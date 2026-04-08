@@ -30,7 +30,7 @@ export default function Home() {
             <p className="text-xs text-gray-500">Governance-Aware Dynamic Resource Allocation</p>
           </div>
           <div className="text-xs text-gray-600">
-            USPTO Patent App. No. 63/999,378
+            USPTO Patent App. No. 19/641,446
           </div>
         </div>
 

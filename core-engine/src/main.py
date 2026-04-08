@@ -1,6 +1,6 @@
 """
 CloudOptimizer Core Engine — FastAPI Application
-Implements USPTO Patent No. 63/999,378: System and Method for Dynamic Resource
+Implements USPTO Patent No. 19/641,446: System and Method for Dynamic Resource
 Allocation in Distributed Computing Environments Using Adaptive Centrality-Entropy
 Index with Oscillation Suppression and Fault Propagation Control.
 """
