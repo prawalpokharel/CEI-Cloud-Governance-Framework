@@ -5,3 +5,4 @@ networkx
 pydantic
 python-dotenv
 httpx
+scipy>=1.11.0

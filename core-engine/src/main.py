@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 import json
+import traceback
 
 from .cei.data_collector import DataCollector
 from .cei.cei_calculator import CEICalculator
@@ -21,6 +22,7 @@ from .fault.propagation import FaultPropagationSimulator
 from .simulation.validator import PreModificationValidator
 from .recommendation.actuator import RecommendationActuator
 from .rollback.manager import RollbackManager
+from .scenarios.loader import ScenarioLoader, ScenarioLoadError
 
 app = FastAPI(
     title="CloudOptimizer Core Engine",
@@ -48,6 +50,7 @@ fault_simulator = FaultPropagationSimulator() # Module 109
 pre_mod_validator = PreModificationValidator()  # Module 110
 actuator = RecommendationActuator()           # Module 111
 rollback_manager = RollbackManager()          # Module 112
+scenario_loader = ScenarioLoader()
 
 
 # --- Request/Response Models ---
@@ -245,3 +248,54 @@ async def revert_to_snapshot(snapshot_id: str):
     """Revert to a previous snapshot upon anomaly detection."""
     result = rollback_manager.revert(snapshot_id)
     return result
+
+
+# --- Scenario Demonstration Endpoints ---
+
+@app.get("/scenarios/list")
+async def list_scenarios():
+    """List all available demonstration scenarios."""
+    try:
+        scenarios = scenario_loader.list_scenarios()
+        return {"scenarios": scenarios, "count": len(scenarios)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/scenarios/{scenario_id}")
+async def get_scenario(scenario_id: str):
+    """Retrieve a scenario's full dataset."""
+    try:
+        return scenario_loader.load(scenario_id)
+    except ScenarioLoadError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/scenarios/{scenario_id}/analyze")
+async def analyze_scenario(scenario_id: str):
+    """Run the full CEI pipeline on a scenario."""
+    try:
+        scenario = scenario_loader.load(scenario_id)
+        engine_input = scenario_loader.to_core_engine_format(scenario)
+        analysis_request = AnalysisRequest(
+            telemetry=TelemetryInput(
+                nodes=engine_input["nodes"],
+                edges=engine_input["edges"],
+                governance_policies=engine_input["governance_policies"],
+            )
+        )
+        analysis_result = await run_full_analysis(analysis_request)
+        return {
+            "scenario_id": scenario_id,
+            "metadata": scenario["metadata"],
+            "analysis": analysis_result,
+        }
+    except ScenarioLoadError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
+
