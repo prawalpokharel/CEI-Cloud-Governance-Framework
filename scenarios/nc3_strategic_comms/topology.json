@@ -1,0 +1,180 @@
+{
+  "nodes": [
+    {
+      "id": "natl-cmd-authority",
+      "type": "command_node",
+      "tier": "critical",
+      "classification": "TS-SCI"
+    },
+    {
+      "id": "stratcom-hq",
+      "type": "command_node",
+      "tier": "critical",
+      "classification": "TS-SCI"
+    },
+    {
+      "id": "alt-cmd-node",
+      "type": "command_node",
+      "tier": "critical",
+      "classification": "TS-SCI"
+    },
+    {
+      "id": "satellite-relay-01",
+      "type": "space_segment",
+      "tier": "critical",
+      "orbit": "MEO"
+    },
+    {
+      "id": "satellite-relay-02",
+      "type": "space_segment",
+      "tier": "critical",
+      "orbit": "GEO"
+    },
+    {
+      "id": "hf-relay-01",
+      "type": "hf_ground",
+      "tier": "critical",
+      "location": "CONUS"
+    },
+    {
+      "id": "hf-relay-02",
+      "type": "hf_ground",
+      "tier": "critical",
+      "location": "PACOM"
+    },
+    {
+      "id": "vlf-transmitter",
+      "type": "vlf_ground",
+      "tier": "critical",
+      "location": "CONUS"
+    },
+    {
+      "id": "crypto-hsm-01",
+      "type": "crypto_module",
+      "tier": "critical",
+      "classification": "TS"
+    },
+    {
+      "id": "crypto-hsm-02",
+      "type": "crypto_module",
+      "tier": "critical",
+      "classification": "TS"
+    },
+    {
+      "id": "auth-gateway-01",
+      "type": "auth_gateway",
+      "tier": "critical",
+      "classification": "TS"
+    },
+    {
+      "id": "auth-gateway-02",
+      "type": "auth_gateway",
+      "tier": "critical",
+      "classification": "TS"
+    },
+    {
+      "id": "bomber-term-01",
+      "type": "platform_terminal",
+      "tier": "critical",
+      "platform": "bomber"
+    },
+    {
+      "id": "sub-term-01",
+      "type": "platform_terminal",
+      "tier": "critical",
+      "platform": "submarine"
+    },
+    {
+      "id": "silo-term-01",
+      "type": "platform_terminal",
+      "tier": "critical",
+      "platform": "silo"
+    },
+    {
+      "id": "mobile-term-01",
+      "type": "platform_terminal",
+      "tier": "core",
+      "platform": "mobile"
+    },
+    {
+      "id": "training-node",
+      "type": "exercise_system",
+      "tier": "supporting",
+      "classification": "S"
+    }
+  ],
+  "edges": [
+    [
+      "natl-cmd-authority",
+      "stratcom-hq"
+    ],
+    [
+      "stratcom-hq",
+      "alt-cmd-node"
+    ],
+    [
+      "stratcom-hq",
+      "crypto-hsm-01"
+    ],
+    [
+      "alt-cmd-node",
+      "crypto-hsm-02"
+    ],
+    [
+      "crypto-hsm-01",
+      "auth-gateway-01"
+    ],
+    [
+      "crypto-hsm-02",
+      "auth-gateway-02"
+    ],
+    [
+      "auth-gateway-01",
+      "satellite-relay-01"
+    ],
+    [
+      "auth-gateway-01",
+      "satellite-relay-02"
+    ],
+    [
+      "auth-gateway-01",
+      "hf-relay-01"
+    ],
+    [
+      "auth-gateway-02",
+      "hf-relay-02"
+    ],
+    [
+      "auth-gateway-01",
+      "vlf-transmitter"
+    ],
+    [
+      "satellite-relay-01",
+      "bomber-term-01"
+    ],
+    [
+      "satellite-relay-02",
+      "bomber-term-01"
+    ],
+    [
+      "vlf-transmitter",
+      "sub-term-01"
+    ],
+    [
+      "hf-relay-01",
+      "silo-term-01"
+    ],
+    [
+      "hf-relay-02",
+      "silo-term-01"
+    ],
+    [
+      "satellite-relay-01",
+      "mobile-term-01"
+    ],
+    [
+      "stratcom-hq",
+      "training-node"
+    ]
+  ]
+}

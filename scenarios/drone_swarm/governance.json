@@ -1,0 +1,49 @@
+{
+  "tiers": {
+    "critical": {
+      "min_redundancy": 2,
+      "max_link_util": 0.8,
+      "latency_budget_ms": 50,
+      "loss_tolerance": 0.01
+    },
+    "core": {
+      "min_redundancy": 1,
+      "max_link_util": 0.85,
+      "latency_budget_ms": 100,
+      "loss_tolerance": 0.05
+    },
+    "supporting": {
+      "min_redundancy": 0,
+      "max_link_util": 0.9,
+      "latency_budget_ms": 200,
+      "loss_tolerance": 0.1
+    }
+  },
+  "policies": [
+    {
+      "id": "coord-redundancy",
+      "targets": [
+        "drone-lead"
+      ],
+      "rule": "hot_standby_required",
+      "value": true
+    },
+    {
+      "id": "jamming-resilience",
+      "targets": [
+        "relay-01",
+        "relay-02"
+      ],
+      "rule": "frequency_hopping",
+      "value": true
+    },
+    {
+      "id": "data-encryption",
+      "targets": [
+        "all"
+      ],
+      "rule": "link_encryption",
+      "value": "AES-256-GCM"
+    }
+  ]
+}

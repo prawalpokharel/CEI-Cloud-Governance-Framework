@@ -1,0 +1,164 @@
+{
+  "nodes": [
+    {
+      "id": "surface-buoy-01",
+      "type": "surface_buoy",
+      "tier": "critical",
+      "depth_m": 0,
+      "link": "rf_satcom"
+    },
+    {
+      "id": "surface-buoy-02",
+      "type": "surface_buoy",
+      "tier": "critical",
+      "depth_m": 0,
+      "link": "rf_satcom"
+    },
+    {
+      "id": "surface-buoy-03",
+      "type": "surface_buoy",
+      "tier": "core",
+      "depth_m": 0,
+      "link": "rf_satcom"
+    },
+    {
+      "id": "seafloor-anchor-01",
+      "type": "acoustic_anchor",
+      "tier": "critical",
+      "depth_m": 1200,
+      "freq_band_khz": "10-15"
+    },
+    {
+      "id": "seafloor-anchor-02",
+      "type": "acoustic_anchor",
+      "tier": "critical",
+      "depth_m": 1500,
+      "freq_band_khz": "10-15"
+    },
+    {
+      "id": "seafloor-anchor-03",
+      "type": "acoustic_anchor",
+      "tier": "core",
+      "depth_m": 800,
+      "freq_band_khz": "15-20"
+    },
+    {
+      "id": "seafloor-anchor-04",
+      "type": "acoustic_anchor",
+      "tier": "core",
+      "depth_m": 1800,
+      "freq_band_khz": "15-20"
+    },
+    {
+      "id": "relay-node-01",
+      "type": "acoustic_relay",
+      "tier": "core",
+      "depth_m": 600,
+      "freq_band_khz": "20-25"
+    },
+    {
+      "id": "relay-node-02",
+      "type": "acoustic_relay",
+      "tier": "core",
+      "depth_m": 900,
+      "freq_band_khz": "20-25"
+    },
+    {
+      "id": "uuv-alpha",
+      "type": "uuv_client",
+      "tier": "critical",
+      "depth_m": 400,
+      "mission": "survey"
+    },
+    {
+      "id": "uuv-beta",
+      "type": "uuv_client",
+      "tier": "critical",
+      "depth_m": 1100,
+      "mission": "patrol"
+    },
+    {
+      "id": "uuv-gamma",
+      "type": "uuv_client",
+      "tier": "core",
+      "depth_m": 700,
+      "mission": "oceanographic"
+    },
+    {
+      "id": "uuv-delta",
+      "type": "uuv_client",
+      "tier": "supporting",
+      "depth_m": 300,
+      "mission": "training"
+    },
+    {
+      "id": "shore-station",
+      "type": "shore_control",
+      "tier": "critical",
+      "depth_m": -50,
+      "link": "fiber"
+    }
+  ],
+  "edges": [
+    [
+      "shore-station",
+      "surface-buoy-01"
+    ],
+    [
+      "shore-station",
+      "surface-buoy-02"
+    ],
+    [
+      "shore-station",
+      "surface-buoy-03"
+    ],
+    [
+      "surface-buoy-01",
+      "seafloor-anchor-01"
+    ],
+    [
+      "surface-buoy-02",
+      "seafloor-anchor-02"
+    ],
+    [
+      "surface-buoy-03",
+      "seafloor-anchor-03"
+    ],
+    [
+      "surface-buoy-03",
+      "seafloor-anchor-04"
+    ],
+    [
+      "seafloor-anchor-01",
+      "relay-node-01"
+    ],
+    [
+      "seafloor-anchor-02",
+      "relay-node-02"
+    ],
+    [
+      "seafloor-anchor-01",
+      "uuv-alpha"
+    ],
+    [
+      "seafloor-anchor-02",
+      "uuv-beta"
+    ],
+    [
+      "seafloor-anchor-03",
+      "uuv-gamma"
+    ],
+    [
+      "seafloor-anchor-04",
+      "uuv-delta"
+    ],
+    [
+      "relay-node-01",
+      "uuv-alpha"
+    ],
+    [
+      "relay-node-02",
+      "uuv-beta"
+    ]
+  ]
+}

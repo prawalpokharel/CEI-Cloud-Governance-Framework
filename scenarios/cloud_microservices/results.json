@@ -1,0 +1,198 @@
+{
+  "scenario": "cloud_microservices",
+  "summary": {
+    "hpa": {
+      "scale_up": 359,
+      "scale_down": 575,
+      "oscillations": 129
+    },
+    "cei": {
+      "scale_up": 2,
+      "scale_down": 3,
+      "no_action": 4,
+      "monitor": 6
+    }
+  },
+  "node_results": [
+    {
+      "node": "lb-01",
+      "tier": "edge",
+      "centrality": 0.205,
+      "entropy": 0.192,
+      "governance_risk": 0.6,
+      "cei": 0.32,
+      "oscillations": 5,
+      "hpa_actions": 0,
+      "cei_action": "no_action",
+      "cei_reason": "dr_requirement_prevents_reduction"
+    },
+    {
+      "node": "api-gateway",
+      "tier": "edge",
+      "centrality": 0.38,
+      "entropy": 0.437,
+      "governance_risk": 0.6,
+      "cei": 0.463,
+      "oscillations": 30,
+      "hpa_actions": 22,
+      "cei_action": "no_action",
+      "cei_reason": "oscillation_suppression"
+    },
+    {
+      "node": "auth-svc",
+      "tier": "core",
+      "centrality": 0.286,
+      "entropy": 0.3,
+      "governance_risk": 0.65,
+      "cei": 0.399,
+      "oscillations": 0,
+      "hpa_actions": 0,
+      "cei_action": "monitor",
+      "cei_reason": "within_stable_band"
+    },
+    {
+      "node": "order-svc",
+      "tier": "core",
+      "centrality": 0.286,
+      "entropy": 0.832,
+      "governance_risk": 0.65,
+      "cei": 0.559,
+      "oscillations": 11,
+      "hpa_actions": 66,
+      "cei_action": "monitor",
+      "cei_reason": "within_stable_band"
+    },
+    {
+      "node": "payment-svc",
+      "tier": "critical",
+      "centrality": 0.286,
+      "entropy": 0.43,
+      "governance_risk": 0.9,
+      "cei": 0.513,
+      "oscillations": 34,
+      "hpa_actions": 34,
+      "cei_action": "no_action",
+      "cei_reason": "oscillation_suppression"
+    },
+    {
+      "node": "inventory-svc",
+      "tier": "core",
+      "centrality": 0.286,
+      "entropy": 0.301,
+      "governance_risk": 0.65,
+      "cei": 0.4,
+      "oscillations": 1,
+      "hpa_actions": 0,
+      "cei_action": "monitor",
+      "cei_reason": "within_stable_band"
+    },
+    {
+      "node": "catalog-svc",
+      "tier": "supporting",
+      "centrality": 0.286,
+      "entropy": 0.826,
+      "governance_risk": 0.3,
+      "cei": 0.452,
+      "oscillations": 5,
+      "hpa_actions": 71,
+      "cei_action": "monitor",
+      "cei_reason": "within_stable_band"
+    },
+    {
+      "node": "search-svc",
+      "tier": "supporting",
+      "centrality": 0.286,
+      "entropy": 0.444,
+      "governance_risk": 0.3,
+      "cei": 0.338,
+      "oscillations": 30,
+      "hpa_actions": 21,
+      "cei_action": "no_action",
+      "cei_reason": "oscillation_suppression"
+    },
+    {
+      "node": "notif-svc",
+      "tier": "supporting",
+      "centrality": 0.327,
+      "entropy": 0.151,
+      "governance_risk": 0.3,
+      "cei": 0.266,
+      "oscillations": 0,
+      "hpa_actions": 180,
+      "cei_action": "scale_down",
+      "cei_reason": "cei_below_lower_threshold"
+    },
+    {
+      "node": "db-primary",
+      "tier": "critical",
+      "centrality": 0.935,
+      "entropy": 0.298,
+      "governance_risk": 0.9,
+      "cei": 0.733,
+      "oscillations": 2,
+      "hpa_actions": 0,
+      "cei_action": "scale_up",
+      "cei_reason": "cei_exceeds_upper_threshold"
+    },
+    {
+      "node": "db-replica-01",
+      "tier": "critical",
+      "centrality": 1.0,
+      "entropy": 0.192,
+      "governance_risk": 0.9,
+      "cei": 0.727,
+      "oscillations": 4,
+      "hpa_actions": 0,
+      "cei_action": "scale_up",
+      "cei_reason": "cei_exceeds_upper_threshold"
+    },
+    {
+      "node": "cache-cluster",
+      "tier": "core",
+      "centrality": 0.691,
+      "entropy": 0.1,
+      "governance_risk": 0.65,
+      "cei": 0.502,
+      "oscillations": 2,
+      "hpa_actions": 180,
+      "cei_action": "monitor",
+      "cei_reason": "within_stable_band"
+    },
+    {
+      "node": "queue-broker",
+      "tier": "core",
+      "centrality": 0.286,
+      "entropy": 0.296,
+      "governance_risk": 0.65,
+      "cei": 0.398,
+      "oscillations": 5,
+      "hpa_actions": 0,
+      "cei_action": "monitor",
+      "cei_reason": "within_stable_band"
+    },
+    {
+      "node": "analytics-svc",
+      "tier": "discretionary",
+      "centrality": 0.327,
+      "entropy": 0.037,
+      "governance_risk": 0.15,
+      "cei": 0.187,
+      "oscillations": 0,
+      "hpa_actions": 180,
+      "cei_action": "scale_down",
+      "cei_reason": "cei_below_lower_threshold"
+    },
+    {
+      "node": "reporting-svc",
+      "tier": "discretionary",
+      "centrality": 0.483,
+      "entropy": 0.0,
+      "governance_risk": 0.15,
+      "cei": 0.238,
+      "oscillations": 0,
+      "hpa_actions": 180,
+      "cei_action": "scale_down",
+      "cei_reason": "cei_below_lower_threshold"
+    }
+  ]
+}

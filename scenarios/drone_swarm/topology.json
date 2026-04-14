@@ -1,0 +1,180 @@
+{
+  "nodes": [
+    {
+      "id": "gcs-primary",
+      "type": "ground_station",
+      "tier": "critical",
+      "location": "base",
+      "link_type": "fiber"
+    },
+    {
+      "id": "gcs-backup",
+      "type": "ground_station",
+      "tier": "critical",
+      "location": "forward_op_base",
+      "link_type": "satcom"
+    },
+    {
+      "id": "relay-01",
+      "type": "comms_relay",
+      "tier": "critical",
+      "location": "airborne",
+      "link_type": "mesh_radio"
+    },
+    {
+      "id": "relay-02",
+      "type": "comms_relay",
+      "tier": "critical",
+      "location": "airborne",
+      "link_type": "mesh_radio"
+    },
+    {
+      "id": "drone-lead",
+      "type": "drone",
+      "tier": "critical",
+      "role": "coordinator",
+      "onboard_compute": "Jetson_Orin"
+    },
+    {
+      "id": "drone-01",
+      "type": "drone",
+      "tier": "core",
+      "role": "sensor",
+      "onboard_compute": "Jetson_Xavier"
+    },
+    {
+      "id": "drone-02",
+      "type": "drone",
+      "tier": "core",
+      "role": "sensor",
+      "onboard_compute": "Jetson_Xavier"
+    },
+    {
+      "id": "drone-03",
+      "type": "drone",
+      "tier": "core",
+      "role": "sensor",
+      "onboard_compute": "Jetson_Xavier"
+    },
+    {
+      "id": "drone-04",
+      "type": "drone",
+      "tier": "core",
+      "role": "sensor",
+      "onboard_compute": "Jetson_Xavier"
+    },
+    {
+      "id": "drone-05",
+      "type": "drone",
+      "tier": "core",
+      "role": "sensor",
+      "onboard_compute": "Jetson_Xavier"
+    },
+    {
+      "id": "drone-06",
+      "type": "drone",
+      "tier": "supporting",
+      "role": "relay",
+      "onboard_compute": "Jetson_Nano"
+    },
+    {
+      "id": "drone-07",
+      "type": "drone",
+      "tier": "supporting",
+      "role": "relay",
+      "onboard_compute": "Jetson_Nano"
+    },
+    {
+      "id": "edge-fusion-node",
+      "type": "fusion_server",
+      "tier": "critical",
+      "location": "airborne_platform",
+      "gpu_count": 2
+    },
+    {
+      "id": "intelligence-feed",
+      "type": "data_service",
+      "tier": "core",
+      "location": "base",
+      "link_type": "fiber"
+    }
+  ],
+  "edges": [
+    [
+      "gcs-primary",
+      "relay-01"
+    ],
+    [
+      "gcs-primary",
+      "relay-02"
+    ],
+    [
+      "gcs-backup",
+      "relay-01"
+    ],
+    [
+      "relay-01",
+      "drone-lead"
+    ],
+    [
+      "relay-02",
+      "drone-lead"
+    ],
+    [
+      "drone-lead",
+      "edge-fusion-node"
+    ],
+    [
+      "drone-lead",
+      "drone-01"
+    ],
+    [
+      "drone-lead",
+      "drone-02"
+    ],
+    [
+      "drone-lead",
+      "drone-03"
+    ],
+    [
+      "drone-lead",
+      "drone-04"
+    ],
+    [
+      "drone-lead",
+      "drone-05"
+    ],
+    [
+      "drone-lead",
+      "drone-06"
+    ],
+    [
+      "drone-lead",
+      "drone-07"
+    ],
+    [
+      "drone-01",
+      "edge-fusion-node"
+    ],
+    [
+      "drone-02",
+      "edge-fusion-node"
+    ],
+    [
+      "drone-03",
+      "edge-fusion-node"
+    ],
+    [
+      "drone-04",
+      "edge-fusion-node"
+    ],
+    [
+      "drone-05",
+      "edge-fusion-node"
+    ],
+    [
+      "edge-fusion-node",
+      "intelligence-feed"
+    ]
+  ]
+}

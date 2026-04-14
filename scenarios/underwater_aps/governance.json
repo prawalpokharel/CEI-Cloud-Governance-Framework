@@ -1,0 +1,50 @@
+{
+  "tiers": {
+    "critical": {
+      "min_positioning_sources": 3,
+      "max_bandwidth_util": 0.7,
+      "ping_interval_sec": 2,
+      "availability_target": 0.999
+    },
+    "core": {
+      "min_positioning_sources": 2,
+      "max_bandwidth_util": 0.8,
+      "ping_interval_sec": 5,
+      "availability_target": 0.99
+    },
+    "supporting": {
+      "min_positioning_sources": 1,
+      "max_bandwidth_util": 0.9,
+      "ping_interval_sec": 15,
+      "availability_target": 0.95
+    }
+  },
+  "policies": [
+    {
+      "id": "uuv-fallback",
+      "targets": [
+        "uuv-alpha",
+        "uuv-beta"
+      ],
+      "rule": "inertial_fallback_enabled",
+      "value": true
+    },
+    {
+      "id": "freq-coord",
+      "targets": [
+        "all_anchors"
+      ],
+      "rule": "frequency_allocation",
+      "value": "TDMA_scheduled"
+    },
+    {
+      "id": "ocean-noise-adaptive",
+      "targets": [
+        "seafloor-anchor-01",
+        "seafloor-anchor-02"
+      ],
+      "rule": "noise_floor_tracking",
+      "value": true
+    }
+  ]
+}
