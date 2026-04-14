@@ -12,7 +12,11 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const CORE_ENGINE_URL = process.env.CORE_ENGINE_URL || 'http://localhost:8000';
 
-app.use(cors({ origin: ['http://localhost:3000'], credentials: true }));
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.set('coreEngineUrl', CORE_ENGINE_URL);
 
