@@ -1,0 +1,74 @@
+{
+  "tiers": {
+    "critical": {
+      "min_redundant_paths": 3,
+      "max_link_util": 0.6,
+      "latency_budget_ms": 100,
+      "availability_target": 0.9999,
+      "crypto_required": true
+    },
+    "core": {
+      "min_redundant_paths": 2,
+      "max_link_util": 0.7,
+      "latency_budget_ms": 200,
+      "availability_target": 0.999,
+      "crypto_required": true
+    },
+    "supporting": {
+      "min_redundant_paths": 1,
+      "max_link_util": 0.85,
+      "latency_budget_ms": 1000,
+      "availability_target": 0.95,
+      "crypto_required": false
+    }
+  },
+  "policies": [
+    {
+      "id": "ts-sci-isolation",
+      "targets": [
+        "natl-cmd-authority",
+        "stratcom-hq",
+        "alt-cmd-node"
+      ],
+      "rule": "network_isolation",
+      "value": "SIPR_NIPR_separate"
+    },
+    {
+      "id": "crypto-dual-control",
+      "targets": [
+        "crypto-hsm-01",
+        "crypto-hsm-02"
+      ],
+      "rule": "two-person-integrity",
+      "value": true
+    },
+    {
+      "id": "path-diversity",
+      "targets": [
+        "silo-term-01",
+        "sub-term-01",
+        "bomber-term-01"
+      ],
+      "rule": "min_physical_paths",
+      "value": 3
+    },
+    {
+      "id": "jam-resilience",
+      "targets": [
+        "vlf-transmitter",
+        "hf-relay-01",
+        "hf-relay-02"
+      ],
+      "rule": "anti-jam-waveform",
+      "value": true
+    },
+    {
+      "id": "training-isolation",
+      "targets": [
+        "training-node"
+      ],
+      "rule": "no_operational_traffic",
+      "value": true
+    }
+  ]
+}

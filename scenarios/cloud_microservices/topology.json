@@ -1,0 +1,194 @@
+{
+  "nodes": [
+    {
+      "id": "lb-01",
+      "type": "load_balancer",
+      "tier": "edge",
+      "replicas": 3,
+      "cpu_limit": 4,
+      "mem_gb": 8
+    },
+    {
+      "id": "api-gateway",
+      "type": "service",
+      "tier": "edge",
+      "replicas": 6,
+      "cpu_limit": 8,
+      "mem_gb": 16
+    },
+    {
+      "id": "auth-svc",
+      "type": "service",
+      "tier": "core",
+      "replicas": 4,
+      "cpu_limit": 4,
+      "mem_gb": 8
+    },
+    {
+      "id": "order-svc",
+      "type": "service",
+      "tier": "core",
+      "replicas": 8,
+      "cpu_limit": 8,
+      "mem_gb": 16
+    },
+    {
+      "id": "payment-svc",
+      "type": "service",
+      "tier": "critical",
+      "replicas": 6,
+      "cpu_limit": 8,
+      "mem_gb": 16
+    },
+    {
+      "id": "inventory-svc",
+      "type": "service",
+      "tier": "core",
+      "replicas": 4,
+      "cpu_limit": 4,
+      "mem_gb": 8
+    },
+    {
+      "id": "catalog-svc",
+      "type": "service",
+      "tier": "supporting",
+      "replicas": 6,
+      "cpu_limit": 4,
+      "mem_gb": 8
+    },
+    {
+      "id": "search-svc",
+      "type": "service",
+      "tier": "supporting",
+      "replicas": 4,
+      "cpu_limit": 4,
+      "mem_gb": 8
+    },
+    {
+      "id": "notif-svc",
+      "type": "service",
+      "tier": "supporting",
+      "replicas": 2,
+      "cpu_limit": 2,
+      "mem_gb": 4
+    },
+    {
+      "id": "db-primary",
+      "type": "database",
+      "tier": "critical",
+      "replicas": 1,
+      "cpu_limit": 16,
+      "mem_gb": 64
+    },
+    {
+      "id": "db-replica-01",
+      "type": "database",
+      "tier": "critical",
+      "replicas": 1,
+      "cpu_limit": 16,
+      "mem_gb": 64
+    },
+    {
+      "id": "cache-cluster",
+      "type": "cache",
+      "tier": "core",
+      "replicas": 3,
+      "cpu_limit": 8,
+      "mem_gb": 32
+    },
+    {
+      "id": "queue-broker",
+      "type": "messaging",
+      "tier": "core",
+      "replicas": 3,
+      "cpu_limit": 4,
+      "mem_gb": 16
+    },
+    {
+      "id": "analytics-svc",
+      "type": "service",
+      "tier": "discretionary",
+      "replicas": 4,
+      "cpu_limit": 8,
+      "mem_gb": 32
+    },
+    {
+      "id": "reporting-svc",
+      "type": "service",
+      "tier": "discretionary",
+      "replicas": 2,
+      "cpu_limit": 4,
+      "mem_gb": 8
+    }
+  ],
+  "edges": [
+    [
+      "lb-01",
+      "api-gateway"
+    ],
+    [
+      "api-gateway",
+      "auth-svc"
+    ],
+    [
+      "api-gateway",
+      "order-svc"
+    ],
+    [
+      "api-gateway",
+      "catalog-svc"
+    ],
+    [
+      "api-gateway",
+      "search-svc"
+    ],
+    [
+      "order-svc",
+      "payment-svc"
+    ],
+    [
+      "order-svc",
+      "inventory-svc"
+    ],
+    [
+      "order-svc",
+      "queue-broker"
+    ],
+    [
+      "payment-svc",
+      "db-primary"
+    ],
+    [
+      "inventory-svc",
+      "db-primary"
+    ],
+    [
+      "catalog-svc",
+      "cache-cluster"
+    ],
+    [
+      "search-svc",
+      "cache-cluster"
+    ],
+    [
+      "auth-svc",
+      "db-primary"
+    ],
+    [
+      "db-primary",
+      "db-replica-01"
+    ],
+    [
+      "queue-broker",
+      "notif-svc"
+    ],
+    [
+      "queue-broker",
+      "analytics-svc"
+    ],
+    [
+      "analytics-svc",
+      "reporting-svc"
+    ]
+  ]
+}

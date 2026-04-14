@@ -1,0 +1,50 @@
+{
+  "tiers": {
+    "critical": {
+      "min_replicas": 1,
+      "max_gpu_pct": 0.95,
+      "retraining_window": "scheduled",
+      "availability_target": 0.999
+    },
+    "core": {
+      "min_replicas": 1,
+      "max_gpu_pct": 0.9,
+      "retraining_window": "opportunistic",
+      "availability_target": 0.99
+    },
+    "supporting": {
+      "min_replicas": 1,
+      "max_gpu_pct": 0.95,
+      "retraining_window": "any",
+      "availability_target": 0.95
+    }
+  },
+  "policies": [
+    {
+      "id": "checkpoint-integrity",
+      "targets": [
+        "checkpoint-store"
+      ],
+      "rule": "write_fence_required",
+      "value": true
+    },
+    {
+      "id": "inference-slo",
+      "targets": [
+        "gpu-worker-07",
+        "gpu-worker-08"
+      ],
+      "rule": "p99_latency_ms",
+      "value": 100
+    },
+    {
+      "id": "data-residency",
+      "targets": [
+        "feature-store",
+        "data-ingest-01"
+      ],
+      "rule": "region",
+      "value": "us-gov-west-1"
+    }
+  ]
+}
