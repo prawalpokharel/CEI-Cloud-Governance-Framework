@@ -16,9 +16,16 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 
-# Resolve path to the scenarios directory at repository root.
-# core-engine/src/scenarios/loader.py -> ../../../scenarios
-SCENARIOS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "scenarios"
+# Resolve path to the scenarios directory.
+# Look in multiple candidate locations so the loader works both in the
+# monorepo (data lives at <repo>/scenarios) and when only the core-engine
+# subtree is deployed to Railway (data lives at <core-engine>/scenarios).
+_HERE = Path(__file__).resolve()
+_CANDIDATES = [
+    _HERE.parent.parent.parent.parent / "scenarios",  # repo-root layout
+    _HERE.parent.parent.parent / "scenarios",          # core-engine root layout (Railway)
+]
+SCENARIOS_DIR = next((p for p in _CANDIDATES if p.exists()), _CANDIDATES[0])
 
 
 AVAILABLE_SCENARIOS = [
