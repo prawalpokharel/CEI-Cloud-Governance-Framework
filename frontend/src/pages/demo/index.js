@@ -95,6 +95,38 @@ export default function DemoIndex() {
               suppression, fault propagation analysis, and HPA-vs-CEI
               comparison. No login required.
             </p>
+
+            <div style={styles.provenance}>
+              <div style={styles.provenanceTitle}>Data provenance</div>
+              <p style={styles.provenanceText}>
+                Each scenario is a <strong>synthetic dataset</strong> whose
+                topology, tier assignments, governance constraints, and
+                telemetry envelopes are derived from <strong>publicly
+                published reference architectures and operational research</strong>{' '}
+                in that domain. Sources include the AWS Well-Architected
+                Framework (commercial cloud), NVIDIA DGX SuperPOD reference
+                architecture and MLCommons MLPerf (GPU clusters), DARPA
+                OFFSET / CODE and USAF Skyborg (drone swarm), NATO CMRE and
+                US Navy ONR (underwater acoustic positioning), and DoD
+                NC3 / RAND modernization studies (strategic communications).
+                Per-scenario citations appear on each detail page.
+              </p>
+              <p style={{ ...styles.provenanceText, marginTop: 8 }}>
+                The same datasets are reproduced in{' '}
+                <a
+                  href="https://github.com/prawalpokharel/CEI-Cloud-Governance-Framework/tree/main/core-engine/scenarios"
+                  style={styles.provenanceLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  /core-engine/scenarios
+                </a>{' '}
+                and referenced as worked examples in USPTO App. 19/641,446.
+                Numbers are constructed to exercise the CEI pipeline across
+                structurally distinct workloads — they are not measurements
+                of any single production system.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -245,6 +277,33 @@ const styles = {
   patentNumber: { fontSize: 14, fontWeight: 600, marginTop: 2 },
   intro: { background: 'white', padding: '48px 0', borderBottom: '1px solid #E8EDF0' },
   introInner: { maxWidth: 900, margin: '0 auto', padding: '0 32px' },
+  provenance: {
+    background: '#FEF9E7',
+    border: '1px solid #B7950B',
+    borderLeft: '4px solid #B7950B',
+    borderRadius: 6,
+    padding: '14px 18px',
+    marginTop: 20,
+  },
+  provenanceTitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#7D6608',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    marginBottom: 6,
+  },
+  provenanceText: {
+    margin: 0,
+    fontSize: 13,
+    lineHeight: 1.6,
+    color: '#5D4E0A',
+  },
+  provenanceLink: {
+    color: '#1B4F72',
+    fontWeight: 600,
+    textDecoration: 'underline',
+  },
   introTitle: {
     fontSize: 24,
     fontWeight: 600,
