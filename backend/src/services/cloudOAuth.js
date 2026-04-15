@@ -122,9 +122,37 @@ async function exchangeCodeForToken(provider, { code, redirectUri }) {
 }
 
 /**
+ * Per-instance monthly USD cost (mid-2025 on-demand averages, us-east-1
+ * / eastus / us-central1). Used to populate node.metadata.monthly_cost
+ * so the core engine's actuator can compute potential savings. A real
+ * deployment would pull live pricing from each provider.
+ */
+const MONTHLY_COST = {
+  // AWS
+  't3.medium': 30, 't3.large': 60, 'm5.large': 70,
+  'm5.xlarge': 140, 'm5.2xlarge': 280, 'r5.xlarge': 184,
+  'r5.large': 92, 'c5.xlarge': 124, 'c5.2xlarge': 248,
+  // Azure
+  'Standard_B2ms': 61, 'Standard_B4ms': 122,
+  'Standard_D2s_v3': 70, 'Standard_D4s_v3': 140, 'Standard_D8s_v3': 280,
+  'Standard_E4s_v3': 184, 'Standard_E8s_v3': 368,
+  'Standard_F4s_v2': 123,
+  // GCP
+  'e2-small': 12, 'e2-medium': 24, 'e2-standard-2': 49,
+  'n2-standard-2': 71, 'n2-standard-4': 142, 'n2-standard-8': 284,
+  'n2-highmem-4': 191, 'c2-standard-4': 153,
+};
+
+function costFor(instanceType, replicas = 1) {
+  const unit = MONTHLY_COST[instanceType] || 50;
+  return Math.round(unit * Math.max(1, replicas));
+}
+
+/**
  * Stub topology discovery. Returns a small but realistic-looking
- * dependency graph per provider. Replace per-provider with real
- * EC2/ECS/EKS, Azure Resource Graph/AKS, GCE/GKE/Cloud Run adapters.
+ * dependency graph per provider with monthly_cost attached so the
+ * actuator's savings estimate is non-zero. Replace per-provider with
+ * real EC2/ECS/EKS, Azure Resource Graph/AKS, GCE/GKE/Cloud Run adapters.
  */
 async function discoverTopology(provider /* , { access_token } */) {
   const layouts = {
@@ -183,6 +211,12 @@ async function discoverTopology(provider /* , { access_token } */) {
     },
   };
   const layout = layouts[provider] || { nodes: [], edges: [] };
+  // Enrich every node with a monthly_cost based on its instance_type
+  // and replica count so the actuator can compute potential savings.
+  layout.nodes = layout.nodes.map((n) => ({
+    ...n,
+    monthly_cost: costFor(n.instance_type, n.replicas),
+  }));
   return {
     provider,
     discovered_at: new Date().toISOString(),
