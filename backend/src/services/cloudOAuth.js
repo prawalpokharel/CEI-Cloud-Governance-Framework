@@ -173,6 +173,16 @@ async function discoverTopology(provider /* , { access_token } */) {
         ['orders-prod', 'rds-prod', 0.95],
         ['api-prod', 'cache-prod', 0.55],
         ['orders-prod', 'workers-prod', 0.4],
+        ['api-prod', 'staging-svc', 0.15],
+        ['api-prod', 'devtools-bastion', 0.05],
+      ],
+      // Peripheral/discretionary nodes — low centrality + low tier =>
+      // CEI < 0.25 => 'low' classification => 'consolidate' recommendation
+      // => actuator produces savings.
+      lowExtras: [
+        { id: 'staging-svc',     tier: 'discretionary', type: 'ecs_service', provider: 'aws', instance_type: 't3.medium', replicas: 2 },
+        { id: 'devtools-bastion',tier: 'discretionary', type: 'ec2',         provider: 'aws', instance_type: 't3.large',  replicas: 1 },
+        { id: 'archive-store',   tier: 'supporting',    type: 's3_lifecycle',provider: 'aws', instance_type: 't3.medium', replicas: 1 },
       ],
     },
     azure: {
@@ -190,6 +200,13 @@ async function discoverTopology(provider /* , { access_token } */) {
         ['aks-api', 'aks-orders', 1.0],
         ['aks-orders', 'sql-prod', 0.95],
         ['aks-api', 'redis-prod', 0.5],
+        ['aks-api', 'aks-staging', 0.12],
+        ['aks-api', 'jumpbox', 0.04],
+      ],
+      lowExtras: [
+        { id: 'aks-staging',  tier: 'discretionary', type: 'aks_pod',   provider: 'azure', instance_type: 'Standard_B2ms', replicas: 1 },
+        { id: 'jumpbox',      tier: 'discretionary', type: 'vm',        provider: 'azure', instance_type: 'Standard_B2ms', replicas: 1 },
+        { id: 'logs-archive', tier: 'supporting',    type: 'storage',   provider: 'azure', instance_type: 'Standard_B2ms', replicas: 1 },
       ],
     },
     gcp: {
@@ -207,10 +224,26 @@ async function discoverTopology(provider /* , { access_token } */) {
         ['gke-api', 'gke-orders', 1.0],
         ['gke-orders', 'spanner-prod', 0.95],
         ['gke-api', 'memorystore', 0.5],
+        ['gke-api', 'gke-dev', 0.1],
+        ['gke-api', 'cloud-shell', 0.04],
+      ],
+      lowExtras: [
+        { id: 'gke-dev',      tier: 'discretionary', type: 'gke_pod', provider: 'gcp', instance_type: 'e2-medium', replicas: 1 },
+        { id: 'cloud-shell',  tier: 'discretionary', type: 'compute', provider: 'gcp', instance_type: 'e2-small',  replicas: 1 },
+        { id: 'cold-storage', tier: 'supporting',    type: 'storage', provider: 'gcp', instance_type: 'e2-medium', replicas: 1 },
       ],
     },
   };
   const layout = layouts[provider] || { nodes: [], edges: [] };
+  // Merge the peripheral / discretionary "lowExtras" into the main
+  // node list so the CEI pipeline sees them. They have low centrality
+  // by construction (edge weight 0.04..0.15 -> small PageRank impact)
+  // and discretionary tier (low governance risk), so several land in
+  // the 'low' classification -> 'consolidate' -> non-zero savings.
+  if (Array.isArray(layout.lowExtras)) {
+    layout.nodes = [...layout.nodes, ...layout.lowExtras];
+    delete layout.lowExtras;
+  }
   // Enrich every node with a monthly_cost based on its instance_type
   // and replica count so the actuator can compute potential savings.
   layout.nodes = layout.nodes.map((n) => ({
