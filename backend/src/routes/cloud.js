@@ -121,6 +121,15 @@ router.post('/analyze/:provider', async (req, res) => {
     const topo = await discoverTopology(provider, { access_token: token.access_token });
     const nodes = (topo.topology.nodes || []).map((n) => ({
       node_id: n.id,
+      // The data_collector reads monthly_cost / provider / instance_type /
+      // region from the TOP LEVEL of each node (see core-engine/src/cei/
+      // data_collector.py), then nests them under metadata for the rest of
+      // the pipeline. We must surface these at top level here, otherwise
+      // the actuator's savings calculation reads $0 for every node.
+      monthly_cost: n.monthly_cost || 0,
+      provider: provider,
+      instance_type: n.instance_type,
+      region: 'unknown',
       // Synthesize realistic-ish utilization spread so the actuator
       // identifies both consolidation candidates (low cpu) and scale-up
       // candidates (high cpu) instead of all being middle-of-the-road.
