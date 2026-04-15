@@ -164,9 +164,14 @@ export default function ScenarioDetail() {
       <div style={styles.page}>
         <header style={styles.header}>
           <div style={styles.headerInner}>
-            <Link href="/demo" style={styles.backLink}>
-              ← All scenarios
-            </Link>
+            <div style={styles.backLinks}>
+              <Link href="/" style={styles.backLink}>
+                ← Home
+              </Link>
+              <Link href="/demo" style={styles.backLink}>
+                ← All scenarios
+              </Link>
+            </div>
             <h1 style={styles.title}>{metadata.display_name}</h1>
             <div style={styles.meta}>
               <span>Domain: {metadata.domain}</span>
@@ -534,11 +539,15 @@ const styles = {
     padding: '24px 0',
   },
   headerInner: { maxWidth: 1300, margin: '0 auto', padding: '0 32px' },
+  backLinks: {
+    display: 'flex',
+    gap: 16,
+    marginBottom: 8,
+  },
   backLink: {
     color: '#AED6F1',
     textDecoration: 'none',
     fontSize: 13,
-    marginBottom: 8,
     display: 'inline-block',
   },
   title: {

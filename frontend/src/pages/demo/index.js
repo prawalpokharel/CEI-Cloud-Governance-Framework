@@ -61,6 +61,9 @@ export default function DemoIndex() {
               </p>
             </div>
             <div style={styles.headerActions}>
+              <Link href="/" style={styles.homeButton}>
+                ← Home
+              </Link>
               <Link href="/connect" style={styles.connectButton}>
                 Connect Cloud →
               </Link>
@@ -257,6 +260,16 @@ const styles = {
     fontWeight: 700,
     textDecoration: 'none',
     boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+  },
+  homeButton: {
+    color: 'rgba(255,255,255,0.95)',
+    padding: '8px 14px',
+    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: 600,
+    textDecoration: 'none',
+    border: '1px solid rgba(255,255,255,0.3)',
+    whiteSpace: 'nowrap',
   },
   headerLink: {
     color: 'rgba(255,255,255,0.95)',
