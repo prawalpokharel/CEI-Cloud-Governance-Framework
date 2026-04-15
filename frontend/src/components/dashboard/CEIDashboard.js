@@ -4,72 +4,114 @@ import React from 'react';
  * CEI Dashboard - Displays Centrality-Entropy Index analysis results
  * with real-time visualization of node classifications, weights, and
  * optimization recommendations.
+ *
+ * Light theme to match the /demo and main page treatment.
  */
+
+const CLASS_COLORS = {
+  critical: { bg: '#FDEDEC', text: '#922B21', dot: '#E74C3C' },
+  elevated: { bg: '#FEF9E7', text: '#7D6608', dot: '#F39C12' },
+  moderate: { bg: '#EBF5FB', text: '#1B4F72', dot: '#3498DB' },
+  low: { bg: '#EAFAF1', text: '#196F3D', dot: '#27AE60' },
+};
+
+const SUMMARY_COLOR = {
+  blue: '#1B4F72',
+  green: '#196F3D',
+  red: '#922B21',
+  yellow: '#7D6608',
+};
+
 export default function CEIDashboard({ results }) {
   if (!results) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-2xl font-bold text-gray-400 mb-4">No Analysis Results</h2>
-        <p className="text-gray-500">Run an analysis from the &quot;Run Analysis&quot; tab to see CEI metrics.</p>
+      <div style={s.empty}>
+        <h2 style={s.emptyTitle}>No Analysis Results</h2>
+        <p style={s.emptyText}>
+          Run an analysis from the &quot;Run Analysis&quot; tab to see CEI metrics.
+        </p>
       </div>
     );
   }
 
-  const { nodes, weights, oscillation_status, total_potential_savings, graph_metrics } = results;
+  const {
+    nodes,
+    weights,
+    oscillation_status,
+    total_potential_savings,
+    graph_metrics,
+  } = results;
 
-  const classificationCounts = { critical: 0, elevated: 0, moderate: 0, low: 0 };
-  nodes.forEach((n) => { classificationCounts[n.classification] = (classificationCounts[n.classification] || 0) + 1; });
+  const counts = { critical: 0, elevated: 0, moderate: 0, low: 0 };
+  nodes.forEach((n) => {
+    counts[n.classification] = (counts[n.classification] || 0) + 1;
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div style={s.wrap}>
+      <div style={s.summaryGrid}>
         <SummaryCard label="Total Nodes" value={nodes.length} color="blue" />
-        <SummaryCard label="Potential Savings" value={`$${total_potential_savings.toFixed(0)}/mo`} color="green" />
-        <SummaryCard label="Critical Nodes" value={classificationCounts.critical} color="red" />
-        <SummaryCard label="Oscillation" value={oscillation_status.suppression_active ? 'ACTIVE' : 'Clear'} color={oscillation_status.suppression_active ? 'yellow' : 'green'} />
+        <SummaryCard
+          label="Potential Savings"
+          value={`$${total_potential_savings.toFixed(0)}/mo`}
+          color="green"
+        />
+        <SummaryCard label="Critical Nodes" value={counts.critical} color="red" />
+        <SummaryCard
+          label="Oscillation"
+          value={oscillation_status.suppression_active ? 'ACTIVE' : 'Clear'}
+          color={oscillation_status.suppression_active ? 'yellow' : 'green'}
+        />
       </div>
 
-      {/* CEI Weights */}
-      <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">Adaptive CEI Weights (Closed-Loop Control)</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <WeightBar label="α (Centrality)" value={weights.alpha} color="blue" />
-          <WeightBar label="β (Entropy)" value={weights.beta} color="purple" />
-          <WeightBar label="γ (Governance Risk)" value={weights.gamma} color="orange" />
+      <div style={s.card}>
+        <h3 style={s.cardTitle}>Adaptive CEI Weights (Closed-Loop Control)</h3>
+        <div style={s.weightGrid}>
+          <WeightBar label="α (Centrality)" value={weights.alpha} color="#3498DB" />
+          <WeightBar label="β (Entropy)" value={weights.beta} color="#9B59B6" />
+          <WeightBar label="γ (Governance Risk)" value={weights.gamma} color="#E67E22" />
         </div>
       </div>
 
-      {/* Node Results Table */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
-        <div className="p-4 border-b border-gray-800">
-          <h3 className="text-sm font-semibold text-gray-400">Node CEI Analysis Results</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-800">
+      <div style={s.card}>
+        <h3 style={s.cardTitle}>Node CEI Analysis Results</h3>
+        <div style={s.tableWrap}>
+          <table style={s.table}>
+            <thead>
               <tr>
-                <th className="px-4 py-2 text-left text-gray-400">Node ID</th>
-                <th className="px-4 py-2 text-right text-gray-400">CEI Score</th>
-                <th className="px-4 py-2 text-right text-gray-400">Centrality</th>
-                <th className="px-4 py-2 text-right text-gray-400">Entropy</th>
-                <th className="px-4 py-2 text-right text-gray-400">Risk</th>
-                <th className="px-4 py-2 text-center text-gray-400">Classification</th>
-                <th className="px-4 py-2 text-left text-gray-400">Recommendation</th>
+                <th style={s.th}>Node ID</th>
+                <th style={{ ...s.th, textAlign: 'right' }}>CEI Score</th>
+                <th style={{ ...s.th, textAlign: 'right' }}>Centrality</th>
+                <th style={{ ...s.th, textAlign: 'right' }}>Entropy</th>
+                <th style={{ ...s.th, textAlign: 'right' }}>Risk</th>
+                <th style={{ ...s.th, textAlign: 'center' }}>Classification</th>
+                <th style={s.th}>Recommendation</th>
               </tr>
             </thead>
             <tbody>
               {nodes.map((node) => (
-                <tr key={node.node_id} className="border-t border-gray-800 hover:bg-gray-800/50">
-                  <td className="px-4 py-2 font-mono text-xs">{node.node_id}</td>
-                  <td className="px-4 py-2 text-right font-bold">{node.cei_score.toFixed(3)}</td>
-                  <td className="px-4 py-2 text-right">{node.centrality.toFixed(3)}</td>
-                  <td className="px-4 py-2 text-right">{node.entropy.toFixed(3)}</td>
-                  <td className="px-4 py-2 text-right">{node.risk_factor.toFixed(3)}</td>
-                  <td className="px-4 py-2 text-center">
+                <tr key={node.node_id} style={s.tr}>
+                  <td style={{ ...s.td, fontFamily: 'monospace', fontSize: 12 }}>
+                    {node.node_id}
+                  </td>
+                  <td style={{ ...s.td, textAlign: 'right', fontWeight: 700 }}>
+                    {node.cei_score.toFixed(3)}
+                  </td>
+                  <td style={{ ...s.td, textAlign: 'right' }}>
+                    {node.centrality.toFixed(3)}
+                  </td>
+                  <td style={{ ...s.td, textAlign: 'right' }}>
+                    {node.entropy.toFixed(3)}
+                  </td>
+                  <td style={{ ...s.td, textAlign: 'right' }}>
+                    {node.risk_factor.toFixed(3)}
+                  </td>
+                  <td style={{ ...s.td, textAlign: 'center' }}>
                     <ClassBadge classification={node.classification} />
                   </td>
-                  <td className="px-4 py-2 text-xs text-gray-400">{node.recommendation}</td>
+                  <td style={{ ...s.td, fontSize: 12, color: '#566573' }}>
+                    {node.recommendation}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -77,15 +119,20 @@ export default function CEIDashboard({ results }) {
         </div>
       </div>
 
-      {/* Graph Metrics */}
-      <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">Dependency Graph Metrics</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+      <div style={s.card}>
+        <h3 style={s.cardTitle}>Dependency Graph Metrics</h3>
+        <div style={s.metricsGrid}>
           <MetricItem label="Nodes" value={graph_metrics.total_nodes} />
           <MetricItem label="Edges" value={graph_metrics.total_edges} />
-          <MetricItem label="Density" value={graph_metrics.density?.toFixed(3)} />
+          <MetricItem
+            label="Density"
+            value={graph_metrics.density?.toFixed(3)}
+          />
           <MetricItem label="Avg Degree" value={graph_metrics.avg_degree} />
-          <MetricItem label="DAG" value={graph_metrics.is_dag ? 'Yes' : 'No'} />
+          <MetricItem
+            label="DAG"
+            value={graph_metrics.is_dag ? 'Yes' : 'No'}
+          />
         </div>
       </div>
     </div>
@@ -93,39 +140,71 @@ export default function CEIDashboard({ results }) {
 }
 
 function SummaryCard({ label, value, color }) {
-  const colorMap = { blue: 'text-blue-400', green: 'text-green-400', red: 'text-red-400', yellow: 'text-yellow-400' };
   return (
-    <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className={`text-2xl font-bold ${colorMap[color]}`}>{value}</p>
+    <div style={s.summaryCard}>
+      <p style={s.summaryLabel}>{label}</p>
+      <p
+        style={{
+          ...s.summaryValue,
+          color: SUMMARY_COLOR[color] || SUMMARY_COLOR.blue,
+        }}
+      >
+        {value}
+      </p>
     </div>
   );
 }
 
 function WeightBar({ label, value, color }) {
-  const colorMap = { blue: 'bg-blue-500', purple: 'bg-purple-500', orange: 'bg-orange-500' };
   return (
     <div>
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-400">{label}</span>
-        <span className="text-white font-mono">{(value * 100).toFixed(1)}%</span>
+      <div style={s.weightHeader}>
+        <span style={s.weightLabel}>{label}</span>
+        <span style={s.weightValue}>{(value * 100).toFixed(1)}%</span>
       </div>
-      <div className="h-2 bg-gray-800 rounded-full">
-        <div className={`h-2 rounded-full ${colorMap[color]}`} style={{ width: `${value * 100}%` }} />
+      <div style={s.weightTrack}>
+        <div
+          style={{
+            ...s.weightFill,
+            width: `${value * 100}%`,
+            background: color,
+          }}
+        />
       </div>
     </div>
   );
 }
 
 function ClassBadge({ classification }) {
-  const styles = {
-    critical: 'bg-red-900 text-red-300',
-    elevated: 'bg-yellow-900 text-yellow-300',
-    moderate: 'bg-blue-900 text-blue-300',
-    low: 'bg-green-900 text-green-300',
+  const c = CLASS_COLORS[classification] || {
+    bg: '#EAEDED',
+    text: '#566573',
+    dot: '#95A5A6',
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${styles[classification] || 'bg-gray-700 text-gray-300'}`}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        background: c.bg,
+        color: c.text,
+        padding: '2px 10px',
+        borderRadius: 12,
+        fontSize: 11,
+        fontWeight: 600,
+        textTransform: 'capitalize',
+      }}
+    >
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: c.dot,
+          display: 'inline-block',
+        }}
+      />
       {classification}
     </span>
   );
@@ -133,9 +212,119 @@ function ClassBadge({ classification }) {
 
 function MetricItem({ label, value }) {
   return (
-    <div className="bg-gray-800 rounded p-2">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm font-mono text-white">{value}</p>
+    <div style={s.metricItem}>
+      <p style={s.metricLabel}>{label}</p>
+      <p style={s.metricValue}>{value}</p>
     </div>
   );
 }
+
+const s = {
+  wrap: { display: 'flex', flexDirection: 'column', gap: 16 },
+  empty: { textAlign: 'center', padding: '64px 16px' },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 600,
+    color: '#7B8A8B',
+    margin: '0 0 8px 0',
+  },
+  emptyText: { fontSize: 13, color: '#95A5A6', margin: 0 },
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: 12,
+  },
+  summaryCard: {
+    background: 'white',
+    border: '1px solid #E5E8EB',
+    borderRadius: 8,
+    padding: 16,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+  },
+  summaryLabel: {
+    margin: 0,
+    fontSize: 11,
+    color: '#7B8A8B',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  summaryValue: {
+    margin: '6px 0 0 0',
+    fontSize: 24,
+    fontWeight: 700,
+  },
+  card: {
+    background: 'white',
+    border: '1px solid #E5E8EB',
+    borderRadius: 8,
+    padding: 18,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+  },
+  cardTitle: {
+    margin: '0 0 14px 0',
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#566573',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  weightGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: 16,
+  },
+  weightHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  weightLabel: { color: '#566573' },
+  weightValue: { fontFamily: 'monospace', color: '#1B4F72', fontWeight: 600 },
+  weightTrack: {
+    height: 8,
+    background: '#EAEDED',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  weightFill: { height: '100%', borderRadius: 4 },
+  tableWrap: { overflowX: 'auto' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
+  th: {
+    textAlign: 'left',
+    padding: '10px 12px',
+    background: '#F4F6F7',
+    color: '#566573',
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    borderBottom: '1px solid #E5E8EB',
+  },
+  tr: { borderBottom: '1px solid #F4F6F7' },
+  td: { padding: '10px 12px', color: '#1C2833' },
+  metricsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+    gap: 10,
+  },
+  metricItem: {
+    background: '#F4F6F7',
+    borderRadius: 6,
+    padding: '10px 12px',
+  },
+  metricLabel: {
+    margin: 0,
+    fontSize: 11,
+    color: '#7B8A8B',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  metricValue: {
+    margin: '4px 0 0 0',
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#1B4F72',
+    fontWeight: 600,
+  },
+};
