@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
+import CostSavingsPanel from '../../components/dashboard/CostSavingsPanel';
+import HpaVsCeiBenchmark from '../../components/dashboard/HpaVsCeiBenchmark';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -46,6 +48,13 @@ export default function ScenarioDetail() {
   const [error, setError] = useState(null);
   const [tourStep, setTourStep] = useState(0);
   const [tourActive, setTourActive] = useState(false);
+  const [savings, setSavings] = useState(null);
+  const [benchmark, setBenchmark] = useState(null);
+
+  // Core engine base URL — used for direct calls to /pricing/* and
+  // /benchmark/* endpoints which don't need the auth-bearing backend.
+  const CORE_BASE =
+    process.env.NEXT_PUBLIC_CORE_ENGINE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     if (!scenarioId) return;
@@ -71,10 +80,57 @@ export default function ScenarioDetail() {
       setAnalysis(data.analysis);
       setTourActive(true);
       setTourStep(0);
+
+      // Fire-and-forget the savings + benchmark calls once analysis lands.
+      // Failures here don't break the analysis view — the UI just hides
+      // the panels until they succeed.
+      runSavingsAndBenchmark(data.analysis);
     } catch (e) {
       setError(e.message);
     }
     setLoading(false);
+  };
+
+  const runSavingsAndBenchmark = async (analysisData) => {
+    if (!scenario || !analysisData) return;
+    const topoNodes = (scenario.topology?.nodes || []).map((n) => ({
+      id: n.id,
+      provider: n.provider || 'aws',
+      instance_type: n.instance_type,
+      replicas: n.replicas || 1,
+      tier: n.tier || 'supporting',
+    }));
+    const analysisNodes = analysisData.nodes || [];
+    try {
+      const savRes = await fetch(`${CORE_BASE}/pricing/savings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodes: topoNodes,
+          analysis_nodes: analysisNodes,
+          governance: scenario.governance,
+        }),
+      });
+      if (savRes.ok) setSavings(await savRes.json());
+    } catch {
+      /* leave savings null */
+    }
+    try {
+      const benchRes = await fetch(`${CORE_BASE}/benchmark/hpa-vs-cei`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodes: topoNodes,
+          edges: scenario.topology?.edges || [],
+          analysis_nodes: analysisNodes,
+          oscillation_status: analysisData.oscillation_status,
+          governance: scenario.governance,
+        }),
+      });
+      if (benchRes.ok) setBenchmark(await benchRes.json());
+    } catch {
+      /* leave benchmark null */
+    }
   };
 
   if (!scenario && !error) {
@@ -266,6 +322,18 @@ export default function ScenarioDetail() {
                     </div>
                   </div>
                 </section>
+
+                {savings && (
+                  <section style={styles.section}>
+                    <CostSavingsPanel savings={savings} />
+                  </section>
+                )}
+
+                {benchmark && (
+                  <section style={styles.section}>
+                    <HpaVsCeiBenchmark benchmark={benchmark} />
+                  </section>
+                )}
 
                 <section style={styles.section}>
                   <h2 style={styles.sectionTitle}>Per-Node CEI Scores</h2>
