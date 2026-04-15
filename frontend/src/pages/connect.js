@@ -135,7 +135,8 @@ export default function ConnectPage() {
         }),
       });
       if (!res.ok) throw new Error(`analyze HTTP ${res.status}`);
-      setAnalysis((a) => ({ ...a, [provider]: await res.json() }));
+      const json = await res.json();
+      setAnalysis((a) => ({ ...a, [provider]: json }));
     } catch (e) {
       setError(e.message);
     }
