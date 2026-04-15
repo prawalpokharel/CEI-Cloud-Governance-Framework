@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 /**
  * Governance Panel - Configure compliance frameworks and policies.
  * Maps to Patent Module 104: Governance Policy Store.
+ *
+ * Light theme to match the /demo and main page treatment.
  */
 export default function GovernancePanel() {
   const [framework, setFramework] = useState('fedramp');
@@ -25,47 +27,62 @@ export default function GovernancePanel() {
   const current = frameworks[framework];
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-bold text-white">Governance Configuration</h2>
+    <div style={s.wrap}>
+      <h2 style={s.heading}>Governance Configuration</h2>
 
-      {/* Framework Selection */}
-      <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">Compliance Framework</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {Object.entries(frameworks).map(([key, fw]) => (
-            <button key={key} onClick={() => setFramework(key)}
-              className={`p-3 rounded-lg border text-left transition-colors ${
-                framework === key ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700 hover:border-gray-600'
-              }`}>
-              <p className="text-sm font-semibold text-white">{fw.name}</p>
-              <p className="text-xs text-gray-500 mt-1">{fw.desc}</p>
-            </button>
-          ))}
+      <div style={s.card}>
+        <h3 style={s.cardTitle}>Compliance Framework</h3>
+        <div style={s.frameworkGrid}>
+          {Object.entries(frameworks).map(([key, fw]) => {
+            const active = framework === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setFramework(key)}
+                style={{
+                  ...s.frameworkButton,
+                  ...(active ? s.frameworkButtonActive : {}),
+                }}
+              >
+                <p style={s.frameworkName}>{fw.name}</p>
+                <p style={s.frameworkDesc}>{fw.desc}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Framework Details */}
-      <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">{current.name} Constraints</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div style={s.card}>
+        <h3 style={s.cardTitle}>{current.name} Constraints</h3>
+        <div style={s.constraintGrid}>
           <ConstraintCard label="Min Replicas" value={current.minReplicas} />
-          <ConstraintCard label="Data Sovereignty" value={current.dataSov ? 'Required' : 'Not Required'} />
-          <ConstraintCard label="Encryption" value={current.encryption ? 'Required' : 'Not Required'} />
-          <ConstraintCard label="Risk Weight" value={current.riskWeight.toFixed(2)} />
+          <ConstraintCard
+            label="Data Sovereignty"
+            value={current.dataSov ? 'Required' : 'Not Required'}
+          />
+          <ConstraintCard
+            label="Encryption"
+            value={current.encryption ? 'Required' : 'Not Required'}
+          />
+          <ConstraintCard
+            label="Risk Weight"
+            value={current.riskWeight.toFixed(2)}
+          />
         </div>
       </div>
 
-      {/* Mission Criticality Levels */}
-      <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">Mission Criticality Classifications</h3>
-        <div className="space-y-2">
+      <div style={s.card}>
+        <h3 style={s.cardTitle}>Mission Criticality Classifications</h3>
+        <div style={s.criticalityList}>
           {criticalities.map((c) => (
-            <div key={c.level} className="flex items-center justify-between bg-gray-800 rounded p-3">
+            <div key={c.level} style={s.criticalityRow}>
               <div>
-                <span className="text-sm font-medium text-white capitalize">{c.level.replace('_', ' ')}</span>
-                <p className="text-xs text-gray-500">{c.desc}</p>
+                <span style={s.criticalityLevel}>
+                  {c.level.replace('_', ' ')}
+                </span>
+                <p style={s.criticalityDesc}>{c.desc}</p>
               </div>
-              <span className="text-sm font-mono text-blue-400">{c.weight.toFixed(2)}</span>
+              <span style={s.criticalityWeight}>{c.weight.toFixed(2)}</span>
             </div>
           ))}
         </div>
@@ -76,9 +93,114 @@ export default function GovernancePanel() {
 
 function ConstraintCard({ label, value }) {
   return (
-    <div className="bg-gray-800 rounded p-3">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm font-semibold text-white mt-1">{value}</p>
+    <div style={s.constraintCard}>
+      <p style={s.constraintLabel}>{label}</p>
+      <p style={s.constraintValue}>{value}</p>
     </div>
   );
 }
+
+const s = {
+  wrap: { display: 'flex', flexDirection: 'column', gap: 16 },
+  heading: {
+    margin: 0,
+    fontSize: 18,
+    fontWeight: 600,
+    color: '#1B4F72',
+  },
+  card: {
+    background: 'white',
+    border: '1px solid #E5E8EB',
+    borderRadius: 8,
+    padding: 18,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+  },
+  cardTitle: {
+    margin: '0 0 14px 0',
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#566573',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  frameworkGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: 10,
+  },
+  frameworkButton: {
+    background: 'white',
+    border: '1px solid #E5E8EB',
+    borderRadius: 6,
+    padding: 12,
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'border-color 0.15s, background 0.15s',
+  },
+  frameworkButtonActive: {
+    borderColor: '#2874A6',
+    background: '#EBF5FB',
+    boxShadow: '0 0 0 1px #2874A6',
+  },
+  frameworkName: {
+    margin: 0,
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#1B4F72',
+  },
+  frameworkDesc: {
+    margin: '4px 0 0 0',
+    fontSize: 12,
+    color: '#7B8A8B',
+    lineHeight: 1.4,
+  },
+  constraintGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: 12,
+  },
+  constraintCard: {
+    background: '#F4F6F7',
+    borderRadius: 6,
+    padding: 12,
+  },
+  constraintLabel: {
+    margin: 0,
+    fontSize: 11,
+    color: '#7B8A8B',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  constraintValue: {
+    margin: '6px 0 0 0',
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#1B4F72',
+  },
+  criticalityList: { display: 'flex', flexDirection: 'column', gap: 8 },
+  criticalityRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    background: '#F4F6F7',
+    borderRadius: 6,
+    padding: '12px 14px',
+  },
+  criticalityLevel: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#1B4F72',
+    textTransform: 'capitalize',
+  },
+  criticalityDesc: {
+    margin: '2px 0 0 0',
+    fontSize: 12,
+    color: '#7B8A8B',
+  },
+  criticalityWeight: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#2874A6',
+  },
+};

@@ -1,0 +1,46 @@
+{
+  "name": "example-microservices",
+  "description": "Minimal CEI input template. Replace nodes/edges/governance with your own infrastructure data and POST to /api/demo/scenarios/upload/analyze (planned) or /analyze on the core engine.",
+  "topology": {
+    "nodes": [
+      { "id": "lb-01", "tier": "edge", "type": "load_balancer", "region": "us-east-1", "replicas": 2 },
+      { "id": "api-gateway", "tier": "core", "type": "service", "region": "us-east-1", "replicas": 3 },
+      { "id": "auth-svc", "tier": "core", "type": "service", "region": "us-east-1", "replicas": 2 },
+      { "id": "order-svc", "tier": "core", "type": "service", "region": "us-east-1", "replicas": 4 },
+      { "id": "payments-svc", "tier": "critical", "type": "service", "region": "us-east-1", "replicas": 3 },
+      { "id": "postgres-primary", "tier": "critical", "type": "database", "region": "us-east-1", "replicas": 1 },
+      { "id": "redis-cache", "tier": "supporting", "type": "cache", "region": "us-east-1", "replicas": 2 }
+    ],
+    "edges": [
+      ["lb-01", "api-gateway", 1.0],
+      ["api-gateway", "auth-svc", 0.8],
+      ["api-gateway", "order-svc", 1.0],
+      ["order-svc", "payments-svc", 1.0],
+      ["order-svc", "postgres-primary", 0.9],
+      ["payments-svc", "postgres-primary", 1.0],
+      ["api-gateway", "redis-cache", 0.5]
+    ]
+  },
+  "governance": {
+    "tiers": {
+      "critical":      { "min_replicas": 3, "max_failure_tolerance": 0.0,  "encryption_required": true },
+      "core":          { "min_replicas": 2, "max_failure_tolerance": 0.05, "encryption_required": true },
+      "edge":          { "min_replicas": 2, "max_failure_tolerance": 0.10 },
+      "supporting":    { "min_replicas": 1, "max_failure_tolerance": 0.20 },
+      "discretionary": { "min_replicas": 0, "max_failure_tolerance": 0.50 }
+    },
+    "policies": [
+      { "id": "pci_dss",      "applies_to_tier": "critical", "constraints": { "data_residency": "us-east-1" } },
+      { "id": "high_avail_db", "applies_to_tier": "critical", "constraints": { "min_redundancy": 2 } }
+    ]
+  },
+  "telemetry": {
+    "lb-01":            [{ "t": 0, "cpu": 0.42, "mem": 0.55 }, { "t": 1, "cpu": 0.45, "mem": 0.55 }],
+    "api-gateway":      [{ "t": 0, "cpu": 0.71, "mem": 0.62 }, { "t": 1, "cpu": 0.74, "mem": 0.63 }],
+    "auth-svc":         [{ "t": 0, "cpu": 0.38, "mem": 0.40 }, { "t": 1, "cpu": 0.42, "mem": 0.41 }],
+    "order-svc":        [{ "t": 0, "cpu": 0.66, "mem": 0.55 }, { "t": 1, "cpu": 0.69, "mem": 0.57 }],
+    "payments-svc":     [{ "t": 0, "cpu": 0.55, "mem": 0.50 }, { "t": 1, "cpu": 0.58, "mem": 0.52 }],
+    "postgres-primary": [{ "t": 0, "cpu": 0.62, "mem": 0.71 }, { "t": 1, "cpu": 0.65, "mem": 0.72 }],
+    "redis-cache":      [{ "t": 0, "cpu": 0.31, "mem": 0.45 }, { "t": 1, "cpu": 0.33, "mem": 0.46 }]
+  }
+}
