@@ -38,8 +38,14 @@ export default function Home() {
               </p>
             </div>
             <div style={styles.headerRight}>
+              <Link href="/connect" style={styles.connectButton}>
+                Connect Cloud →
+              </Link>
+              <Link href="/upload" style={styles.demoButton}>
+                Upload Data
+              </Link>
               <Link href="/demo" style={styles.demoButton}>
-                View Live Scenarios →
+                Live Scenarios
               </Link>
               <div style={styles.patentBadge}>
                 <div style={styles.patentLabel}>USPTO</div>
@@ -98,6 +104,12 @@ export default function Home() {
             CloudOptimizer · Patent-pending CEI framework · Prawal Pokharel
           </div>
           <div style={styles.footerLinks}>
+            <Link href="/connect" style={styles.footerLink}>
+              Connect Cloud
+            </Link>
+            <Link href="/upload" style={styles.footerLink}>
+              Upload
+            </Link>
             <Link href="/demo" style={styles.footerLink}>
               Live Demo
             </Link>
@@ -143,7 +155,22 @@ const styles = {
     letterSpacing: '-0.5px',
   },
   subtitle: { margin: '6px 0 0 0', fontSize: 14, opacity: 0.9 },
-  headerRight: { display: 'flex', alignItems: 'center', gap: 16 },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  connectButton: {
+    background: 'rgba(255,255,255,0.95)',
+    color: '#1B4F72',
+    padding: '10px 18px',
+    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: 700,
+    textDecoration: 'none',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+  },
   demoButton: {
     background: 'rgba(255,255,255,0.18)',
     color: 'white',
