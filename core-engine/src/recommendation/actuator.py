@@ -16,6 +16,10 @@ class RecommendationActuator:
     # Cost estimation factors
     CONSOLIDATION_SAVINGS_PERCENT = 0.27  # 27% per paper results
     RIGHTSIZING_SAVINGS_PERCENT = 0.15
+    # Threshold below which a node is considered a rightsizing candidate.
+    # Any node with CEI < this AND a "no_action" / "monitor" recommendation
+    # is presumed over-provisioned relative to its workload variability.
+    RIGHTSIZING_CEI_THRESHOLD = 0.70
 
     def generate_recommendations(
         self, validated_results: Dict[str, Dict]
@@ -28,7 +32,17 @@ class RecommendationActuator:
 
         for node_id, data in validated_results.items():
             action = data.get("recommendation", "no_action")
-            monthly_cost = data.get("metadata", {}).get("monthly_cost", 0.0)
+            # Monthly cost may be nested under metadata (from data_collector)
+            # or surfaced at the top level (from the cloud-provider discovery
+            # path). Accept both so savings compute correctly regardless of
+            # upstream shape.
+            monthly_cost = (
+                data.get("metadata", {}).get("monthly_cost")
+                or data.get("monthly_cost")
+                or 0.0
+            )
+            cei_score = data.get("cei_score", 0.0)
+            risk_factor = data.get("risk_factor", 0.0)
 
             estimated_savings = 0.0
             action_details = ""
@@ -36,22 +50,41 @@ class RecommendationActuator:
             if action == "consolidate":
                 estimated_savings = monthly_cost * self.CONSOLIDATION_SAVINGS_PERCENT
                 action_details = (
-                    f"Consolidate or decommission. CEI score {data['cei_score']:.3f} "
+                    f"Consolidate or decommission. CEI score {cei_score:.3f} "
                     f"indicates low criticality and stable workload. "
                     f"Estimated monthly savings: ${estimated_savings:.2f}"
                 )
             elif action == "scale_up":
                 action_details = (
-                    f"Scale up resources. CEI score {data['cei_score']:.3f} "
+                    f"Scale up resources. CEI score {cei_score:.3f} "
                     f"indicates high criticality with complex demand patterns. "
                     f"Risk of underprovisioning if current capacity maintained."
                 )
             elif action == "monitor":
-                action_details = (
-                    f"Continue monitoring. CEI score {data['cei_score']:.3f} "
-                    f"is elevated but within acceptable range. "
-                    f"Re-evaluate in next analysis cycle."
-                )
+                # Monitor + moderate CEI → rightsizing opportunity.
+                # Patent §V.B: rightsize oversized instances with stable
+                # workloads for ~15% savings. Governance-safe because the
+                # node stays in place, only instance class is tuned down.
+                if (
+                    cei_score < self.RIGHTSIZING_CEI_THRESHOLD
+                    and risk_factor < 0.7
+                    and monthly_cost > 0
+                ):
+                    estimated_savings = (
+                        monthly_cost * self.RIGHTSIZING_SAVINGS_PERCENT
+                    )
+                    action_details = (
+                        f"Rightsize resources. CEI score {cei_score:.3f} is "
+                        f"elevated but stable — workload variability does not "
+                        f"justify current instance class. "
+                        f"Estimated monthly savings: ${estimated_savings:.2f}"
+                    )
+                else:
+                    action_details = (
+                        f"Continue monitoring. CEI score {cei_score:.3f} "
+                        f"is elevated but within acceptable range. "
+                        f"Re-evaluate in next analysis cycle."
+                    )
             elif action == "no_action":
                 blocked = data.get("blocked_reason")
                 if blocked:
@@ -59,8 +92,25 @@ class RecommendationActuator:
                         f"No modification permitted. {blocked}. "
                         f"Manual review recommended."
                     )
+                elif (
+                    cei_score < self.RIGHTSIZING_CEI_THRESHOLD
+                    and risk_factor < 0.7
+                    and monthly_cost > 0
+                ):
+                    # Unblocked no_action + moderate CEI → rightsizing candidate.
+                    estimated_savings = (
+                        monthly_cost * self.RIGHTSIZING_SAVINGS_PERCENT
+                    )
+                    action_details = (
+                        f"Rightsize candidate. CEI score {cei_score:.3f} with "
+                        f"stable workload suggests the instance class can be "
+                        f"reduced one tier. "
+                        f"Estimated monthly savings: ${estimated_savings:.2f}"
+                    )
                 else:
-                    action_details = "No optimization action required at this time."
+                    action_details = (
+                        "No optimization action required at this time."
+                    )
 
             recommendations[node_id] = {
                 "node_id": node_id,
