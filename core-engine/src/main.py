@@ -23,6 +23,13 @@ from .simulation.validator import PreModificationValidator
 from .recommendation.actuator import RecommendationActuator
 from .rollback.manager import RollbackManager
 from .scenarios.loader import ScenarioLoader, ScenarioLoadError
+from .pricing import (
+    INSTANCE_PRICES,
+    list_supported_providers,
+    monthly_cost,
+    compute_savings,
+    run_hpa_vs_cei,
+)
 
 app = FastAPI(
     title="CloudOptimizer Core Engine",
@@ -310,3 +317,156 @@ async def scenarios_debug():
         "cwd": os.getcwd(),
         "cwd_contents": os.listdir(os.getcwd()),
     }
+
+
+# ----------------------------------------------------------------------
+# Pricing & benchmark endpoints (PR 7 — feature/cost-savings-engine)
+# ----------------------------------------------------------------------
+
+
+@app.get("/pricing/providers")
+async def pricing_providers():
+    """List supported cloud providers in the embedded pricing tables."""
+    return {
+        "providers": list_supported_providers(),
+        "instance_counts": {p: len(INSTANCE_PRICES[p]) for p in INSTANCE_PRICES},
+    }
+
+
+@app.get("/pricing/instance/{provider}/{instance_type}")
+async def pricing_instance(provider: str, instance_type: str, replicas: int = 1):
+    """Return the monthly USD cost for a single instance type."""
+    spec = INSTANCE_PRICES.get(provider, {}).get(instance_type)
+    if not spec:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown instance type {instance_type!r} for provider {provider!r}",
+        )
+    return {
+        "provider": provider,
+        "instance_type": instance_type,
+        "spec": spec,
+        "replicas": replicas,
+        "monthly_cost_usd": monthly_cost(provider, instance_type, replicas),
+    }
+
+
+@app.post("/pricing/savings")
+async def pricing_savings(payload: Dict):
+    """
+    Compute per-node rightsizing recommendations and total monthly savings
+    given a topology + analysis result.
+
+    Expected payload:
+      {
+        "nodes":            [{id, provider, instance_type, replicas, tier?}, ...],
+        "analysis_nodes":   [{node_id, cei_score, classification, recommendation}, ...],
+        "governance":       {tiers: {...}}      # optional
+        "tau_down": 0.25, "tau_up": 0.65        # optional thresholds
+      }
+    """
+    try:
+        return compute_savings(
+            nodes=payload.get("nodes", []),
+            analysis_nodes=payload.get("analysis_nodes", []),
+            governance=payload.get("governance"),
+            tau_down=payload.get("tau_down", 0.25),
+            tau_up=payload.get("tau_up", 0.65),
+        )
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
+
+
+@app.post("/benchmark/hpa-vs-cei")
+async def benchmark_hpa_vs_cei(payload: Dict):
+    """
+    Side-by-side metrics comparing a naive HPA control loop against the
+    full CEI pipeline on the same scenario.
+
+    Expected payload:
+      {
+        "nodes":               [topology nodes with provider/instance_type/replicas/tier],
+        "edges":               [edge tuples or {source, target, weight} dicts],
+        "analysis_nodes":      [analysis.nodes],
+        "oscillation_status":  analysis.oscillation_status,
+        "governance":          {tiers: {...}}    # optional
+      }
+    """
+    try:
+        result = run_hpa_vs_cei(
+            nodes=payload.get("nodes", []),
+            edges=payload.get("edges", []),
+            analysis_nodes=payload.get("analysis_nodes", []),
+            oscillation_status=payload.get("oscillation_status", {}),
+            governance=payload.get("governance"),
+        )
+        return result.to_dict()
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
+
+
+@app.post("/scenarios/{scenario_id}/benchmark")
+async def scenario_benchmark(scenario_id: str):
+    """
+    Convenience wrapper: load a built-in scenario, run analysis, then
+    benchmark HPA vs CEI on the result. Returns the full benchmark
+    payload plus the savings calculation.
+    """
+    try:
+        scenario = scenario_loader.load(scenario_id)
+        engine_input = scenario_loader.to_core_engine_format(scenario)
+        analysis = await run_full_analysis(
+            AnalysisRequest(
+                telemetry=TelemetryInput(
+                    nodes=engine_input["nodes"],
+                    edges=engine_input["edges"],
+                    governance_policies=engine_input["governance_policies"],
+                )
+            )
+        )
+        # Re-shape topology nodes for the cost calculator. The seeded
+        # scenarios use the loader's normalized format (id, tier, type),
+        # so we map provider/instance_type/replicas with safe defaults.
+        topo_nodes = []
+        for n in scenario["topology"]["nodes"]:
+            topo_nodes.append(
+                {
+                    "id": n["id"],
+                    "provider": n.get("provider", "aws"),
+                    "instance_type": n.get("instance_type"),
+                    "replicas": n.get("replicas", 1),
+                    "tier": n.get("tier", "supporting"),
+                }
+            )
+        analysis_nodes = [na.dict() if hasattr(na, "dict") else na for na in analysis.nodes]
+        savings = compute_savings(
+            nodes=topo_nodes,
+            analysis_nodes=analysis_nodes,
+            governance=scenario.get("governance"),
+        )
+        bench = run_hpa_vs_cei(
+            nodes=topo_nodes,
+            edges=scenario["topology"].get("edges", []),
+            analysis_nodes=analysis_nodes,
+            oscillation_status=analysis.oscillation_status,
+            governance=scenario.get("governance"),
+        )
+        return {
+            "scenario_id": scenario_id,
+            "metadata": scenario["metadata"],
+            "savings": savings,
+            "benchmark": bench.to_dict(),
+        }
+    except ScenarioLoadError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
