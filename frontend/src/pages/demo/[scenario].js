@@ -137,6 +137,42 @@ export default function ScenarioDetail() {
               {(governance.policies || []).length} policies loaded
             </div>
 
+            <h4 style={styles.sidebarSubtitle}>Data source</h4>
+            <div style={styles.sourceBlock}>
+              <p style={styles.sourceLine}>
+                <strong>Synthetic / illustrative dataset</strong>
+              </p>
+              <p style={styles.sourceLine}>
+                Authored as a worked example for{' '}
+                <a
+                  href="https://patentcenter.uspto.gov/applications/19641446"
+                  style={styles.sourceLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  USPTO App. 19/641,446
+                </a>
+                , Section{(metadata.patent_sections || []).length > 1 ? 's' : ''}{' '}
+                <strong>{(metadata.patent_sections || []).join(', ')}</strong>.
+              </p>
+              <p style={styles.sourceLine}>
+                Topology, governance, and 180-point telemetry live at{' '}
+                <a
+                  href={`https://github.com/prawalpokharel/CEI-Cloud-Governance-Framework/tree/main/core-engine/scenarios/${scenarioId}`}
+                  style={styles.sourceLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  /core-engine/scenarios/{scenarioId}
+                </a>
+                .
+              </p>
+              <p style={{ ...styles.sourceLine, marginBottom: 0, color: '#7B8A8B' }}>
+                Numbers are constructed to exercise the CEI pipeline — not
+                measurements of any production system.
+              </p>
+            </div>
+
             {!analysis && (
               <button
                 onClick={runAnalysis}
@@ -413,6 +449,25 @@ const styles = {
   tierList: { listStyle: 'none', padding: 0, margin: '0 0 10px 0' },
   tierItem: { fontSize: 13, color: '#34495E', padding: '3px 0' },
   policyCount: { fontSize: 13, color: '#34495E', marginBottom: 20 },
+  sourceBlock: {
+    background: '#FEF9E7',
+    border: '1px solid #B7950B',
+    borderLeft: '4px solid #B7950B',
+    borderRadius: 6,
+    padding: '12px 14px',
+    marginBottom: 20,
+  },
+  sourceLine: {
+    margin: '0 0 8px 0',
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: '#5D4E0A',
+  },
+  sourceLink: {
+    color: '#1B4F72',
+    fontWeight: 600,
+    textDecoration: 'underline',
+  },
   runButton: {
     width: '100%',
     padding: '12px 16px',
