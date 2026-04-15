@@ -46,6 +46,9 @@ export default function Home() {
               <Link href="/demo" style={styles.demoButton}>
                 Live Scenarios
               </Link>
+              <Link href="/national-interest" style={styles.reviewersButton}>
+                For Reviewers
+              </Link>
               <div style={styles.patentBadge}>
                 <div style={styles.patentLabel}>USPTO</div>
                 <div style={styles.patentNumber}>App. No. 19/641,446</div>
@@ -112,6 +115,9 @@ export default function Home() {
             <Link href="/demo" style={styles.footerLink}>
               Live Demo
             </Link>
+            <Link href="/national-interest" style={styles.footerLink}>
+              For Reviewers
+            </Link>
             <a
               href="https://github.com/prawalpokharel/CEI-Cloud-Governance-Framework"
               style={styles.footerLink}
@@ -132,6 +138,8 @@ const styles = {
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     color: '#1C2833',
+    display: 'flex',
+    flexDirection: 'column',
   },
   header: {
     background: 'linear-gradient(135deg, #1B4F72 0%, #2874A6 100%)',
@@ -190,6 +198,17 @@ const styles = {
     border: '1px solid rgba(255,255,255,0.3)',
     whiteSpace: 'nowrap',
   },
+  reviewersButton: {
+    background: 'transparent',
+    color: '#EAF4FB',
+    padding: '8px 14px',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    textDecoration: 'none',
+    border: '1px solid rgba(174, 214, 241, 0.55)',
+    whiteSpace: 'nowrap',
+  },
   patentBadge: {
     background: 'rgba(255,255,255,0.12)',
     padding: '6px 12px',
@@ -227,8 +246,11 @@ const styles = {
   },
   main: {
     maxWidth: 1200,
+    width: '100%',
     margin: '0 auto',
     padding: '32px',
+    boxSizing: 'border-box',
+    flex: '1 0 auto',
   },
   cta: {
     background: 'white',
@@ -270,7 +292,7 @@ const styles = {
     fontSize: 13,
     flexWrap: 'wrap',
     gap: 12,
-    marginTop: 48,
+    flexShrink: 0,
   },
   footerLinks: { display: 'flex', gap: 20 },
   footerLink: { color: '#85C1E2', textDecoration: 'none' },
