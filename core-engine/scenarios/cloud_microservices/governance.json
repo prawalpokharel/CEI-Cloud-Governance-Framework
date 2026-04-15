@@ -1,0 +1,61 @@
+{
+  "tiers": {
+    "critical": {
+      "min_replicas": 2,
+      "max_cpu_pct": 0.85,
+      "dr_required": true,
+      "compliance": [
+        "PCI-DSS",
+        "SOC2"
+      ]
+    },
+    "core": {
+      "min_replicas": 2,
+      "max_cpu_pct": 0.75,
+      "dr_required": true,
+      "compliance": [
+        "SOC2"
+      ]
+    },
+    "edge": {
+      "min_replicas": 2,
+      "max_cpu_pct": 0.7,
+      "dr_required": true,
+      "compliance": [
+        "SOC2"
+      ]
+    },
+    "supporting": {
+      "min_replicas": 1,
+      "max_cpu_pct": 0.8,
+      "dr_required": false,
+      "compliance": []
+    },
+    "discretionary": {
+      "min_replicas": 1,
+      "max_cpu_pct": 0.9,
+      "dr_required": false,
+      "compliance": []
+    }
+  },
+  "policies": [
+    {
+      "id": "pci-scope",
+      "targets": [
+        "payment-svc",
+        "db-primary"
+      ],
+      "rule": "encryption_at_rest",
+      "value": true
+    },
+    {
+      "id": "min-avail",
+      "targets": [
+        "payment-svc",
+        "order-svc"
+      ],
+      "rule": "min_replicas",
+      "value": 3
+    }
+  ]
+}

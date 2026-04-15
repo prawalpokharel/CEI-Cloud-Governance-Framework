@@ -1,0 +1,202 @@
+{
+  "nodes": [
+    {
+      "id": "scheduler",
+      "type": "scheduler",
+      "tier": "critical",
+      "gpu_count": 0,
+      "cpu_limit": 32,
+      "mem_gb": 128
+    },
+    {
+      "id": "data-ingest-01",
+      "type": "data_pipeline",
+      "tier": "core",
+      "gpu_count": 0,
+      "cpu_limit": 64,
+      "mem_gb": 256
+    },
+    {
+      "id": "data-ingest-02",
+      "type": "data_pipeline",
+      "tier": "core",
+      "gpu_count": 0,
+      "cpu_limit": 64,
+      "mem_gb": 256
+    },
+    {
+      "id": "feature-store",
+      "type": "storage",
+      "tier": "critical",
+      "gpu_count": 0,
+      "cpu_limit": 32,
+      "mem_gb": 512
+    },
+    {
+      "id": "gpu-worker-01",
+      "type": "training",
+      "tier": "core",
+      "gpu_count": 8,
+      "gpu_type": "H100",
+      "mem_gb": 640
+    },
+    {
+      "id": "gpu-worker-02",
+      "type": "training",
+      "tier": "core",
+      "gpu_count": 8,
+      "gpu_type": "H100",
+      "mem_gb": 640
+    },
+    {
+      "id": "gpu-worker-03",
+      "type": "training",
+      "tier": "core",
+      "gpu_count": 8,
+      "gpu_type": "H100",
+      "mem_gb": 640
+    },
+    {
+      "id": "gpu-worker-04",
+      "type": "training",
+      "tier": "core",
+      "gpu_count": 8,
+      "gpu_type": "A100",
+      "mem_gb": 320
+    },
+    {
+      "id": "gpu-worker-05",
+      "type": "training",
+      "tier": "core",
+      "gpu_count": 8,
+      "gpu_type": "A100",
+      "mem_gb": 320
+    },
+    {
+      "id": "gpu-worker-06",
+      "type": "training",
+      "tier": "supporting",
+      "gpu_count": 4,
+      "gpu_type": "A100",
+      "mem_gb": 160
+    },
+    {
+      "id": "gpu-worker-07",
+      "type": "inference",
+      "tier": "critical",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "mem_gb": 320
+    },
+    {
+      "id": "gpu-worker-08",
+      "type": "inference",
+      "tier": "critical",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "mem_gb": 320
+    },
+    {
+      "id": "checkpoint-store",
+      "type": "storage",
+      "tier": "critical",
+      "gpu_count": 0,
+      "cpu_limit": 16,
+      "mem_gb": 64
+    },
+    {
+      "id": "eval-service",
+      "type": "evaluation",
+      "tier": "core",
+      "gpu_count": 2,
+      "gpu_type": "A100",
+      "mem_gb": 80
+    },
+    {
+      "id": "metrics-collector",
+      "type": "monitoring",
+      "tier": "supporting",
+      "gpu_count": 0,
+      "cpu_limit": 8,
+      "mem_gb": 32
+    }
+  ],
+  "edges": [
+    [
+      "data-ingest-01",
+      "feature-store"
+    ],
+    [
+      "data-ingest-02",
+      "feature-store"
+    ],
+    [
+      "feature-store",
+      "scheduler"
+    ],
+    [
+      "scheduler",
+      "gpu-worker-01"
+    ],
+    [
+      "scheduler",
+      "gpu-worker-02"
+    ],
+    [
+      "scheduler",
+      "gpu-worker-03"
+    ],
+    [
+      "scheduler",
+      "gpu-worker-04"
+    ],
+    [
+      "scheduler",
+      "gpu-worker-05"
+    ],
+    [
+      "scheduler",
+      "gpu-worker-06"
+    ],
+    [
+      "gpu-worker-01",
+      "checkpoint-store"
+    ],
+    [
+      "gpu-worker-02",
+      "checkpoint-store"
+    ],
+    [
+      "gpu-worker-03",
+      "checkpoint-store"
+    ],
+    [
+      "gpu-worker-04",
+      "checkpoint-store"
+    ],
+    [
+      "gpu-worker-05",
+      "checkpoint-store"
+    ],
+    [
+      "gpu-worker-06",
+      "checkpoint-store"
+    ],
+    [
+      "checkpoint-store",
+      "eval-service"
+    ],
+    [
+      "eval-service",
+      "gpu-worker-07"
+    ],
+    [
+      "eval-service",
+      "gpu-worker-08"
+    ],
+    [
+      "scheduler",
+      "metrics-collector"
+    ]
+  ]
+}
