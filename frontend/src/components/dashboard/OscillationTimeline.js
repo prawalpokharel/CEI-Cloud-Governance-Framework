@@ -144,31 +144,31 @@ export default function OscillationTimeline({ oscillationStatus, telemetry }) {
       </div>
 
       <div style={styles.tableHead}>
-        <span style={{ ...styles.th, flex: '0 0 160px' }}>Node</span>
-        <span style={{ ...styles.th, flex: '0 0 230px' }}>CPU sparkline</span>
-        <span style={{ ...styles.th, flex: '0 0 80px' }}>O(t)</span>
-        <span style={{ ...styles.th, flex: '0 0 80px' }}>Δsign</span>
-        <span style={{ ...styles.th, flex: 1 }}>Status</span>
+        <span style={styles.th}>Node</span>
+        <span style={styles.th}>CPU sparkline</span>
+        <span style={{ ...styles.th, textAlign: 'right' }}>O(t)</span>
+        <span style={{ ...styles.th, textAlign: 'right' }}>Δsign</span>
+        <span style={styles.th}>Status</span>
       </div>
       <div style={styles.tableBody}>
         {rows.map((r) => (
           <div key={r.nodeId} style={styles.row}>
-            <span style={{ ...styles.cell, flex: '0 0 160px' }}>
+            <span style={styles.cell}>
               <strong>{r.nodeId}</strong>
             </span>
-            <span style={{ ...styles.cell, flex: '0 0 230px' }}>
+            <span style={{ ...styles.cell, justifyContent: 'flex-start' }}>
               <Sparkline
                 values={r.series}
                 color={r.isOscillating ? '#E74C3C' : '#3498DB'}
               />
             </span>
-            <span style={{ ...styles.cell, flex: '0 0 80px' }}>
+            <span style={{ ...styles.cell, justifyContent: 'flex-end', fontVariantNumeric: 'tabular-nums' }}>
               {r.oscillationFrequency.toFixed(3)}
             </span>
-            <span style={{ ...styles.cell, flex: '0 0 80px' }}>
+            <span style={{ ...styles.cell, justifyContent: 'flex-end', fontVariantNumeric: 'tabular-nums' }}>
               {r.directionChanges}
             </span>
-            <span style={{ ...styles.cell, flex: 1 }}>
+            <span style={styles.cell}>
               {r.isOscillating ? (
                 <span style={styles.pillRed}>FLIP-FLOP</span>
               ) : (
@@ -219,26 +219,33 @@ const styles = {
     paddingBottom: 12,
     borderBottom: '1px solid #EAEDED',
   },
+  // CSS grid template shared by header and rows so columns line up exactly.
+  // Tracks: Node | CPU sparkline | O(t) | Δsign | Status
   tableHead: {
-    display: 'flex',
-    padding: '8px 0',
+    display: 'grid',
+    gridTemplateColumns: '160px 240px 80px 80px 1fr',
+    columnGap: 12,
+    padding: '8px 4px',
     borderBottom: '1px solid #EAEDED',
     fontSize: 11,
     color: '#7B8A8B',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
+    alignItems: 'center',
   },
-  th: { padding: '0 8px' },
+  th: { padding: 0 },
   tableBody: { maxHeight: 380, overflowY: 'auto' },
   row: {
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: '160px 240px 80px 80px 1fr',
+    columnGap: 12,
     alignItems: 'center',
-    padding: '6px 0',
+    padding: '8px 4px',
     borderBottom: '1px solid #F4F6F7',
     fontSize: 13,
     color: '#1C2833',
   },
-  cell: { padding: '0 8px' },
+  cell: { display: 'flex', alignItems: 'center', minWidth: 0 },
   pillRed: {
     background: '#FDEDEC',
     color: '#922B21',
