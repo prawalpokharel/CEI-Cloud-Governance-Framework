@@ -4,6 +4,9 @@ import Link from 'next/link';
 import Head from 'next/head';
 import D3DependencyGraph from '../../components/visualization/D3DependencyGraph';
 import CEIBreakdownChart from '../../components/dashboard/CEIBreakdownChart';
+import OscillationTimeline from '../../components/dashboard/OscillationTimeline';
+import FaultPropagationView from '../../components/dashboard/FaultPropagationView';
+import ComplianceHeatmap from '../../components/dashboard/ComplianceHeatmap';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -290,6 +293,28 @@ export default function ScenarioDetail() {
                     weights={
                       analysis.weights || { alpha: 0.4, beta: 0.35, gamma: 0.25 }
                     }
+                  />
+                </section>
+
+                <section style={styles.section}>
+                  <OscillationTimeline
+                    oscillationStatus={analysis.oscillation_status}
+                    telemetry={scenario.telemetry}
+                  />
+                </section>
+
+                <section style={styles.section}>
+                  <FaultPropagationView
+                    topology={topology}
+                    analysis={analysis}
+                  />
+                </section>
+
+                <section style={styles.section}>
+                  <ComplianceHeatmap
+                    topology={topology}
+                    analysis={analysis}
+                    governance={governance}
                   />
                 </section>
 
