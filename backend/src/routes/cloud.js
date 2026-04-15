@@ -125,8 +125,8 @@ router.post('/analyze/:provider', async (req, res) => {
       // identifies both consolidation candidates (low cpu) and scale-up
       // candidates (high cpu) instead of all being middle-of-the-road.
       metrics: {
-        cpu_utilization: deterministicCpu(n.id),
-        memory_utilization: deterministicMem(n.id),
+        cpu_utilization: deterministicCpu(n.id, n.tier),
+        memory_utilization: deterministicMem(n.id, n.tier),
         network_throughput: 0,
         disk_io: 0,
       },
@@ -138,7 +138,7 @@ router.post('/analyze/:provider', async (req, res) => {
         monthly_cost: n.monthly_cost || 0,
         instance_type: n.instance_type,
       },
-      utilization_history: deterministicHistory(n.id),
+      utilization_history: deterministicHistory(n.id, n.tier),
     }));
     const edges = (topo.topology.edges || []).map((e) =>
       Array.isArray(e)
@@ -199,22 +199,32 @@ function hashStr(str) {
   return h;
 }
 
-function deterministicCpu(nodeId) {
-  // Spread CPU across 0.05..0.95 so the actuator finds both consolidation
-  // candidates (low) and scale-up candidates (high) instead of all
-  // landing at the boring 0.5 default.
-  const r = (hashStr(nodeId) % 100) / 100; // 0..0.99
-  return Math.round((0.05 + r * 0.9) * 100); // 5..95 (% units)
+// Tier-aware band so discretionary/supporting nodes are reliably
+// underutilized (drives 'low' classification -> 'consolidate' -> savings)
+// and critical/core stay loaded (drives elevated/critical classifications).
+function tierBand(tier) {
+  switch (tier) {
+    case 'discretionary': return [0.05, 0.20]; // 5..20%
+    case 'supporting':    return [0.10, 0.30]; // 10..30%
+    case 'edge':          return [0.30, 0.55];
+    case 'core':          return [0.45, 0.75];
+    case 'critical':      return [0.55, 0.90];
+    default:              return [0.20, 0.70];
+  }
 }
-function deterministicMem(nodeId) {
+function deterministicCpu(nodeId, tier) {
+  const [lo, hi] = tierBand(tier);
+  const r = (hashStr(nodeId) % 100) / 100;
+  return Math.round((lo + r * (hi - lo)) * 100);
+}
+function deterministicMem(nodeId, tier) {
+  const [lo, hi] = tierBand(tier);
   const r = (hashStr(nodeId + '_mem') % 100) / 100;
-  return Math.round((0.1 + r * 0.85) * 100);
+  return Math.round((lo + r * (hi - lo)) * 100);
 }
-function deterministicHistory(nodeId) {
-  const baseCpu = deterministicCpu(nodeId) / 100;
-  const baseMem = deterministicMem(nodeId) / 100;
-  // 12 points so the oscillation detector and stability monitor have
-  // enough samples to compute a non-trivial signal.
+function deterministicHistory(nodeId, tier) {
+  const baseCpu = deterministicCpu(nodeId, tier) / 100;
+  const baseMem = deterministicMem(nodeId, tier) / 100;
   const out = [];
   for (let t = 0; t < 12; t++) {
     const jitter = ((hashStr(nodeId + ':' + t) % 21) - 10) / 100; // ±0.1
