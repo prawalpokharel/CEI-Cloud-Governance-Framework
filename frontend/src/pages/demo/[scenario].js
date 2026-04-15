@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
+import D3DependencyGraph from '../../components/visualization/D3DependencyGraph';
+import CEIBreakdownChart from '../../components/dashboard/CEIBreakdownChart';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -268,6 +270,30 @@ export default function ScenarioDetail() {
                 </section>
 
                 <section style={styles.section}>
+                  <h2 style={styles.sectionTitle}>
+                    Dependency Graph (Patent Module 103)
+                  </h2>
+                  <p style={styles.sectionSub}>
+                    Force-directed view of the topology with CEI-classified
+                    nodes. Node color = classification; node radius = centrality;
+                    edge width = dependency weight. Hover for breakdown.
+                  </p>
+                  <D3DependencyGraph
+                    topology={topology}
+                    analysis={analysis}
+                  />
+                </section>
+
+                <section style={styles.section}>
+                  <CEIBreakdownChart
+                    nodes={analysis.nodes || []}
+                    weights={
+                      analysis.weights || { alpha: 0.4, beta: 0.35, gamma: 0.25 }
+                    }
+                  />
+                </section>
+
+                <section style={styles.section}>
                   <h2 style={styles.sectionTitle}>Per-Node CEI Scores</h2>
                   <div style={styles.tableWrap}>
                     <table style={styles.table}>
@@ -457,6 +483,12 @@ const styles = {
     fontWeight: 600,
     color: '#1B4F72',
     margin: '0 0 16px 0',
+  },
+  sectionSub: {
+    fontSize: 13,
+    color: '#566573',
+    margin: '-8px 0 16px 0',
+    lineHeight: 1.5,
   },
   metricsRow: {
     display: 'grid',
