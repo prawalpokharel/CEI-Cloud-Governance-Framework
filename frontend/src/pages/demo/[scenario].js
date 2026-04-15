@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
+import SCENARIO_SOURCES from '../../lib/scenarioSources';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -139,24 +140,45 @@ export default function ScenarioDetail() {
 
             <h4 style={styles.sidebarSubtitle}>Data source</h4>
             <div style={styles.sourceBlock}>
-              <p style={styles.sourceLine}>
-                <strong>Synthetic / illustrative dataset</strong>
-              </p>
-              <p style={styles.sourceLine}>
-                Authored as a worked example for{' '}
-                <a
-                  href="https://patentcenter.uspto.gov/applications/19641446"
-                  style={styles.sourceLink}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  USPTO App. 19/641,446
-                </a>
-                , Section{(metadata.patent_sections || []).length > 1 ? 's' : ''}{' '}
-                <strong>{(metadata.patent_sections || []).join(', ')}</strong>.
-              </p>
-              <p style={styles.sourceLine}>
-                Topology, governance, and 180-point telemetry live at{' '}
+              {SCENARIO_SOURCES[scenarioId] ? (
+                <>
+                  <p style={styles.sourceLine}>
+                    {SCENARIO_SOURCES[scenarioId].summary}
+                  </p>
+                  <p style={{ ...styles.sourceLine, marginTop: 8, fontWeight: 600, color: '#5D4E0A' }}>
+                    Primary references:
+                  </p>
+                  <ul style={styles.sourceList}>
+                    {SCENARIO_SOURCES[scenarioId].sources.map((s) => (
+                      <li key={s.url} style={styles.sourceListItem}>
+                        <a
+                          href={s.url}
+                          style={styles.sourceLink}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {s.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p style={styles.sourceLine}>
+                  Synthetic / illustrative dataset.
+                </p>
+              )}
+              <p
+                style={{
+                  ...styles.sourceLine,
+                  marginTop: 10,
+                  paddingTop: 10,
+                  borderTop: '1px solid rgba(183,149,11,0.4)',
+                  color: '#7B8A8B',
+                  marginBottom: 0,
+                }}
+              >
+                Reproduced in{' '}
                 <a
                   href={`https://github.com/prawalpokharel/CEI-Cloud-Governance-Framework/tree/main/core-engine/scenarios/${scenarioId}`}
                   style={styles.sourceLink}
@@ -164,12 +186,11 @@ export default function ScenarioDetail() {
                   rel="noreferrer"
                 >
                   /core-engine/scenarios/{scenarioId}
-                </a>
-                .
-              </p>
-              <p style={{ ...styles.sourceLine, marginBottom: 0, color: '#7B8A8B' }}>
-                Numbers are constructed to exercise the CEI pipeline — not
-                measurements of any production system.
+                </a>{' '}
+                and referenced in USPTO App. 19/641,446 §
+                {(metadata.patent_sections || []).join(', §')} as a worked
+                example. Numbers exercise the CEI pipeline; not measurements
+                of any single production system.
               </p>
             </div>
 
@@ -467,6 +488,16 @@ const styles = {
     color: '#1B4F72',
     fontWeight: 600,
     textDecoration: 'underline',
+  },
+  sourceList: {
+    margin: '4px 0 0 0',
+    paddingLeft: 18,
+    fontSize: 12,
+    color: '#5D4E0A',
+  },
+  sourceListItem: {
+    marginBottom: 4,
+    lineHeight: 1.5,
   },
   runButton: {
     width: '100%',
