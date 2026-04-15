@@ -298,4 +298,15 @@ async def analyze_scenario(scenario_id: str):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
-
+@app.get("/scenarios/_debug")
+async def scenarios_debug():
+    """Temporary diagnostic — shows what path the loader resolved."""
+    from .scenarios.loader import SCENARIOS_DIR
+    import os
+    return {
+        "scenarios_dir": str(SCENARIOS_DIR),
+        "exists": SCENARIOS_DIR.exists(),
+        "contents": os.listdir(str(SCENARIOS_DIR)) if SCENARIOS_DIR.exists() else [],
+        "cwd": os.getcwd(),
+        "cwd_contents": os.listdir(os.getcwd()),
+    }
