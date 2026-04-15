@@ -99,44 +99,25 @@ export default function ConnectPage() {
   };
 
   const handleAnalyze = async (provider) => {
-    const topo = topologies[provider];
-    if (!topo) return;
     setLoading((l) => ({ ...l, [`${provider}-analyze`]: true }));
+    setError(null);
     try {
-      // Translate to /analyze input shape (same as upload page)
-      const nodes = (topo.topology.nodes || []).map((n) => ({
-        node_id: n.id,
-        metrics: { cpu_utilization: 50, memory_utilization: 50, network_throughput: 0, disk_io: 0 },
-        metadata: { tier: n.tier, type: n.type, region: 'unknown', replicas: n.replicas || 1 },
-        utilization_history: [
-          { t: 0, cpu: 0.5, mem: 0.5 },
-          { t: 1, cpu: 0.55, mem: 0.52 },
-          { t: 2, cpu: 0.48, mem: 0.5 },
-        ],
-      }));
-      const edges = (topo.topology.edges || []).map((e) =>
-        Array.isArray(e)
-          ? { source: e[0], target: e[1], weight: e[2] ?? 1.0, type: 'dependency' }
-          : { ...e, type: e.type || 'dependency' }
-      );
-      const policies = {};
-      Object.entries(topo.governance_template?.tiers || {}).forEach(([t, def]) => {
-        policies[`tier_${t}`] = {
-          description: `Tier: ${t}`,
-          constraints: def,
-          applies_to_tier: t,
-        };
-      });
-      const res = await fetch(`${CORE_BASE}/analyze`, {
+      // Route through the backend so we don't depend on
+      // NEXT_PUBLIC_CORE_ENGINE_URL being set on the frontend.
+      // Backend already knows the core engine URL via CORE_ENGINE_URL.
+      const res = await fetch(`${API_BASE}/api/cloud/analyze/${provider}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          telemetry: { nodes, edges, governance_policies: policies },
-        }),
+        body: '{}',
       });
-      if (!res.ok) throw new Error(`analyze HTTP ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`analyze HTTP ${res.status}: ${text.slice(0, 200)}`);
+      }
       const json = await res.json();
-      setAnalysis((a) => ({ ...a, [provider]: json }));
+      // Backend returns { provider, topology, analysis } — surface the
+      // analysis block to the per-provider summary card.
+      setAnalysis((a) => ({ ...a, [provider]: json.analysis }));
     } catch (e) {
       setError(e.message);
     }
