@@ -30,11 +30,10 @@ export default function Home() {
       <div style={styles.page}>
         <header style={styles.header}>
           <div style={styles.headerInner}>
-            <div>
+            <div style={styles.brand}>
               <h1 style={styles.title}>CloudOptimizer</h1>
               <p style={styles.subtitle}>
-                Governance-Aware Dynamic Resource Allocation — Centrality-Entropy
-                Index Framework
+                Governance-Aware Dynamic Resource Allocation · CEI Framework
               </p>
             </div>
             <div style={styles.headerRight}>
@@ -141,54 +140,65 @@ const styles = {
   headerInner: {
     maxWidth: 1200,
     margin: '0 auto',
-    padding: '24px 32px',
+    padding: '20px 32px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 24,
     flexWrap: 'wrap',
-    gap: 16,
   },
+  brand: { minWidth: 0, flex: '1 1 auto' },
   title: {
     margin: 0,
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: 700,
     letterSpacing: '-0.5px',
+    lineHeight: 1.2,
   },
-  subtitle: { margin: '6px 0 0 0', fontSize: 14, opacity: 0.9 },
+  subtitle: {
+    margin: '4px 0 0 0',
+    fontSize: 13,
+    opacity: 0.85,
+    lineHeight: 1.4,
+  },
   headerRight: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
   connectButton: {
-    background: 'rgba(255,255,255,0.95)',
+    background: 'rgba(255,255,255,0.98)',
     color: '#1B4F72',
-    padding: '10px 18px',
+    padding: '8px 14px',
     borderRadius: 6,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 700,
     textDecoration: 'none',
     boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+    whiteSpace: 'nowrap',
   },
   demoButton: {
-    background: 'rgba(255,255,255,0.18)',
+    background: 'rgba(255,255,255,0.15)',
     color: 'white',
-    padding: '10px 18px',
+    padding: '8px 14px',
     borderRadius: 6,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
     textDecoration: 'none',
     border: '1px solid rgba(255,255,255,0.3)',
+    whiteSpace: 'nowrap',
   },
   patentBadge: {
-    background: 'rgba(255,255,255,0.15)',
-    padding: '8px 14px',
+    background: 'rgba(255,255,255,0.12)',
+    padding: '6px 12px',
     borderRadius: 6,
-    border: '1px solid rgba(255,255,255,0.25)',
+    border: '1px solid rgba(255,255,255,0.22)',
+    whiteSpace: 'nowrap',
   },
-  patentLabel: { fontSize: 10, opacity: 0.8, letterSpacing: '1px' },
-  patentNumber: { fontSize: 13, fontWeight: 600, marginTop: 2 },
+  patentLabel: { fontSize: 9, opacity: 0.8, letterSpacing: '1px' },
+  patentNumber: { fontSize: 11, fontWeight: 600, marginTop: 1 },
   tabsBar: {
     background: 'rgba(0,0,0,0.15)',
     borderTop: '1px solid rgba(255,255,255,0.1)',

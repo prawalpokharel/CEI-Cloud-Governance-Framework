@@ -43,9 +43,13 @@ export default function AnalysisPanel({ onResults }) {
     };
 
     try {
-      const coreBase =
-        process.env.NEXT_PUBLIC_CORE_ENGINE_URL || 'http://localhost:8000';
-      const response = await fetch(`${coreBase}/analyze`, {
+      // Route through the backend so we don't depend on
+      // NEXT_PUBLIC_CORE_ENGINE_URL being set on the frontend.
+      // The backend already knows the core engine URL via CORE_ENGINE_URL
+      // and forwards the same payload to /analyze.
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiBase}/api/demo/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
