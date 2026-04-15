@@ -60,9 +60,17 @@ export default function DemoIndex() {
                 Centrality-Entropy Index Framework — Live Demonstration
               </p>
             </div>
-            <div style={styles.patentBadge}>
-              <div style={styles.patentLabel}>USPTO</div>
-              <div style={styles.patentNumber}>App. No. 19/641,446</div>
+            <div style={styles.headerActions}>
+              <Link href="/connect" style={styles.connectButton}>
+                Connect Cloud →
+              </Link>
+              <Link href="/upload" style={styles.headerLink}>
+                Upload Data
+              </Link>
+              <div style={styles.patentBadge}>
+                <div style={styles.patentLabel}>USPTO</div>
+                <div style={styles.patentNumber}>App. No. 19/641,446</div>
+              </div>
             </div>
           </div>
         </header>
@@ -234,6 +242,31 @@ const styles = {
   },
   title: { margin: 0, fontSize: 36, fontWeight: 700, letterSpacing: '-0.5px' },
   subtitle: { margin: '6px 0 0 0', fontSize: 16, opacity: 0.9 },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  connectButton: {
+    background: 'rgba(255,255,255,0.95)',
+    color: '#1B4F72',
+    padding: '8px 14px',
+    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: 700,
+    textDecoration: 'none',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+  },
+  headerLink: {
+    color: 'rgba(255,255,255,0.95)',
+    padding: '8px 14px',
+    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: 600,
+    textDecoration: 'none',
+    border: '1px solid rgba(255,255,255,0.3)',
+  },
   patentBadge: {
     background: 'rgba(255,255,255,0.15)',
     padding: '10px 16px',

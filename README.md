@@ -2,7 +2,7 @@
 
 ## Overview
 
-CloudOptimizer is a full-stack SaaS implementation of the methodology described in **USPTO Provisional Patent Application No. 63/999,378**: *System and Method for Dynamic Resource Allocation in Distributed Computing Environments Using Adaptive Centrality-Entropy Index with Oscillation Suppression and Fault Propagation Control.*
+CloudOptimizer is a full-stack SaaS implementation of the methodology described in **USPTO Non-Provisional Utility Application No. 19/641,446** (filed April 7, 2026 under 35 USC 111(a), claiming priority from provisional **63/999,378**): *System and Method for Dynamic Resource Allocation in Distributed Computing Environments Using Adaptive Centrality-Entropy Index with Oscillation Suppression and Fault Propagation Control.*
 
 ## Architecture
 
@@ -14,7 +14,7 @@ cloud-optimizer/
 └── README.md
 ```
 
-## Patent Claim Cross-Reference (USPTO App. No. 63/999,378)
+## Patent Claim Cross-Reference (USPTO App. No. 19/641,446)
 
 | Patent Component (Ref#) | Implementation Module | Claim |
 |---|---|---|
@@ -46,6 +46,6 @@ cd frontend && npm install && npm run dev  # port 3000
 ```
 
 ## References
-- USPTO Provisional Patent Application No. 63/999,378
+- USPTO Non-Provisional Utility Patent Application No. 19/641,446 (priority date 63/999,378)
 - P. Pokharel, "Governance-Aware Dynamic Resource Allocation..." IEEE Cloud Summit 2026
 - P. Pokharel, "AI Modernization in the US Air Force..." SSRN, 2025

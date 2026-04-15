@@ -13,6 +13,28 @@ const router = express.Router();
 router.use(demoAccess);
 
 /**
+ * POST /api/demo/analyze
+ *
+ * No-auth proxy to the core engine's /analyze endpoint. The frontend's
+ * AnalysisPanel uses this so it doesn't need to be configured with a
+ * direct NEXT_PUBLIC_CORE_ENGINE_URL.
+ *
+ * Body shape mirrors POST /analyze on the core engine:
+ *   { telemetry: {nodes, edges, governance_policies}, ...thresholds }
+ */
+router.post('/analyze', async (req, res) => {
+  try {
+    const coreUrl = req.app.get('coreEngineUrl');
+    const response = await axios.post(`${coreUrl}/analyze`, req.body);
+    res.json(response.data);
+  } catch (err) {
+    const status = err.response?.status || 500;
+    const message = err.response?.data?.detail || err.message;
+    res.status(status).json({ error: message });
+  }
+});
+
+/**
  * GET /api/demo/scenarios
  * List all available demonstration scenarios with metadata.
  */
