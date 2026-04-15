@@ -225,13 +225,17 @@ function deterministicMem(nodeId, tier) {
 function deterministicHistory(nodeId, tier) {
   const baseCpu = deterministicCpu(nodeId, tier) / 100;
   const baseMem = deterministicMem(nodeId, tier) / 100;
+  // Smooth timeseries: small monotonic drift (±0.02) instead of random
+  // jitter so the oscillation detector doesn't flag every node and
+  // trigger system-wide suppression, which blocks all consolidation
+  // recommendations and zeroes out savings.
   const out = [];
   for (let t = 0; t < 12; t++) {
-    const jitter = ((hashStr(nodeId + ':' + t) % 21) - 10) / 100; // ±0.1
+    const drift = (t / 11 - 0.5) * 0.04; // -0.02 .. +0.02 over the window
     out.push({
       t,
-      cpu: Math.max(0.02, Math.min(0.98, baseCpu + jitter)),
-      mem: Math.max(0.05, Math.min(0.98, baseMem + jitter * 0.6)),
+      cpu: Math.max(0.02, Math.min(0.98, baseCpu + drift)),
+      mem: Math.max(0.05, Math.min(0.98, baseMem + drift * 0.6)),
     });
   }
   return out;
