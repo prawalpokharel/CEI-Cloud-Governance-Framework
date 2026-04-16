@@ -82,6 +82,16 @@ class NodeCEIResult(BaseModel):
     risk_factor: float
     classification: str
     recommendation: str
+    # Extended fields surfaced so the UI can render Quick Wins + pre-mod
+    # simulation detail without a second round-trip. All optional so the
+    # response stays backward-compatible.
+    action_type: Optional[str] = None
+    action_details: Optional[str] = ""
+    estimated_savings: Optional[float] = 0.0
+    monthly_cost: Optional[float] = 0.0
+    is_safe: Optional[bool] = False
+    blocked_reason: Optional[str] = None
+    validation: Optional[Dict] = {}
 
 class AnalysisResponse(BaseModel):
     nodes: List[NodeCEIResult]
@@ -197,7 +207,14 @@ async def run_full_analysis(request: AnalysisRequest):
                 entropy=data["entropy"],
                 risk_factor=data["risk_factor"],
                 classification=data["classification"],
-                recommendation=data["recommendation"]
+                recommendation=data["recommendation"],
+                action_type=data.get("action_type"),
+                action_details=data.get("action_details", ""),
+                estimated_savings=data.get("estimated_savings", 0.0),
+                monthly_cost=data.get("monthly_cost", 0.0),
+                is_safe=data.get("is_safe", False),
+                blocked_reason=data.get("blocked_reason"),
+                validation=data.get("validation", {}),
             ))
             total_savings += data.get("estimated_savings", 0.0)
 

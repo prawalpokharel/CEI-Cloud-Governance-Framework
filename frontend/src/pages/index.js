@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import CEIDashboard from '../components/dashboard/CEIDashboard';
+import QuickWins from '../components/dashboard/QuickWins';
 import GovernancePanel from '../components/governance/GovernancePanel';
 import AnalysisPanel from '../components/analysis/AnalysisPanel';
 import GraphVisualization from '../components/visualization/GraphVisualization';
@@ -17,6 +18,7 @@ export default function Home() {
 
   const tabs = [
     { id: 'dashboard', label: 'CEI Dashboard' },
+    { id: 'quickwins', label: 'Quick Wins' },
     { id: 'analysis', label: 'Run Analysis' },
     { id: 'governance', label: 'Governance' },
     { id: 'graph', label: 'Dependency Graph' },
@@ -88,6 +90,9 @@ export default function Home() {
 
           {activeTab === 'dashboard' && (
             <CEIDashboard results={analysisResults} />
+          )}
+          {activeTab === 'quickwins' && (
+            <QuickWins results={analysisResults} />
           )}
           {activeTab === 'analysis' && (
             <AnalysisPanel onResults={setAnalysisResults} />
