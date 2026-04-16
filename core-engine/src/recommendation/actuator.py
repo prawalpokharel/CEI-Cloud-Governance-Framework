@@ -60,49 +60,54 @@ class RecommendationActuator:
                     f"indicates high criticality with complex demand patterns. "
                     f"Risk of underprovisioning if current capacity maintained."
                 )
-            elif action == "monitor":
-                if (
+            elif action in ("monitor", "no_action"):
+                # Rightsizing is a softer intervention than consolidation
+                # or scale_up: it reduces instance class *in place* without
+                # changing replica count, region, or connectivity. Because
+                # it preserves the topology, the k-hop impact check
+                # (Module 110) and cascade risk check don't apply — they
+                # only apply to interventions that change the graph shape.
+                # So rightsizing eligibility is evaluated independently of
+                # the blocked_reason flag, which is set by those same
+                # graph-shape checks. Governance-specific blocks (e.g.
+                # pinned instance class) still gate rightsizing; those
+                # are not currently modeled as a distinct violation type.
+                rightsize_eligible = (
                     cei_score < self.RIGHTSIZING_CEI_THRESHOLD
                     and risk_factor < 0.7
                     and monthly_cost > 0
-                ):
+                )
+                blocked = data.get("blocked_reason")
+
+                if rightsize_eligible:
                     estimated_savings = (
                         monthly_cost * self.RIGHTSIZING_SAVINGS_PERCENT
                     )
                     action_type = "rightsize"
-                    action_details = (
-                        f"Rightsize resources. CEI score {cei_score:.3f} is "
-                        f"elevated but stable — workload variability does not "
-                        f"justify current instance class. "
-                        f"Estimated monthly savings: ${estimated_savings:.2f}"
-                    )
-                else:
-                    action_details = (
-                        f"Continue monitoring. CEI score {cei_score:.3f} "
-                        f"is elevated but within acceptable range. "
-                        f"Re-evaluate in next analysis cycle."
-                    )
-            elif action == "no_action":
-                blocked = data.get("blocked_reason")
-                if blocked:
+                    if action == "monitor":
+                        action_details = (
+                            f"Rightsize resources. CEI score {cei_score:.3f} "
+                            f"is elevated but stable — workload variability "
+                            f"does not justify current instance class. "
+                            f"Estimated monthly savings: ${estimated_savings:.2f}"
+                        )
+                    else:
+                        action_details = (
+                            f"Rightsize candidate. CEI score {cei_score:.3f} "
+                            f"with stable workload suggests the instance "
+                            f"class can be reduced one tier. "
+                            f"Estimated monthly savings: ${estimated_savings:.2f}"
+                        )
+                elif blocked:
                     action_details = (
                         f"No modification permitted. {blocked}. "
                         f"Manual review recommended."
                     )
-                elif (
-                    cei_score < self.RIGHTSIZING_CEI_THRESHOLD
-                    and risk_factor < 0.7
-                    and monthly_cost > 0
-                ):
-                    estimated_savings = (
-                        monthly_cost * self.RIGHTSIZING_SAVINGS_PERCENT
-                    )
-                    action_type = "rightsize"
+                elif action == "monitor":
                     action_details = (
-                        f"Rightsize candidate. CEI score {cei_score:.3f} with "
-                        f"stable workload suggests the instance class can be "
-                        f"reduced one tier. "
-                        f"Estimated monthly savings: ${estimated_savings:.2f}"
+                        f"Continue monitoring. CEI score {cei_score:.3f} "
+                        f"is elevated but within acceptable range. "
+                        f"Re-evaluate in next analysis cycle."
                     )
                 else:
                     action_details = (
