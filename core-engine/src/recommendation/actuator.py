@@ -13,12 +13,12 @@ class RecommendationActuator:
     Patent: "An actuator 111 executes modifications by calling cloud provider APIs"
     """
 
-    # Cost estimation factors
+    # Cost estimation factors (Patent Section V.B)
     CONSOLIDATION_SAVINGS_PERCENT = 0.27  # 27% per paper results
     RIGHTSIZING_SAVINGS_PERCENT = 0.15
-    # Threshold below which a node is considered a rightsizing candidate.
-    # Any node with CEI < this AND a "no_action" / "monitor" recommendation
-    # is presumed over-provisioned relative to its workload variability.
+    # Any node with CEI below this AND a "no_action" / "monitor" recommendation
+    # is presumed over-provisioned relative to its workload variability, and
+    # therefore a rightsizing candidate (Patent Section V.B).
     RIGHTSIZING_CEI_THRESHOLD = 0.70
 
     def generate_recommendations(
@@ -32,10 +32,9 @@ class RecommendationActuator:
 
         for node_id, data in validated_results.items():
             action = data.get("recommendation", "no_action")
-            # Monthly cost may be nested under metadata (from data_collector)
-            # or surfaced at the top level (from the cloud-provider discovery
-            # path). Accept both so savings compute correctly regardless of
-            # upstream shape.
+            # Monthly cost may be nested under metadata (core engine shape)
+            # or surfaced at the top level (cloud-provider discovery shape).
+            # Accept both so savings compute correctly regardless of source.
             monthly_cost = (
                 data.get("metadata", {}).get("monthly_cost")
                 or data.get("monthly_cost")
@@ -46,6 +45,7 @@ class RecommendationActuator:
 
             estimated_savings = 0.0
             action_details = ""
+            action_type = action  # normalized action verb for the UI
 
             if action == "consolidate":
                 estimated_savings = monthly_cost * self.CONSOLIDATION_SAVINGS_PERCENT
@@ -61,10 +61,6 @@ class RecommendationActuator:
                     f"Risk of underprovisioning if current capacity maintained."
                 )
             elif action == "monitor":
-                # Monitor + moderate CEI → rightsizing opportunity.
-                # Patent §V.B: rightsize oversized instances with stable
-                # workloads for ~15% savings. Governance-safe because the
-                # node stays in place, only instance class is tuned down.
                 if (
                     cei_score < self.RIGHTSIZING_CEI_THRESHOLD
                     and risk_factor < 0.7
@@ -73,6 +69,7 @@ class RecommendationActuator:
                     estimated_savings = (
                         monthly_cost * self.RIGHTSIZING_SAVINGS_PERCENT
                     )
+                    action_type = "rightsize"
                     action_details = (
                         f"Rightsize resources. CEI score {cei_score:.3f} is "
                         f"elevated but stable — workload variability does not "
@@ -97,10 +94,10 @@ class RecommendationActuator:
                     and risk_factor < 0.7
                     and monthly_cost > 0
                 ):
-                    # Unblocked no_action + moderate CEI → rightsizing candidate.
                     estimated_savings = (
                         monthly_cost * self.RIGHTSIZING_SAVINGS_PERCENT
                     )
+                    action_type = "rightsize"
                     action_details = (
                         f"Rightsize candidate. CEI score {cei_score:.3f} with "
                         f"stable workload suggests the instance class can be "
@@ -120,8 +117,10 @@ class RecommendationActuator:
                 "risk_factor": data.get("risk_factor", 0.0),
                 "classification": data.get("classification", "unknown"),
                 "recommendation": action,
+                "action_type": action_type,
                 "action_details": action_details,
                 "estimated_savings": round(estimated_savings, 2),
+                "monthly_cost": round(monthly_cost, 2),
                 "is_safe": data.get("is_safe", False),
                 "blocked_reason": data.get("blocked_reason"),
                 "validation": data.get("validation", {}),
