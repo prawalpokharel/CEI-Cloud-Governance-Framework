@@ -64,14 +64,18 @@ export default function CEIDashboard({ results }) {
       <div style={s.summaryGrid}>
         <SummaryCard label="Total Nodes" value={nodes.length} color="blue" />
         <SummaryCard
-          label="Projected Savings"
+          label="Critical Nodes"
+          value={counts.critical}
+          color="red"
+        />
+        <SummaryCard
+          label="Waste Surfaced by Topology Analysis"
           value={formatMonthly(total_potential_savings)}
           sub={`${formatAnnual(total_potential_savings)} annualized`}
           color="green"
         />
-        <SummaryCard label="Critical Nodes" value={counts.critical} color="red" />
         <SummaryCard
-          label="Oscillation"
+          label="Oscillation (Adaptive)"
           value={oscillation_status.suppression_active ? 'ACTIVE' : 'Clear'}
           color={oscillation_status.suppression_active ? 'yellow' : 'green'}
         />

@@ -23,7 +23,7 @@ export default function QuickWins({ results }) {
   if (!results) {
     return (
       <div style={s.empty}>
-        <h2 style={s.emptyTitle}>Quick Wins</h2>
+        <h2 style={s.emptyTitle}>Validated Recommendations</h2>
         <p style={s.emptyText}>
           Run an analysis from the <strong>Run Analysis</strong> tab to see
           the top optimization opportunities in your topology.
@@ -36,11 +36,12 @@ export default function QuickWins({ results }) {
     <div style={s.wrap}>
       <header style={s.header}>
         <div>
-          <h2 style={s.title}>Quick Wins</h2>
+          <h2 style={s.title}>Validated Recommendations</h2>
           <p style={s.subtitle}>
-            Top optimization opportunities, ranked by projected monthly
-            savings. Every opportunity is validated against governance
-            constraints and k-hop blast radius before it is offered.
+            Topology-level optimization candidates, ranked by the waste
+            each one surfaces. Every candidate is first validated against
+            governance constraints and k-hop blast radius by the patent&apos;s
+            pre-modification validator (Module 110) before it appears here.
           </p>
         </div>
         <div style={s.headerStats}>

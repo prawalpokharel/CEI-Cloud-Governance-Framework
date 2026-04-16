@@ -67,3 +67,20 @@ video {
     overflow-wrap: anywhere;
   }
 }
+
+/* FinOps comparison grid on /national-interest: three-column table
+   on desktop (axis | existing tools | CEI framework). On narrow
+   viewports the three cells stack so nothing is cramped. */
+.finops-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 1fr;
+}
+@media (max-width: 820px) {
+  .finops-row {
+    grid-template-columns: 1fr;
+  }
+  .finops-row > :first-child {
+    background: #1b4f72 !important;
+    color: white !important;
+  }
+}
