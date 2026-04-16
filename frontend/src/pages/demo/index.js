@@ -236,15 +236,15 @@ const styles = {
   headerInner: {
     maxWidth: 1200,
     margin: '0 auto',
-    padding: '0 32px',
+    padding: '0 16px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 16,
   },
-  title: { margin: 0, fontSize: 36, fontWeight: 700, letterSpacing: '-0.5px' },
-  subtitle: { margin: '6px 0 0 0', fontSize: 16, opacity: 0.9 },
+  title: { margin: 0, fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 700, letterSpacing: '-0.5px' },
+  subtitle: { margin: '6px 0 0 0', fontSize: 'clamp(13px, 2.5vw, 16px)', opacity: 0.9 },
   headerActions: {
     display: 'flex',
     alignItems: 'center',
@@ -288,8 +288,8 @@ const styles = {
   },
   patentLabel: { fontSize: 11, opacity: 0.8, letterSpacing: '1px' },
   patentNumber: { fontSize: 14, fontWeight: 600, marginTop: 2 },
-  intro: { background: 'white', padding: '48px 0', borderBottom: '1px solid #E8EDF0' },
-  introInner: { maxWidth: 900, margin: '0 auto', padding: '0 32px' },
+  intro: { background: 'white', padding: '32px 0', borderBottom: '1px solid #E8EDF0' },
+  introInner: { maxWidth: 900, margin: '0 auto', padding: '0 16px' },
   provenance: {
     background: '#FEF9E7',
     border: '1px solid #B7950B',
@@ -332,9 +332,9 @@ const styles = {
   grid: {
     maxWidth: 1200,
     margin: '0 auto',
-    padding: '48px 32px',
+    padding: '32px 16px',
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
     gap: 20,
   },
   card: {
@@ -404,7 +404,7 @@ const styles = {
   footer: {
     background: '#1C2833',
     color: '#BDC3C7',
-    padding: '24px 32px',
+    padding: '20px 16px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',

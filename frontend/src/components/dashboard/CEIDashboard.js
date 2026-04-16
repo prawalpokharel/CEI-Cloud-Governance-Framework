@@ -245,7 +245,7 @@ const s = {
   emptyText: { fontSize: 13, color: '#95A5A6', margin: 0 },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
     gap: 12,
   },
   summaryCard: {
