@@ -103,7 +103,7 @@ export default function Home() {
         </header>
 
         <main style={styles.main}>
-          {!analysisResults && (
+          {activeTab === 'dashboard' && (
             <>
               {/* ---------- Hero / lede ---------- */}
               <section style={styles.hero}>
