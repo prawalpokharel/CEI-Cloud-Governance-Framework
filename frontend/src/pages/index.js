@@ -6,6 +6,7 @@ import QuickWins from '../components/dashboard/QuickWins';
 import GovernancePanel from '../components/governance/GovernancePanel';
 import AnalysisPanel from '../components/analysis/AnalysisPanel';
 import GraphVisualization from '../components/visualization/GraphVisualization';
+import useIsMobile from '../hooks/useIsMobile';
 
 /**
  * CloudOptimizer — Main Application Page
@@ -15,6 +16,7 @@ import GraphVisualization from '../components/visualization/GraphVisualization';
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [analysisResults, setAnalysisResults] = useState(null);
+  const isMobile = useIsMobile();
 
   const tabs = [
     { id: 'dashboard', label: 'CEI Dashboard' },
@@ -31,34 +33,58 @@ export default function Home() {
       </Head>
       <div style={styles.page}>
         <header style={styles.header}>
-          <div style={styles.headerInner}>
+          <div
+            style={{
+              ...styles.headerInner,
+              ...(isMobile ? styles.headerInnerMobile : {}),
+            }}
+          >
             <div style={styles.brand}>
-              <h1 style={styles.title}>CloudOptimizer</h1>
-              <p style={styles.subtitle}>
+              <h1
+                style={{
+                  ...styles.title,
+                  ...(isMobile ? { fontSize: 22 } : {}),
+                }}
+              >
+                CloudOptimizer
+              </h1>
+              <p
+                style={{
+                  ...styles.subtitle,
+                  ...(isMobile ? { fontSize: 12 } : {}),
+                }}
+              >
                 Governance-Aware Dynamic Resource Allocation · CEI Framework
               </p>
             </div>
-            <div style={styles.headerRight}>
+            <div
+              style={{
+                ...styles.headerRight,
+                ...(isMobile ? styles.headerRightMobile : {}),
+              }}
+            >
               <Link href="/connect" style={styles.connectButton}>
                 Connect Cloud →
               </Link>
               <Link href="/upload" style={styles.demoButton}>
-                Upload Data
+                Upload
               </Link>
               <Link href="/demo" style={styles.demoButton}>
-                Live Scenarios
+                {isMobile ? 'Demos' : 'Live Scenarios'}
               </Link>
               <Link href="/national-interest" style={styles.reviewersButton}>
-                For Reviewers
+                {isMobile ? 'Reviewers' : 'For Reviewers'}
               </Link>
-              <div style={styles.patentBadge}>
-                <div style={styles.patentLabel}>USPTO</div>
-                <div style={styles.patentNumber}>App. No. 19/641,446</div>
-              </div>
+              {!isMobile && (
+                <div style={styles.patentBadge}>
+                  <div style={styles.patentLabel}>USPTO</div>
+                  <div style={styles.patentNumber}>App. No. 19/641,446</div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div style={styles.tabsBar}>
+          <div style={styles.tabsBar} className="tabs-scroll">
             <nav style={styles.tabs}>
               {tabs.map((tab) => (
                 <button
@@ -160,6 +186,16 @@ const styles = {
     gap: 24,
     flexWrap: 'wrap',
   },
+  headerInnerMobile: {
+    padding: '14px 16px',
+    gap: 12,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  headerRightMobile: {
+    gap: 6,
+    justifyContent: 'flex-start',
+  },
   brand: { minWidth: 0, flex: '1 1 auto' },
   title: {
     margin: 0,
@@ -230,9 +266,10 @@ const styles = {
   tabs: {
     maxWidth: 1200,
     margin: '0 auto',
-    padding: '0 32px',
+    padding: '0 16px',
     display: 'flex',
     gap: 4,
+    whiteSpace: 'nowrap',
   },
   tab: {
     padding: '12px 18px',
@@ -253,7 +290,7 @@ const styles = {
     maxWidth: 1200,
     width: '100%',
     margin: '0 auto',
-    padding: '32px',
+    padding: '24px 16px',
     boxSizing: 'border-box',
     flex: '1 0 auto',
   },
@@ -290,7 +327,7 @@ const styles = {
   footer: {
     background: '#1C2833',
     color: '#BDC3C7',
-    padding: '20px 32px',
+    padding: '18px 16px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',

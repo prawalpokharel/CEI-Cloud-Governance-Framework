@@ -10,6 +10,7 @@ import CEIBreakdownChart from '../../components/dashboard/CEIBreakdownChart';
 import OscillationTimeline from '../../components/dashboard/OscillationTimeline';
 import FaultPropagationView from '../../components/dashboard/FaultPropagationView';
 import ComplianceHeatmap from '../../components/dashboard/ComplianceHeatmap';
+import useIsMobile from '../../hooks/useIsMobile';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -47,6 +48,7 @@ const TOUR_STEPS = [
 export default function ScenarioDetail() {
   const router = useRouter();
   const { scenario: scenarioId } = router.query;
+  const isMobile = useIsMobile();
 
   const [scenario, setScenario] = useState(null);
   const [analysis, setAnalysis] = useState(null);
@@ -185,8 +187,18 @@ export default function ScenarioDetail() {
           </div>
         </header>
 
-        <div style={styles.body}>
-          <aside style={styles.sidebar}>
+        <div
+          style={{
+            ...styles.body,
+            ...(isMobile ? styles.bodyMobile : {}),
+          }}
+        >
+          <aside
+            style={{
+              ...styles.sidebar,
+              ...(isMobile ? styles.sidebarMobile : {}),
+            }}
+          >
             <h3 style={styles.sidebarTitle}>About this scenario</h3>
             <p style={styles.sidebarText}>{metadata.description}</p>
 
@@ -536,9 +548,9 @@ const styles = {
   header: {
     background: 'linear-gradient(135deg, #1B4F72 0%, #2874A6 100%)',
     color: 'white',
-    padding: '24px 0',
+    padding: '20px 0',
   },
-  headerInner: { maxWidth: 1300, margin: '0 auto', padding: '0 32px' },
+  headerInner: { maxWidth: 1300, margin: '0 auto', padding: '0 16px' },
   backLinks: {
     display: 'flex',
     gap: 16,
@@ -564,6 +576,11 @@ const styles = {
     gridTemplateColumns: '320px 1fr',
     gap: 24,
   },
+  bodyMobile: {
+    padding: '16px',
+    gridTemplateColumns: '1fr',
+    gap: 16,
+  },
   sidebar: {
     background: 'white',
     borderRadius: 8,
@@ -572,6 +589,10 @@ const styles = {
     alignSelf: 'start',
     position: 'sticky',
     top: 20,
+  },
+  sidebarMobile: {
+    position: 'static',
+    padding: 16,
   },
   sidebarTitle: {
     margin: '0 0 8px 0',

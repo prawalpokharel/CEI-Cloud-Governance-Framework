@@ -309,17 +309,17 @@ const styles = {
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     color: '#1C2833',
   },
-  container: { maxWidth: 1100, margin: '0 auto', padding: '0 32px' },
+  container: { maxWidth: 1100, margin: '0 auto', padding: '0 16px' },
 
   header: {
     background: 'linear-gradient(135deg, #1B4F72 0%, #2874A6 100%)',
     color: 'white',
-    padding: '40px 0 32px 0',
+    padding: '32px 0 24px 0',
   },
   headerInner: {
     maxWidth: 1100,
     margin: '0 auto',
-    padding: '0 32px',
+    padding: '0 16px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -335,11 +335,12 @@ const styles = {
   },
   title: {
     margin: 0,
-    fontSize: 34,
+    fontSize: 'clamp(24px, 5vw, 34px)',
     fontWeight: 700,
     letterSpacing: '-0.5px',
+    lineHeight: 1.2,
   },
-  subtitle: { margin: '10px 0 0 0', fontSize: 15, opacity: 0.92 },
+  subtitle: { margin: '10px 0 0 0', fontSize: 'clamp(13px, 2.5vw, 15px)', opacity: 0.92 },
   headerLink: { color: '#AED6F1', textDecoration: 'underline' },
   homeLink: {
     color: 'white',
@@ -351,7 +352,7 @@ const styles = {
     borderRadius: 4,
   },
 
-  lede: { background: 'white', padding: '40px 0', borderBottom: '1px solid #E8EDF0' },
+  lede: { background: 'white', padding: '28px 0', borderBottom: '1px solid #E8EDF0' },
   ledeText: {
     fontSize: 15,
     lineHeight: 1.7,
@@ -360,9 +361,9 @@ const styles = {
   },
   inlineLink: { color: '#2874A6', textDecoration: 'underline' },
 
-  sectionLight: { padding: '56px 0', background: '#F8F9FA' },
+  sectionLight: { padding: '40px 0', background: '#F8F9FA' },
   sectionDark: {
-    padding: '56px 0',
+    padding: '40px 0',
     background: 'linear-gradient(180deg, #1C2833 0%, #283747 100%)',
   },
   sectionHead: { marginBottom: 32, maxWidth: 820 },
@@ -375,10 +376,11 @@ const styles = {
     marginBottom: 8,
   },
   h2: {
-    fontSize: 26,
+    fontSize: 'clamp(20px, 4vw, 26px)',
     fontWeight: 700,
     color: '#1B4F72',
     margin: '0 0 12px 0',
+    lineHeight: 1.25,
     letterSpacing: '-0.3px',
   },
   sectionLede: {
@@ -390,8 +392,8 @@ const styles = {
 
   programsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: 18,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: 16,
   },
   programCard: {
     background: 'white',
@@ -432,8 +434,8 @@ const styles = {
 
   defenseGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: 20,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: 16,
   },
   defenseCard: {
     background: 'rgba(255,255,255,0.06)',
@@ -486,8 +488,8 @@ const styles = {
 
   impactGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-    gap: 18,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 16,
   },
   impactCard: {
     background: 'white',
@@ -546,12 +548,12 @@ const styles = {
   patentBlock: {
     background: '#1C2833',
     color: 'white',
-    padding: '48px 0',
+    padding: '32px 0',
   },
   patentGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: 16,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: 12,
     marginBottom: 20,
   },
   patentCell: {
@@ -589,7 +591,7 @@ const styles = {
   footer: {
     background: '#17202A',
     color: '#BDC3C7',
-    padding: '24px 32px',
+    padding: '20px 16px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -597,6 +599,6 @@ const styles = {
     flexWrap: 'wrap',
     gap: 12,
   },
-  footerLinks: { display: 'flex', gap: 20 },
+  footerLinks: { display: 'flex', gap: 16, flexWrap: 'wrap' },
   footerLink: { color: '#85C1E2', textDecoration: 'none' },
 };

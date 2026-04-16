@@ -1,3 +1,69 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------- Mobile / responsive baseline ---------- */
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tables that contain too many columns should scroll horizontally
+   inside their container rather than breaking page layout. */
+.scroll-x {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Nav tab bar that scrolls horizontally when it overflows on narrow
+   screens (used by the main home-page tabs bar). */
+.tabs-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch targets — buttons/links below this tend to be hard to tap. */
+@media (max-width: 720px) {
+  button,
+  a[role='button'] {
+    min-height: 36px;
+  }
+}
+
+/* Code snippets + long URLs need to wrap instead of blowing out the
+   page on narrow viewports. */
+@media (max-width: 720px) {
+  code,
+  pre,
+  a[href^='http'] {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+}
