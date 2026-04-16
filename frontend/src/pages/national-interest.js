@@ -74,6 +74,84 @@ export default function NationalInterestPage() {
           </div>
         </section>
 
+        {/* ---------- FinOps differentiation ---------- */}
+        <section style={styles.sectionLight}>
+          <div style={styles.container}>
+            <div style={styles.sectionHead}>
+              <div style={styles.prong}>
+                How this differs from existing cloud-cost tools
+              </div>
+              <h2 style={styles.h2}>
+                A structural problem that per-instance optimization cannot solve
+              </h2>
+              <p style={styles.sectionLede}>
+                Commercial FinOps platforms — Cloudability, CloudZero, Vantage,
+                Flexera ONE, Apptio — evaluate individual cloud resources in
+                isolation and surface per-instance rightsizing recommendations.
+                They do not model the dependency graph, do not gate
+                recommendations through governance policy, and do not validate
+                proposed modifications against the downstream blast radius
+                before they are offered to an operator. For federal and defense
+                workloads, those capabilities are not optional; they determine
+                whether a recommendation is safe to execute at all.
+              </p>
+            </div>
+
+            <div style={styles.finopsGrid}>
+              <div className="finops-row" style={styles.finopsRow}>
+                <div style={styles.finopsAxis}>Unit of analysis</div>
+                <div style={styles.finopsOld}>
+                  Individual instance / workload / account
+                </div>
+                <div style={styles.finopsNew}>
+                  Full dependency graph, k-hop neighborhood
+                </div>
+              </div>
+              <div className="finops-row" style={styles.finopsRow}>
+                <div style={styles.finopsAxis}>Governance integration</div>
+                <div style={styles.finopsOld}>
+                  Budget alerts + tag-based reports; no policy gating
+                </div>
+                <div style={styles.finopsNew}>
+                  Policy store (Module 104) gates every recommendation;
+                  FedRAMP / CMMC / HIPAA constraints enforced pre-execution
+                </div>
+              </div>
+              <div className="finops-row" style={styles.finopsRow}>
+                <div style={styles.finopsAxis}>Pre-execution validation</div>
+                <div style={styles.finopsOld}>
+                  None — recommendations are suggestions, operator verifies
+                  manually
+                </div>
+                <div style={styles.finopsNew}>
+                  Pre-modification validator (Module 110) simulates k-hop
+                  impact and rejects unsafe changes before they are offered
+                </div>
+              </div>
+              <div className="finops-row" style={styles.finopsRow}>
+                <div style={styles.finopsAxis}>Target environment</div>
+                <div style={styles.finopsOld}>
+                  Commercial multi-cloud cost accounting
+                </div>
+                <div style={styles.finopsNew}>
+                  Federal / defense distributed systems, including GPS-denied
+                  PNT, tactical edge mesh, and strategic communications
+                </div>
+              </div>
+              <div className="finops-row" style={styles.finopsRow}>
+                <div style={styles.finopsAxis}>Novelty claim</div>
+                <div style={styles.finopsOld}>
+                  Report &amp; recommend on existing cost data
+                </div>
+                <div style={styles.finopsNew}>
+                  Governance-aware, topology-based decision framework —
+                  USPTO App. No. {PATENT.application_no}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ---------- Federal Programs ---------- */}
         <section style={styles.sectionLight}>
           <div style={styles.container}>
@@ -390,6 +468,40 @@ const styles = {
     margin: 0,
   },
 
+  finopsGrid: {
+    background: 'white',
+    border: '1px solid #E8EDF0',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  // Grid layout lives in globals.css (.finops-row) so it can collapse to
+  // a single column on narrow viewports.
+  finopsRow: {
+    borderBottom: '1px solid #E8EDF0',
+    fontSize: 13,
+    lineHeight: 1.55,
+  },
+  finopsAxis: {
+    padding: '14px 16px',
+    fontWeight: 600,
+    color: '#1B4F72',
+    background: '#F8F9FA',
+    fontSize: 12,
+    letterSpacing: '0.3px',
+    textTransform: 'uppercase',
+  },
+  finopsOld: {
+    padding: '14px 16px',
+    color: '#7B8A8B',
+    borderLeft: '1px solid #E8EDF0',
+  },
+  finopsNew: {
+    padding: '14px 16px',
+    color: '#1C2833',
+    borderLeft: '1px solid #E8EDF0',
+    background: '#EAF4FB',
+    fontWeight: 500,
+  },
   programsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',

@@ -20,7 +20,7 @@ export default function Home() {
 
   const tabs = [
     { id: 'dashboard', label: 'CEI Dashboard' },
-    { id: 'quickwins', label: 'Quick Wins' },
+    { id: 'quickwins', label: 'Validated Recommendations' },
     { id: 'analysis', label: 'Run Analysis' },
     { id: 'governance', label: 'Governance' },
     { id: 'graph', label: 'Dependency Graph' },
@@ -104,17 +104,121 @@ export default function Home() {
 
         <main style={styles.main}>
           {!analysisResults && (
-            <div style={styles.cta}>
-              <h2 style={styles.ctaTitle}>Get Started</h2>
-              <p style={styles.ctaText}>
-                Run analysis on your own data via the <strong>Run Analysis</strong>{' '}
-                tab, or jump into a pre-built scenario to see the framework in
-                action across five domains.
-              </p>
-              <Link href="/demo" style={styles.ctaButton}>
-                Browse Live Scenarios →
-              </Link>
-            </div>
+            <>
+              {/* ---------- Hero / lede ---------- */}
+              <section style={styles.hero}>
+                <p style={styles.heroPara}>
+                  Federal and defense cloud systems operate at a scale where
+                  small inefficiencies compound into billions in wasted
+                  infrastructure capacity and increased operational risk.
+                </p>
+                <p style={styles.heroPara}>
+                  Existing cloud optimization tools evaluate individual
+                  resources in isolation and cannot detect system-level
+                  inefficiencies that arise from interdependent workloads.
+                </p>
+                <p style={styles.heroPara}>
+                  <strong>CloudOptimizer</strong> implements a
+                  governance-aware, topology-based analysis framework that
+                  evaluates entire infrastructure systems, validates changes
+                  against policy constraints, and simulates downstream impact
+                  before execution.
+                </p>
+                <p style={styles.heroPara}>
+                  This approach enables safer, system-level optimization of
+                  large-scale distributed environments, including defense AI
+                  systems, simulation infrastructure, and hybrid cloud-edge
+                  deployments. The system is designed for cross-environment
+                  deployment and is not limited to a single organization or
+                  cloud provider.
+                </p>
+                <div style={styles.heroCtas}>
+                  <Link href="/national-interest" style={styles.heroCtaPrimary}>
+                    For Reviewers — Federal Relevance →
+                  </Link>
+                  <Link href="/demo" style={styles.heroCtaSecondary}>
+                    Live defense scenarios →
+                  </Link>
+                </div>
+              </section>
+
+              {/* ---------- Why this matters strip ---------- */}
+              <section style={styles.matters}>
+                <h3 style={styles.mattersTitle}>
+                  Why this matters at scale
+                </h3>
+                <div style={styles.mattersGrid}>
+                  <div style={styles.matterTile}>
+                    <div style={styles.matterLabel}>Federal IT footprint</div>
+                    <div style={styles.matterValue}>
+                      Tens of billions annually
+                    </div>
+                    <div style={styles.matterDetail}>
+                      Civilian + defense IT obligations across federal
+                      agencies (OMB IT Dashboard).
+                    </div>
+                  </div>
+                  <div style={styles.matterTile}>
+                    <div style={styles.matterLabel}>
+                      Documented waste band
+                    </div>
+                    <div style={styles.matterValue}>~32%</div>
+                    <div style={styles.matterDetail}>
+                      Enterprise-reported cloud spend lost to under-utilized
+                      or mis-sized resources (Flexera 2024).
+                    </div>
+                  </div>
+                  <div style={styles.matterTile}>
+                    <div style={styles.matterLabel}>Programs this serves</div>
+                    <div style={styles.matterValue}>JWCC · FedRAMP</div>
+                    <div style={styles.matterDetail}>
+                      Plus EO 14028, EO 14110, NSPM-7, Cloud Smart —{' '}
+                      <Link
+                        href="/national-interest"
+                        style={styles.matterLink}
+                      >
+                        full list
+                      </Link>
+                      .
+                    </div>
+                  </div>
+                  <div style={styles.matterTile}>
+                    <div style={styles.matterLabel}>
+                      Defense demonstrations
+                    </div>
+                    <div style={styles.matterValue}>3 live scenarios</div>
+                    <div style={styles.matterDetail}>
+                      NC3 strategic comms · tactical drone swarm · GPS-denied
+                      positioning.{' '}
+                      <Link href="/demo" style={styles.matterLink}>
+                        run them
+                      </Link>
+                      .
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* ---------- Technical summary (below the fold) ---------- */}
+              <section style={styles.technical}>
+                <h3 style={styles.technicalTitle}>How it works</h3>
+                <p style={styles.technicalPara}>
+                  The Centrality-Entropy Index (CEI) framework, USPTO Patent
+                  App. No. 19/641,446, classifies every node in a dependency
+                  graph by a weighted combination of its centrality (α),
+                  workload entropy (β), and governance risk (γ). Before any
+                  proposed modification executes, a pre-modification
+                  validator simulates its impact across the k-hop
+                  neighborhood and rejects changes that exceed safety
+                  thresholds or violate policy.
+                </p>
+                <p style={styles.technicalPara}>
+                  Use the tabs below to exercise the framework against
+                  enterprise-scale telemetry, review the governance store,
+                  or inspect the live dependency graph.
+                </p>
+              </section>
+            </>
           )}
 
           {activeTab === 'dashboard' && (
@@ -294,6 +398,121 @@ const styles = {
     boxSizing: 'border-box',
     flex: '1 0 auto',
   },
+  /* ---------- Hero / lede ---------- */
+  hero: {
+    background: 'white',
+    borderRadius: 8,
+    padding: 28,
+    marginBottom: 20,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    borderLeft: '4px solid #1B4F72',
+  },
+  heroPara: {
+    margin: '0 0 14px 0',
+    fontSize: 15,
+    lineHeight: 1.65,
+    color: '#2C3E50',
+  },
+  heroCtas: {
+    marginTop: 20,
+    display: 'flex',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  heroCtaPrimary: {
+    background: '#1B4F72',
+    color: 'white',
+    padding: '10px 18px',
+    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: 600,
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
+  },
+  heroCtaSecondary: {
+    background: 'transparent',
+    color: '#1B4F72',
+    padding: '10px 18px',
+    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: 600,
+    textDecoration: 'none',
+    border: '1px solid #BDC3C7',
+    whiteSpace: 'nowrap',
+  },
+
+  /* ---------- Why this matters strip ---------- */
+  matters: {
+    background: '#F4F8FB',
+    borderRadius: 8,
+    padding: 24,
+    marginBottom: 20,
+    border: '1px solid #D4E6F1',
+  },
+  mattersTitle: {
+    margin: '0 0 16px 0',
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#1B4F72',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase',
+  },
+  mattersGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: 14,
+  },
+  matterTile: {
+    background: 'white',
+    padding: '14px 16px',
+    borderRadius: 6,
+    border: '1px solid #D4E6F1',
+  },
+  matterLabel: {
+    fontSize: 10,
+    color: '#7B8A8B',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  matterValue: {
+    fontSize: 17,
+    fontWeight: 700,
+    color: '#1B4F72',
+    marginBottom: 6,
+  },
+  matterDetail: {
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: '#566573',
+  },
+  matterLink: { color: '#2874A6', textDecoration: 'underline' },
+
+  /* ---------- Technical summary ---------- */
+  technical: {
+    background: 'white',
+    borderRadius: 8,
+    padding: 24,
+    marginBottom: 24,
+    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+    borderLeft: '3px solid #AED6F1',
+  },
+  technicalTitle: {
+    margin: '0 0 12px 0',
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#1B4F72',
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase',
+  },
+  technicalPara: {
+    margin: '0 0 10px 0',
+    fontSize: 13.5,
+    lineHeight: 1.65,
+    color: '#566573',
+  },
+
+  /* ---------- (legacy) CTA — kept for reference ---------- */
   cta: {
     background: 'white',
     borderRadius: 8,
