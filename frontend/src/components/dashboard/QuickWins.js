@@ -52,6 +52,7 @@ export default function QuickWins({ results }) {
           <Stat
             label="Projected monthly savings"
             value={formatUsd(totals.actionableSavings)}
+            sub={`${formatUsdAnnual(totals.actionableSavings)} annualized`}
             color="#1B4F72"
           />
           <Stat
@@ -120,8 +121,12 @@ export default function QuickWins({ results }) {
         <strong>15%</strong> for rightsizing of nodes with CEI&nbsp;&lt;&nbsp;0.70
         and governance risk&nbsp;&lt;&nbsp;0.70. Monthly cost is taken from the
         telemetry payload (cloud-provider discovery, scenario dataset, or
-        uploaded template). Savings shown are projections on the current
-        analyzed topology, not measured production outcomes.
+        uploaded template). The Run Analysis sample topology is sized to a
+        mid-market enterprise web + data tier (~$31K/mo baseline). To see
+        projections on your own infrastructure, use{' '}
+        <strong>Connect Cloud</strong> or <strong>Upload Data</strong>.
+        Savings shown are projections on the analyzed topology, not
+        measured production outcomes.
       </footer>
 
       {selectedNode && (
@@ -144,13 +149,15 @@ function partitionOpportunities(results) {
       totals: { actionableCount: 0, actionableSavings: 0, blockedCount: 0 },
     };
   }
+  // "Actionable" = any node where the actuator computed real savings.
+  // The actuator's rightsizing branch evaluates eligibility independently
+  // of the k-hop blocker (rightsizing is a softer intervention that
+  // preserves topology), so a node can have estimated_savings > 0 even
+  // when the validator set blocked_reason on the classification-assigned
+  // action. The blocked_reason in that case refers to the blocked
+  // consolidate/scale_up action, not the rightsize we're surfacing here.
   const actionable = results.nodes
-    .filter(
-      (n) =>
-        (Number(n.estimated_savings) || 0) > 0 &&
-        n.is_safe !== false &&
-        !n.blocked_reason,
-    )
+    .filter((n) => (Number(n.estimated_savings) || 0) > 0)
     .sort(
       (a, b) =>
         (Number(b.estimated_savings) || 0) -
@@ -158,8 +165,17 @@ function partitionOpportunities(results) {
     )
     .slice(0, 5);
 
+  // "Blocked opportunities" = nodes where the classification wanted a
+  // topology-changing action (consolidate/scale_up) but the validator
+  // withheld it, AND no softer rightsizing could compensate (savings=0).
+  // This is the patent's Module 104 + 110 novelty showcase.
   const blocked = results.nodes
-    .filter((n) => n.blocked_reason)
+    .filter(
+      (n) =>
+        n.blocked_reason &&
+        (Number(n.estimated_savings) || 0) === 0 &&
+        (n.classification === 'low' || n.classification === 'critical'),
+    )
     .slice(0, 5);
 
   const actionableSavings = actionable.reduce(
@@ -173,7 +189,7 @@ function partitionOpportunities(results) {
     totals: {
       actionableCount: actionable.length,
       actionableSavings,
-      blockedCount: results.nodes.filter((n) => n.blocked_reason).length,
+      blockedCount: blocked.length,
     },
   };
 }
@@ -205,12 +221,19 @@ function formatUsd(n) {
   return `$${v.toFixed(0)}/mo`;
 }
 
+function formatUsdAnnual(monthly) {
+  const annual = (Number(monthly) || 0) * 12;
+  if (annual >= 1000) return `$${(annual / 1000).toFixed(0)}k/yr`;
+  return `$${annual.toFixed(0)}/yr`;
+}
+
 /* ---------- subcomponents ---------- */
 
-function Stat({ label, value, color }) {
+function Stat({ label, value, sub, color }) {
   return (
     <div style={s.stat}>
       <div style={{ ...s.statValue, color }}>{value}</div>
+      {sub && <div style={s.statSub}>{sub}</div>}
       <div style={s.statLabel}>{label}</div>
     </div>
   );
@@ -449,6 +472,12 @@ const s = {
   },
   stat: { textAlign: 'right' },
   statValue: { fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' },
+  statSub: {
+    fontSize: 11,
+    color: '#16A085',
+    fontWeight: 600,
+    marginTop: 1,
+  },
   statLabel: {
     fontSize: 11,
     color: '#7B8A8B',

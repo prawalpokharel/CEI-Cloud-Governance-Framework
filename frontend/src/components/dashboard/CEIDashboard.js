@@ -22,6 +22,18 @@ const SUMMARY_COLOR = {
   yellow: '#7D6608',
 };
 
+function formatMonthly(n) {
+  const v = Number(n) || 0;
+  if (v >= 1000) return `$${(v / 1000).toFixed(1)}k/mo`;
+  return `$${v.toFixed(0)}/mo`;
+}
+
+function formatAnnual(monthly) {
+  const annual = (Number(monthly) || 0) * 12;
+  if (annual >= 1000) return `$${(annual / 1000).toFixed(0)}k/yr`;
+  return `$${annual.toFixed(0)}/yr`;
+}
+
 export default function CEIDashboard({ results }) {
   if (!results) {
     return (
@@ -52,8 +64,9 @@ export default function CEIDashboard({ results }) {
       <div style={s.summaryGrid}>
         <SummaryCard label="Total Nodes" value={nodes.length} color="blue" />
         <SummaryCard
-          label="Potential Savings"
-          value={`$${total_potential_savings.toFixed(0)}/mo`}
+          label="Projected Savings"
+          value={formatMonthly(total_potential_savings)}
+          sub={`${formatAnnual(total_potential_savings)} annualized`}
           color="green"
         />
         <SummaryCard label="Critical Nodes" value={counts.critical} color="red" />
@@ -139,7 +152,7 @@ export default function CEIDashboard({ results }) {
   );
 }
 
-function SummaryCard({ label, value, color }) {
+function SummaryCard({ label, value, sub, color }) {
   return (
     <div style={s.summaryCard}>
       <p style={s.summaryLabel}>{label}</p>
@@ -151,6 +164,7 @@ function SummaryCard({ label, value, color }) {
       >
         {value}
       </p>
+      {sub && <p style={s.summarySub}>{sub}</p>}
     </div>
   );
 }
@@ -252,6 +266,12 @@ const s = {
     margin: '6px 0 0 0',
     fontSize: 24,
     fontWeight: 700,
+  },
+  summarySub: {
+    margin: '2px 0 0 0',
+    fontSize: 11,
+    color: '#16A085',
+    fontWeight: 600,
   },
   card: {
     background: 'white',

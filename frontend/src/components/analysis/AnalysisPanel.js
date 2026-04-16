@@ -277,32 +277,60 @@ const s = {
   },
 };
 
+/**
+ * Mid-market enterprise reference topology (8-node web + data tier).
+ * Sized to represent a realistic federal / defense-contractor workload so
+ * projected savings read as materially meaningful rather than hobby-scale.
+ * Baseline monthly cost ~ $31K/mo across the 8 nodes; 15–27% rightsize/
+ * consolidate savings per patent §V.B yield $3–8K/mo depending on which
+ * classifications the CEI calculator assigns on a given run.
+ */
+const SAMPLE_NODES = [
+  // node_id              instance (AWS)   replicas  monthly_cost  criticality        environment
+  ['api-gateway',         'm5.4xlarge',          3,         4800, 'mission_critical', 'production'],
+  ['auth-service',        'm5.xlarge',           2,         1200, 'business_critical','production'],
+  ['data-pipeline',       'c5.9xlarge',          2,         6500, 'operational',      'production'],
+  ['ml-inference',        'g4dn.8xlarge',        2,         8200, 'operational',      'production'],
+  ['cache-layer',         'r5.xlarge',           3,          900, 'business_critical','production'],
+  ['db-primary',          'r5.8xlarge',          2,         7400, 'mission_critical', 'production'],
+  ['worker-pool',         'c5.4xlarge',          4,         2100, 'development',      'production'],
+  ['monitoring',          'm5.large',            2,          400, 'operational',      'development'],
+];
+
+// Instance family mapping so the sample reads realistically regardless of
+// which provider the user selected in the UI. Monthly cost is identical
+// across providers — tuning the family label only.
+const INSTANCE_ALIASES = {
+  aws:        ['m5.4xlarge','m5.xlarge','c5.9xlarge','g4dn.8xlarge','r5.xlarge','r5.8xlarge','c5.4xlarge','m5.large'],
+  azure:      ['Standard_D16s_v3','Standard_D4s_v3','Standard_F36s_v2','Standard_NC8as_T4_v3','Standard_E4s_v3','Standard_E32s_v3','Standard_F16s_v2','Standard_D2s_v3'],
+  gcp:        ['n2-standard-16','n2-standard-4','c2-standard-30','a2-highgpu-1g','n2-highmem-4','n2-highmem-32','c2-standard-16','n2-standard-2'],
+  kubernetes: ['pool-lg','pool-md','pool-xl','pool-gpu','pool-mem-md','pool-mem-lg','pool-cpu-lg','pool-sm'],
+};
+
 function generateSampleNodes(provider, region) {
-  const types = {
-    aws: ['t3.medium', 't3.large', 'm5.xlarge', 'c5.2xlarge', 'r5.large', 'm5.2xlarge', 'c5.xlarge', 'r5.xlarge'],
-    azure: ['Standard_B2ms', 'Standard_D4s_v3', 'Standard_E4s_v3', 'Standard_F4s_v2', 'Standard_D8s_v3', 'Standard_E8s_v3', 'Standard_B4ms', 'Standard_D2s_v3'],
-    gcp: ['e2-medium', 'n2-standard-4', 'c2-standard-8', 'e2-standard-2', 'n2-standard-8', 'e2-small', 'n2-standard-2', 'c2-standard-4'],
-    kubernetes: ['pod-sm', 'pod-md', 'pod-lg', 'pod-xl', 'pod-sm-2', 'pod-md-2', 'pod-lg-2', 'pod-xl-2'],
-  };
-  const labels = ['api-gateway', 'auth-service', 'data-pipeline', 'ml-inference', 'cache-layer', 'db-primary', 'worker-pool', 'monitoring'];
-  const criticalities = ['mission_critical', 'business_critical', 'operational', 'operational', 'business_critical', 'mission_critical', 'development', 'operational'];
-  return labels.map((label, i) => ({
-    node_id: label,
-    metrics: {
-      cpu_utilization: Math.round((Math.random() * 70 + 10) * 10) / 10,
-      memory_utilization: Math.round((Math.random() * 65 + 15) * 10) / 10,
-      storage_io: Math.round(Math.random() * 50 * 10) / 10,
-      network_throughput: Math.round(Math.random() * 400 + 50),
-      request_rate: Math.round(Math.random() * 2000),
-      error_rate: Math.round(Math.random() * 2 * 100) / 100,
-      latency_p99: Math.round(Math.random() * 150 + 20),
-    },
-    provider,
-    region,
-    instance_type: (types[provider] || types.aws)[i],
-    monthly_cost: Math.round((Math.random() * 600 + 100) * 100) / 100,
-    tags: { criticality: criticalities[i], environment: i < 6 ? 'production' : 'development' },
-  }));
+  const aliases = INSTANCE_ALIASES[provider] || INSTANCE_ALIASES.aws;
+  return SAMPLE_NODES.map(
+    ([label, _defaultInstance, replicas, monthlyCost, criticality, environment], i) => ({
+      node_id: label,
+      metrics: {
+        // Keep telemetry ranges realistic for a mid-market production
+        // workload: moderate CPU, memory with headroom, modest variance.
+        cpu_utilization: Math.round((Math.random() * 55 + 15) * 10) / 10,
+        memory_utilization: Math.round((Math.random() * 50 + 25) * 10) / 10,
+        storage_io: Math.round(Math.random() * 60 * 10) / 10,
+        network_throughput: Math.round(Math.random() * 600 + 100),
+        request_rate: Math.round(Math.random() * 3500),
+        error_rate: Math.round(Math.random() * 1.5 * 100) / 100,
+        latency_p99: Math.round(Math.random() * 140 + 30),
+      },
+      provider,
+      region,
+      instance_type: aliases[i],
+      replicas,
+      monthly_cost: monthlyCost,
+      tags: { criticality, environment },
+    }),
+  );
 }
 
 function generateSampleEdges(nodes) {
