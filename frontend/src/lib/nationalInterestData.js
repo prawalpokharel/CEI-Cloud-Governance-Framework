@@ -88,7 +88,7 @@ export const DEFENSE_APPLICATIONS = [
     summary:
       'A 17-node strategic communications network with path-diversity, two-person crypto integrity, and segmentation requirements. CEI demonstrates correctness on high-redundancy, low-utilization-by-design infrastructure — the inverse of every commercial autoscaler\u2019s assumption.',
     why_it_matters:
-      'Directly relevant to DoD Nuclear Command, Control & Communications modernization and the FY-budgeted NC3 enterprise refresh ($77B+ committed across the FYDP per CBO).',
+      'Directly relevant to DoD Nuclear Command, Control & Communications modernization ($154B for operating, sustaining, and modernizing NC3 over 2025-2034 per CBO).',
   },
   {
     scenario_id: 'drone_swarm',
@@ -175,8 +175,8 @@ export const REPRODUCIBILITY = [
   {
     label: 'Live deployed instance',
     detail:
-      'frontend-cei-governance-production.up.railway.app — production deployment running the same code as the repo. No login required for the demo scenarios.',
-    url: 'https://frontend-cei-governance-production.up.railway.app/demo',
+      'cloudoptimizer.app — production deployment running the same code as the repo. No login required for the demo scenarios.',
+    url: 'https://cloudoptimizer.app/demo',
   },
 ];
 
