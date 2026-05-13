@@ -181,18 +181,29 @@ export const REPRODUCIBILITY = [
 ];
 
 /**
- * Optional publications block — fill in with real URLs once accepted /
- * pre-prints posted. Empty entries are hidden by the page.
+ * Peer-reviewed publications. Entries render regardless of whether a
+ * DOI/URL is available yet — accepted papers show a "forthcoming" badge.
  */
 export const PUBLICATIONS = [
   {
     citation:
-      'P. Pokharel, "Governance-Aware Dynamic Resource Allocation Using Adaptive Centrality-Entropy Index," IEEE Cloud Summit 2026 (forthcoming).',
+      'P. Pokharel, "Federated Deployment and Empirical Evaluation of the Centrality-Entropy Index Framework for Enterprise Cloud Governance in Multi-Tier Distributed Environments,"',
+    venue: 'FTC 2026 — Future Technologies Conference, Berlin, Oct 15–18, 2026.',
+    status: 'accepted',
     url: '',
   },
   {
     citation:
-      'P. Pokharel, "AI Modernization in the U.S. Air Force: Governance-Aware Compute Allocation," SSRN, 2025.',
+      'P. Pokharel, "Governance-Aware Resource Allocation for Defense Infrastructure Under Adversarial Threat: Strategic Communications, Cloud Resilience, and Interceptor Engagement Using the Centrality-Entropy Index,"',
+    venue: 'FTC 2026 — Future Technologies Conference, Berlin, Oct 15–18, 2026.',
+    status: 'accepted',
+    url: '',
+  },
+  {
+    citation:
+      'P. Pokharel, "Governance-Aware Resource Allocation for Distributed Sensor Networks in GPS-Denied and Contested Environments: Underwater Acoustic Positioning and Multi-Modal Biometric Sensor Fusion Using the Centrality-Entropy Index,"',
+    venue: 'FTC 2026 — Future Technologies Conference, Berlin, Oct 15–18, 2026.',
+    status: 'accepted',
     url: '',
   },
 ];

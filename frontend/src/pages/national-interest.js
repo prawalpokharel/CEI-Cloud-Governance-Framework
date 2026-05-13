@@ -291,24 +291,56 @@ export default function NationalInterestPage() {
           </div>
         </section>
 
-        {/* ---------- Publications (optional, renders only if URLs present) ---------- */}
-        {PUBLICATIONS.some((p) => p.url) && (
+        {/* ---------- Publications ---------- */}
+        {PUBLICATIONS.length > 0 && (
           <section style={styles.sectionLight}>
             <div style={styles.container}>
               <div style={styles.sectionHead}>
-                <h2 style={styles.h2}>Publications</h2>
+                <div style={styles.prong}>Peer-Reviewed Publications</div>
+                <h2 style={styles.h2}>
+                  3 papers accepted — FTC 2026, Berlin
+                </h2>
+                <p style={styles.sectionLede}>
+                  All three papers apply the CEI framework to structurally
+                  distinct infrastructure domains and have been peer-reviewed
+                  and accepted for presentation at the Future Technologies
+                  Conference (FTC 2026), Berlin, October 15–18, 2026.
+                </p>
               </div>
               <ul style={styles.reproList}>
-                {PUBLICATIONS.filter((p) => p.url).map((p, i) => (
+                {PUBLICATIONS.map((p, i) => (
                   <li key={i} style={styles.reproItem}>
-                    <a
-                      href={p.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={styles.reproLink}
-                    >
-                      {p.citation}
-                    </a>
+                    {p.url ? (
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={styles.reproLink}
+                      >
+                        {p.citation}
+                      </a>
+                    ) : (
+                      <span style={styles.reproLink}>{p.citation}</span>
+                    )}
+                    {p.venue && (
+                      <span style={{ fontStyle: 'italic', color: '#566573', fontSize: 14 }}>
+                        {' '}{p.venue}
+                      </span>
+                    )}
+                    {p.status === 'accepted' && !p.url && (
+                      <span style={{
+                        display: 'inline-block',
+                        marginLeft: 10,
+                        background: '#EAFAF1',
+                        color: '#196F3D',
+                        padding: '2px 10px',
+                        borderRadius: 12,
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}>
+                        Accepted
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
