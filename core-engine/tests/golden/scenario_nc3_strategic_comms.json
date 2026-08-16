@@ -1,0 +1,275 @@
+{
+  "governance": {
+    "policies": [
+      {
+        "id": "ts-sci-isolation",
+        "rule": "network_isolation",
+        "targets": [
+          "natl-cmd-authority",
+          "stratcom-hq",
+          "alt-cmd-node"
+        ],
+        "value": "SIPR_NIPR_separate"
+      },
+      {
+        "id": "crypto-dual-control",
+        "rule": "two-person-integrity",
+        "targets": [
+          "crypto-hsm-01",
+          "crypto-hsm-02"
+        ],
+        "value": true
+      },
+      {
+        "id": "path-diversity",
+        "rule": "min_physical_paths",
+        "targets": [
+          "silo-term-01",
+          "sub-term-01",
+          "bomber-term-01"
+        ],
+        "value": 3
+      },
+      {
+        "id": "jam-resilience",
+        "rule": "anti-jam-waveform",
+        "targets": [
+          "vlf-transmitter",
+          "hf-relay-01",
+          "hf-relay-02"
+        ],
+        "value": true
+      },
+      {
+        "id": "training-isolation",
+        "rule": "no_operational_traffic",
+        "targets": [
+          "training-node"
+        ],
+        "value": true
+      }
+    ],
+    "tiers": {
+      "core": {
+        "availability_target": 0.999,
+        "crypto_required": true,
+        "latency_budget_ms": 200,
+        "max_link_util": 0.7,
+        "min_redundant_paths": 2
+      },
+      "critical": {
+        "availability_target": 0.9999,
+        "crypto_required": true,
+        "latency_budget_ms": 100,
+        "max_link_util": 0.6,
+        "min_redundant_paths": 3
+      },
+      "supporting": {
+        "availability_target": 0.95,
+        "crypto_required": false,
+        "latency_budget_ms": 1000,
+        "max_link_util": 0.85,
+        "min_redundant_paths": 1
+      }
+    }
+  },
+  "metadata": {
+    "description": "A 17-node strategic communications network where low utilization is by design, with path-diversity requirements, crypto two-person integrity, and network segmentation. Demonstrates framework correctness on high-redundancy, low-utilization-by-design infrastructure.",
+    "display_name": "NC3 Strategic Communications",
+    "domain": "Strategic Communications",
+    "icon": "shield",
+    "patent_sections": [
+      "7.1"
+    ]
+  },
+  "scenario_id": "nc3_strategic_comms",
+  "telemetry": {
+    "__digest__": "29fd99ae666cbf88e471029ea3ae3224b17ef8b02c3cf2aeefaa60f71a44a2e5",
+    "__point_count__": 3060,
+    "__series_count__": 17
+  },
+  "topology": {
+    "edges": [
+      [
+        "natl-cmd-authority",
+        "stratcom-hq"
+      ],
+      [
+        "stratcom-hq",
+        "alt-cmd-node"
+      ],
+      [
+        "stratcom-hq",
+        "crypto-hsm-01"
+      ],
+      [
+        "alt-cmd-node",
+        "crypto-hsm-02"
+      ],
+      [
+        "crypto-hsm-01",
+        "auth-gateway-01"
+      ],
+      [
+        "crypto-hsm-02",
+        "auth-gateway-02"
+      ],
+      [
+        "auth-gateway-01",
+        "satellite-relay-01"
+      ],
+      [
+        "auth-gateway-01",
+        "satellite-relay-02"
+      ],
+      [
+        "auth-gateway-01",
+        "hf-relay-01"
+      ],
+      [
+        "auth-gateway-02",
+        "hf-relay-02"
+      ],
+      [
+        "auth-gateway-01",
+        "vlf-transmitter"
+      ],
+      [
+        "satellite-relay-01",
+        "bomber-term-01"
+      ],
+      [
+        "satellite-relay-02",
+        "bomber-term-01"
+      ],
+      [
+        "vlf-transmitter",
+        "sub-term-01"
+      ],
+      [
+        "hf-relay-01",
+        "silo-term-01"
+      ],
+      [
+        "hf-relay-02",
+        "silo-term-01"
+      ],
+      [
+        "satellite-relay-01",
+        "mobile-term-01"
+      ],
+      [
+        "stratcom-hq",
+        "training-node"
+      ]
+    ],
+    "nodes": [
+      {
+        "classification": "TS-SCI",
+        "id": "natl-cmd-authority",
+        "tier": "critical",
+        "type": "command_node"
+      },
+      {
+        "classification": "TS-SCI",
+        "id": "stratcom-hq",
+        "tier": "critical",
+        "type": "command_node"
+      },
+      {
+        "classification": "TS-SCI",
+        "id": "alt-cmd-node",
+        "tier": "critical",
+        "type": "command_node"
+      },
+      {
+        "id": "satellite-relay-01",
+        "orbit": "MEO",
+        "tier": "critical",
+        "type": "space_segment"
+      },
+      {
+        "id": "satellite-relay-02",
+        "orbit": "GEO",
+        "tier": "critical",
+        "type": "space_segment"
+      },
+      {
+        "id": "hf-relay-01",
+        "location": "CONUS",
+        "tier": "critical",
+        "type": "hf_ground"
+      },
+      {
+        "id": "hf-relay-02",
+        "location": "PACOM",
+        "tier": "critical",
+        "type": "hf_ground"
+      },
+      {
+        "id": "vlf-transmitter",
+        "location": "CONUS",
+        "tier": "critical",
+        "type": "vlf_ground"
+      },
+      {
+        "classification": "TS",
+        "id": "crypto-hsm-01",
+        "tier": "critical",
+        "type": "crypto_module"
+      },
+      {
+        "classification": "TS",
+        "id": "crypto-hsm-02",
+        "tier": "critical",
+        "type": "crypto_module"
+      },
+      {
+        "classification": "TS",
+        "id": "auth-gateway-01",
+        "tier": "critical",
+        "type": "auth_gateway"
+      },
+      {
+        "classification": "TS",
+        "id": "auth-gateway-02",
+        "tier": "critical",
+        "type": "auth_gateway"
+      },
+      {
+        "id": "bomber-term-01",
+        "platform": "bomber",
+        "tier": "critical",
+        "type": "platform_terminal"
+      },
+      {
+        "id": "sub-term-01",
+        "platform": "submarine",
+        "tier": "critical",
+        "type": "platform_terminal"
+      },
+      {
+        "id": "silo-term-01",
+        "platform": "silo",
+        "tier": "critical",
+        "type": "platform_terminal"
+      },
+      {
+        "id": "mobile-term-01",
+        "platform": "mobile",
+        "tier": "core",
+        "type": "platform_terminal"
+      },
+      {
+        "classification": "S",
+        "id": "training-node",
+        "tier": "supporting",
+        "type": "exercise_system"
+      }
+    ]
+  },
+  "writeup": {
+    "__chars__": 1982,
+    "__digest__": "68d14bf45355ad4110c4be36aa8c698c73c5ecfb221264502115a03bed998740"
+  }
+}

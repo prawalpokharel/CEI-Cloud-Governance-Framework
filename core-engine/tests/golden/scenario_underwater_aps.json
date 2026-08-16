@@ -1,0 +1,235 @@
+{
+  "governance": {
+    "policies": [
+      {
+        "id": "uuv-fallback",
+        "rule": "inertial_fallback_enabled",
+        "targets": [
+          "uuv-alpha",
+          "uuv-beta"
+        ],
+        "value": true
+      },
+      {
+        "id": "freq-coord",
+        "rule": "frequency_allocation",
+        "targets": [
+          "all_anchors"
+        ],
+        "value": "TDMA_scheduled"
+      },
+      {
+        "id": "ocean-noise-adaptive",
+        "rule": "noise_floor_tracking",
+        "targets": [
+          "seafloor-anchor-01",
+          "seafloor-anchor-02"
+        ],
+        "value": true
+      }
+    ],
+    "tiers": {
+      "core": {
+        "availability_target": 0.99,
+        "max_bandwidth_util": 0.8,
+        "min_positioning_sources": 2,
+        "ping_interval_sec": 5
+      },
+      "critical": {
+        "availability_target": 0.999,
+        "max_bandwidth_util": 0.7,
+        "min_positioning_sources": 3,
+        "ping_interval_sec": 2
+      },
+      "supporting": {
+        "availability_target": 0.95,
+        "max_bandwidth_util": 0.9,
+        "min_positioning_sources": 1,
+        "ping_interval_sec": 15
+      }
+    }
+  },
+  "metadata": {
+    "description": "A 14-node GPS-denied positioning network with severe bandwidth scarcity, minimum positioning-source enforcement, and ocean noise adaptivity. Tests framework generalization to sparse-connectivity environments.",
+    "display_name": "Underwater Acoustic Positioning",
+    "domain": "Subsurface / GPS-Denied",
+    "icon": "waves",
+    "patent_sections": [
+      "7.3"
+    ]
+  },
+  "scenario_id": "underwater_aps",
+  "telemetry": {
+    "__digest__": "25e6b60a6e39157bf47c685a08de79ee7e14c0bfbb884394ddc87948a7ce195e",
+    "__point_count__": 2520,
+    "__series_count__": 14
+  },
+  "topology": {
+    "edges": [
+      [
+        "shore-station",
+        "surface-buoy-01"
+      ],
+      [
+        "shore-station",
+        "surface-buoy-02"
+      ],
+      [
+        "shore-station",
+        "surface-buoy-03"
+      ],
+      [
+        "surface-buoy-01",
+        "seafloor-anchor-01"
+      ],
+      [
+        "surface-buoy-02",
+        "seafloor-anchor-02"
+      ],
+      [
+        "surface-buoy-03",
+        "seafloor-anchor-03"
+      ],
+      [
+        "surface-buoy-03",
+        "seafloor-anchor-04"
+      ],
+      [
+        "seafloor-anchor-01",
+        "relay-node-01"
+      ],
+      [
+        "seafloor-anchor-02",
+        "relay-node-02"
+      ],
+      [
+        "seafloor-anchor-01",
+        "uuv-alpha"
+      ],
+      [
+        "seafloor-anchor-02",
+        "uuv-beta"
+      ],
+      [
+        "seafloor-anchor-03",
+        "uuv-gamma"
+      ],
+      [
+        "seafloor-anchor-04",
+        "uuv-delta"
+      ],
+      [
+        "relay-node-01",
+        "uuv-alpha"
+      ],
+      [
+        "relay-node-02",
+        "uuv-beta"
+      ]
+    ],
+    "nodes": [
+      {
+        "depth_m": 0,
+        "id": "surface-buoy-01",
+        "link": "rf_satcom",
+        "tier": "critical",
+        "type": "surface_buoy"
+      },
+      {
+        "depth_m": 0,
+        "id": "surface-buoy-02",
+        "link": "rf_satcom",
+        "tier": "critical",
+        "type": "surface_buoy"
+      },
+      {
+        "depth_m": 0,
+        "id": "surface-buoy-03",
+        "link": "rf_satcom",
+        "tier": "core",
+        "type": "surface_buoy"
+      },
+      {
+        "depth_m": 1200,
+        "freq_band_khz": "10-15",
+        "id": "seafloor-anchor-01",
+        "tier": "critical",
+        "type": "acoustic_anchor"
+      },
+      {
+        "depth_m": 1500,
+        "freq_band_khz": "10-15",
+        "id": "seafloor-anchor-02",
+        "tier": "critical",
+        "type": "acoustic_anchor"
+      },
+      {
+        "depth_m": 800,
+        "freq_band_khz": "15-20",
+        "id": "seafloor-anchor-03",
+        "tier": "core",
+        "type": "acoustic_anchor"
+      },
+      {
+        "depth_m": 1800,
+        "freq_band_khz": "15-20",
+        "id": "seafloor-anchor-04",
+        "tier": "core",
+        "type": "acoustic_anchor"
+      },
+      {
+        "depth_m": 600,
+        "freq_band_khz": "20-25",
+        "id": "relay-node-01",
+        "tier": "core",
+        "type": "acoustic_relay"
+      },
+      {
+        "depth_m": 900,
+        "freq_band_khz": "20-25",
+        "id": "relay-node-02",
+        "tier": "core",
+        "type": "acoustic_relay"
+      },
+      {
+        "depth_m": 400,
+        "id": "uuv-alpha",
+        "mission": "survey",
+        "tier": "critical",
+        "type": "uuv_client"
+      },
+      {
+        "depth_m": 1100,
+        "id": "uuv-beta",
+        "mission": "patrol",
+        "tier": "critical",
+        "type": "uuv_client"
+      },
+      {
+        "depth_m": 700,
+        "id": "uuv-gamma",
+        "mission": "oceanographic",
+        "tier": "core",
+        "type": "uuv_client"
+      },
+      {
+        "depth_m": 300,
+        "id": "uuv-delta",
+        "mission": "training",
+        "tier": "supporting",
+        "type": "uuv_client"
+      },
+      {
+        "depth_m": -50,
+        "id": "shore-station",
+        "link": "fiber",
+        "tier": "critical",
+        "type": "shore_control"
+      }
+    ]
+  },
+  "writeup": {
+    "__chars__": 1841,
+    "__digest__": "562a33ada7011e9a9305cc4fc22755b9ae6a2c6749428c24b6bdc89ece50822c"
+  }
+}

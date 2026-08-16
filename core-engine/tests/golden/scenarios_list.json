@@ -1,0 +1,70 @@
+{
+  "count": 5,
+  "scenarios": [
+    {
+      "description": "A 15-node e-commerce platform with tier-based availability requirements and PCI-DSS constraints. Exercises the primary embodiment of the CEI framework on a dependency-dense commercial cloud workload.",
+      "display_name": "E-Commerce Cloud Microservices",
+      "domain": "Commercial Cloud",
+      "edge_count": 17,
+      "has_writeup": true,
+      "icon": "cloud",
+      "node_count": 15,
+      "patent_sections": [
+        "1-6 (primary embodiment)"
+      ],
+      "scenario_id": "cloud_microservices"
+    },
+    {
+      "description": "A 15-node ML training infrastructure mixing A100, H100, and inference-tier accelerators under checkpoint-integrity and inference-SLO constraints. Exercises the framework on heterogeneous scheduling workloads.",
+      "display_name": "Heterogeneous GPU Training Cluster",
+      "domain": "GPU Computing",
+      "edge_count": 19,
+      "has_writeup": true,
+      "icon": "chip",
+      "node_count": 15,
+      "patent_sections": [
+        "7.4"
+      ],
+      "scenario_id": "gpu_cluster"
+    },
+    {
+      "description": "A 14-node tactical UAV mesh with latency budgets, link redundancy requirements, and intermittent connectivity under EM jamming. Demonstrates CEI operating on a latency-critical edge mesh with adversarial conditions.",
+      "display_name": "Tactical Drone Swarm",
+      "domain": "Edge / Tactical",
+      "edge_count": 19,
+      "has_writeup": true,
+      "icon": "drone",
+      "node_count": 14,
+      "patent_sections": [
+        "7.2"
+      ],
+      "scenario_id": "drone_swarm"
+    },
+    {
+      "description": "A 14-node GPS-denied positioning network with severe bandwidth scarcity, minimum positioning-source enforcement, and ocean noise adaptivity. Tests framework generalization to sparse-connectivity environments.",
+      "display_name": "Underwater Acoustic Positioning",
+      "domain": "Subsurface / GPS-Denied",
+      "edge_count": 15,
+      "has_writeup": true,
+      "icon": "waves",
+      "node_count": 14,
+      "patent_sections": [
+        "7.3"
+      ],
+      "scenario_id": "underwater_aps"
+    },
+    {
+      "description": "A 17-node strategic communications network where low utilization is by design, with path-diversity requirements, crypto two-person integrity, and network segmentation. Demonstrates framework correctness on high-redundancy, low-utilization-by-design infrastructure.",
+      "display_name": "NC3 Strategic Communications",
+      "domain": "Strategic Communications",
+      "edge_count": 18,
+      "has_writeup": true,
+      "icon": "shield",
+      "node_count": 17,
+      "patent_sections": [
+        "7.1"
+      ],
+      "scenario_id": "nc3_strategic_comms"
+    }
+  ]
+}

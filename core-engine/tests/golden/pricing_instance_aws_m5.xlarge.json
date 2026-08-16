@@ -1,0 +1,12 @@
+{
+  "instance_type": "m5.xlarge",
+  "monthly_cost_usd": 420.48,
+  "provider": "aws",
+  "replicas": 3,
+  "spec": {
+    "hourly_usd": 0.192,
+    "memory_gib": 16,
+    "tier": "general",
+    "vcpu": 4
+  }
+}

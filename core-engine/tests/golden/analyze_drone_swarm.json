@@ -1,0 +1,704 @@
+{
+  "analysis": {
+    "graph_metrics": {
+      "avg_degree": 2.71,
+      "connected_components": 1,
+      "critical_nodes": [
+        "relay-01",
+        "drone-lead",
+        "edge-fusion-node"
+      ],
+      "density": 0.1044,
+      "is_dag": true,
+      "longest_path_length": 5.0,
+      "total_edges": 19,
+      "total_nodes": 14
+    },
+    "nodes": [
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2503,
+        "centrality": 0.1381,
+        "classification": "moderate",
+        "entropy": 0.3689,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gcs-primary",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.1212,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.7193,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "drone-lead",
+              "gcs-backup",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.1644,
+        "centrality": 0.086,
+        "classification": "low",
+        "entropy": 0.1357,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gcs-backup",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0827,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.5473,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "drone-lead",
+              "gcs-primary",
+              "relay-01"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3288,
+        "centrality": 0.4092,
+        "classification": "moderate",
+        "entropy": 0.2178,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "relay-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.1442,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.967,
+            "k_hop_count": 12,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-06",
+              "drone-07",
+              "drone-lead",
+              "edge-fusion-node",
+              "gcs-backup",
+              "gcs-primary",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.1957,
+        "centrality": 0.2241,
+        "classification": "low",
+        "entropy": 0.0265,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "relay-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.1179,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.0661,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-06",
+              "drone-07",
+              "drone-lead",
+              "edge-fusion-node",
+              "gcs-primary",
+              "relay-01"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.6318,
+        "centrality": 1.0,
+        "classification": "elevated",
+        "entropy": 0.3773,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "drone-lead",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.3305,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.8554,
+            "k_hop_count": 13,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-06",
+              "drone-07",
+              "edge-fusion-node",
+              "gcs-backup",
+              "gcs-primary",
+              "intelligence-feed",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 0.9304
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3085,
+        "centrality": 0.2418,
+        "classification": "moderate",
+        "entropy": 0.4156,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "drone-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0289,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.3895,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-06",
+              "drone-07",
+              "drone-lead",
+              "edge-fusion-node",
+              "intelligence-feed",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3035,
+        "centrality": 0.2418,
+        "classification": "moderate",
+        "entropy": 0.3969,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "drone-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0289,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.3895,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-06",
+              "drone-07",
+              "drone-lead",
+              "edge-fusion-node",
+              "intelligence-feed",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3029,
+        "centrality": 0.2418,
+        "classification": "moderate",
+        "entropy": 0.3948,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "drone-03",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0289,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.3895,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-04",
+              "drone-05",
+              "drone-06",
+              "drone-07",
+              "drone-lead",
+              "edge-fusion-node",
+              "intelligence-feed",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2992,
+        "centrality": 0.2418,
+        "classification": "moderate",
+        "entropy": 0.381,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "drone-04",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0289,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.3895,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-05",
+              "drone-06",
+              "drone-07",
+              "drone-lead",
+              "edge-fusion-node",
+              "intelligence-feed",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2351,
+        "centrality": 0.2418,
+        "classification": "low",
+        "entropy": 0.1438,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "drone-05",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0289,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.3895,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-06",
+              "drone-07",
+              "drone-lead",
+              "edge-fusion-node",
+              "intelligence-feed",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2165,
+        "centrality": 0.1897,
+        "classification": "low",
+        "entropy": 0.1596,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "drone-06",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.9624,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-07",
+              "drone-lead",
+              "edge-fusion-node",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2347,
+        "centrality": 0.1897,
+        "classification": "low",
+        "entropy": 0.2272,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "drone-07",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.9624,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-06",
+              "drone-lead",
+              "edge-fusion-node",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.5544,
+        "centrality": 0.9304,
+        "classification": "elevated",
+        "entropy": 0.204,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "edge-fusion-node",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0308,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.7009,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-06",
+              "drone-07",
+              "drone-lead",
+              "intelligence-feed",
+              "relay-01",
+              "relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4058,
+        "centrality": 0.4792,
+        "classification": "moderate",
+        "entropy": 0.3892,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "intelligence-feed",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.1394,
+            "k_hop_count": 7,
+            "k_hop_nodes": [
+              "drone-01",
+              "drone-02",
+              "drone-03",
+              "drone-04",
+              "drone-05",
+              "drone-lead",
+              "edge-fusion-node"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      }
+    ],
+    "oscillation_status": {
+      "consecutive_oscillation_episodes": 1,
+      "hysteresis_window_minutes": 22,
+      "node_details": {
+        "drone-01": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6703
+        },
+        "drone-02": {
+          "direction_changes": 57,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6831
+        },
+        "drone-03": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6934
+        },
+        "drone-04": {
+          "direction_changes": 61,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7291
+        },
+        "drone-05": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6929
+        },
+        "drone-06": {
+          "direction_changes": 72,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.86
+        },
+        "drone-07": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6685
+        },
+        "drone-lead": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6916
+        },
+        "edge-fusion-node": {
+          "direction_changes": 50,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.5938
+        },
+        "gcs-backup": {
+          "direction_changes": 64,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7539
+        },
+        "gcs-primary": {
+          "direction_changes": 48,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.5727
+        },
+        "intelligence-feed": {
+          "direction_changes": 55,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6554
+        },
+        "relay-01": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6591
+        },
+        "relay-02": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6898
+        }
+      },
+      "oscillating_node_count": 14,
+      "oscillating_nodes": [
+        "gcs-primary",
+        "gcs-backup",
+        "relay-01",
+        "relay-02",
+        "drone-lead",
+        "drone-01",
+        "drone-02",
+        "drone-03",
+        "drone-04",
+        "drone-05",
+        "drone-06",
+        "drone-07",
+        "edge-fusion-node",
+        "intelligence-feed"
+      ],
+      "oscillation_ratio": 1.0,
+      "suppression_active": true,
+      "system_oscillation_score": 0.6867,
+      "threshold": 0.3,
+      "total_nodes": 14
+    },
+    "total_potential_savings": 0.0,
+    "weights": {
+      "alpha": 0.44,
+      "beta": 0.27,
+      "gamma": 0.29
+    }
+  },
+  "metadata": {
+    "description": "A 14-node tactical UAV mesh with latency budgets, link redundancy requirements, and intermittent connectivity under EM jamming. Demonstrates CEI operating on a latency-critical edge mesh with adversarial conditions.",
+    "display_name": "Tactical Drone Swarm",
+    "domain": "Edge / Tactical",
+    "icon": "drone",
+    "patent_sections": [
+      "7.2"
+    ]
+  },
+  "scenario_id": "drone_swarm"
+}

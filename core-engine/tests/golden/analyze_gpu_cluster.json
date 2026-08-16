@@ -1,0 +1,724 @@
+{
+  "analysis": {
+    "graph_metrics": {
+      "avg_degree": 2.53,
+      "connected_components": 1,
+      "critical_nodes": [
+        "feature-store",
+        "checkpoint-store"
+      ],
+      "density": 0.0905,
+      "is_dag": true,
+      "longest_path_length": 6.0,
+      "total_edges": 19,
+      "total_nodes": 15
+    },
+    "nodes": [
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.535,
+        "centrality": 0.7885,
+        "classification": "elevated",
+        "entropy": 0.3637,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "scheduler",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.2779,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.1889,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "data-ingest-01",
+              "data-ingest-02",
+              "feature-store",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "metrics-collector"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2275,
+        "centrality": 0.0825,
+        "classification": "low",
+        "entropy": 0.3752,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "data-ingest-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0779,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.3331,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "data-ingest-02",
+              "feature-store",
+              "scheduler"
+            ],
+            "max_single_impact": 0.7885
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.23,
+        "centrality": 0.0825,
+        "classification": "low",
+        "entropy": 0.3845,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "data-ingest-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0779,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.3331,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "data-ingest-01",
+              "feature-store",
+              "scheduler"
+            ],
+            "max_single_impact": 0.7885
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3834,
+        "centrality": 0.4621,
+        "classification": "moderate",
+        "entropy": 0.334,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "feature-store",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.144,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.5153,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "data-ingest-01",
+              "data-ingest-02",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "metrics-collector",
+              "scheduler"
+            ],
+            "max_single_impact": 0.7885
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2559,
+        "centrality": 0.2329,
+        "classification": "moderate",
+        "entropy": 0.2352,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gpu-worker-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.042,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.2667,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "eval-service",
+              "feature-store",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "metrics-collector",
+              "scheduler"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2461,
+        "centrality": 0.2329,
+        "classification": "low",
+        "entropy": 0.1992,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gpu-worker-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.042,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.2667,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "eval-service",
+              "feature-store",
+              "gpu-worker-01",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "metrics-collector",
+              "scheduler"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2318,
+        "centrality": 0.2329,
+        "classification": "low",
+        "entropy": 0.1461,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gpu-worker-03",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.042,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.2667,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "eval-service",
+              "feature-store",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "metrics-collector",
+              "scheduler"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.265,
+        "centrality": 0.2329,
+        "classification": "moderate",
+        "entropy": 0.269,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gpu-worker-04",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.042,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.2667,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "eval-service",
+              "feature-store",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "metrics-collector",
+              "scheduler"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2552,
+        "centrality": 0.2329,
+        "classification": "moderate",
+        "entropy": 0.2326,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gpu-worker-05",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.042,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.2667,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "eval-service",
+              "feature-store",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-06",
+              "metrics-collector",
+              "scheduler"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2858,
+        "centrality": 0.2329,
+        "classification": "moderate",
+        "entropy": 0.346,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gpu-worker-06",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.042,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.2667,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "eval-service",
+              "feature-store",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "metrics-collector",
+              "scheduler"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3322,
+        "centrality": 0.3186,
+        "classification": "moderate",
+        "entropy": 0.3782,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gpu-worker-07",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.0058,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "eval-service",
+              "gpu-worker-08"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3311,
+        "centrality": 0.3186,
+        "classification": "moderate",
+        "entropy": 0.3742,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "gpu-worker-08",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.0058,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "eval-service",
+              "gpu-worker-07"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.6424,
+        "centrality": 1.0,
+        "classification": "elevated",
+        "entropy": 0.4166,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "checkpoint-store",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.072,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.5103,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "eval-service",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "gpu-worker-07",
+              "gpu-worker-08",
+              "scheduler"
+            ],
+            "max_single_impact": 0.7885
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4929,
+        "centrality": 0.6872,
+        "classification": "moderate",
+        "entropy": 0.3727,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "eval-service",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.053,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.0346,
+            "k_hop_count": 9,
+            "k_hop_nodes": [
+              "checkpoint-store",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "gpu-worker-07",
+              "gpu-worker-08"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2613,
+        "centrality": 0.1644,
+        "classification": "moderate",
+        "entropy": 0.367,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "metrics-collector",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.648,
+            "k_hop_count": 8,
+            "k_hop_nodes": [
+              "feature-store",
+              "gpu-worker-01",
+              "gpu-worker-02",
+              "gpu-worker-03",
+              "gpu-worker-04",
+              "gpu-worker-05",
+              "gpu-worker-06",
+              "scheduler"
+            ],
+            "max_single_impact": 0.7885
+          },
+          "safety_threshold": 0.7
+        }
+      }
+    ],
+    "oscillation_status": {
+      "consecutive_oscillation_episodes": 1,
+      "hysteresis_window_minutes": 22,
+      "node_details": {
+        "checkpoint-store": {
+          "direction_changes": 52,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6251
+        },
+        "data-ingest-01": {
+          "direction_changes": 57,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6794
+        },
+        "data-ingest-02": {
+          "direction_changes": 61,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7278
+        },
+        "eval-service": {
+          "direction_changes": 62,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7408
+        },
+        "feature-store": {
+          "direction_changes": 50,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.5961
+        },
+        "gpu-worker-01": {
+          "direction_changes": 61,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7189
+        },
+        "gpu-worker-02": {
+          "direction_changes": 61,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7229
+        },
+        "gpu-worker-03": {
+          "direction_changes": 63,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7355
+        },
+        "gpu-worker-04": {
+          "direction_changes": 64,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7589
+        },
+        "gpu-worker-05": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6655
+        },
+        "gpu-worker-06": {
+          "direction_changes": 65,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.779
+        },
+        "gpu-worker-07": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7032
+        },
+        "gpu-worker-08": {
+          "direction_changes": 62,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7459
+        },
+        "metrics-collector": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6917
+        },
+        "scheduler": {
+          "direction_changes": 65,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.773
+        }
+      },
+      "oscillating_node_count": 15,
+      "oscillating_nodes": [
+        "scheduler",
+        "data-ingest-01",
+        "data-ingest-02",
+        "feature-store",
+        "gpu-worker-01",
+        "gpu-worker-02",
+        "gpu-worker-03",
+        "gpu-worker-04",
+        "gpu-worker-05",
+        "gpu-worker-06",
+        "gpu-worker-07",
+        "gpu-worker-08",
+        "checkpoint-store",
+        "eval-service",
+        "metrics-collector"
+      ],
+      "oscillation_ratio": 1.0,
+      "suppression_active": true,
+      "system_oscillation_score": 0.7109,
+      "threshold": 0.3,
+      "total_nodes": 15
+    },
+    "total_potential_savings": 0.0,
+    "weights": {
+      "alpha": 0.44,
+      "beta": 0.27,
+      "gamma": 0.29
+    }
+  },
+  "metadata": {
+    "description": "A 15-node ML training infrastructure mixing A100, H100, and inference-tier accelerators under checkpoint-integrity and inference-SLO constraints. Exercises the framework on heterogeneous scheduling workloads.",
+    "display_name": "Heterogeneous GPU Training Cluster",
+    "domain": "GPU Computing",
+    "icon": "chip",
+    "patent_sections": [
+      "7.4"
+    ]
+  },
+  "scenario_id": "gpu_cluster"
+}

@@ -1,0 +1,12 @@
+{
+  "instance_type": "Standard_D4s_v3",
+  "monthly_cost_usd": 420.48,
+  "provider": "azure",
+  "replicas": 3,
+  "spec": {
+    "hourly_usd": 0.192,
+    "memory_gib": 16,
+    "tier": "general",
+    "vcpu": 4
+  }
+}

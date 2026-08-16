@@ -4,8 +4,20 @@ Gathers telemetry from a distributed computing environment (102) including
 resource utilization metrics, dependency relationships, and configuration parameters.
 """
 from typing import List, Dict, Any
+import hashlib
 import numpy as np
 from datetime import datetime
+
+
+def _stable_seed(node_id: str) -> int:
+    """
+    Derive a stable 32-bit seed from a node id.
+
+    Python's built-in hash() is salted per process (PYTHONHASHSEED), so it
+    cannot be used for anything that must reproduce across runs.
+    """
+    digest = hashlib.sha256(node_id.encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big")
 
 
 class DataCollector:
@@ -67,11 +79,23 @@ class DataCollector:
         error_rate = self._normalize(metrics.get("error_rate", 0), 0, 100)
         latency_p99 = metrics.get("latency_p99", 0)
 
-        # Extract utilization history for longitudinal analysis
+        # Extract utilization history for longitudinal analysis.
+        #
+        # KNOWN DEFECT (see tests/golden/README.md): callers such as
+        # ScenarioLoader.to_core_engine_format supply real history at the
+        # node's TOP level (node["utilization_history"]), not nested under
+        # "metrics". This lookup therefore misses it and falls through to the
+        # synthetic generator below, discarding the real telemetry. Correcting
+        # the lookup moves every NIW/USPTO-facing demonstration number, so it
+        # is being handled as a reviewed change rather than silently here.
         utilization_history = metrics.get("utilization_history", [])
         if not utilization_history:
-            # Generate synthetic history from current metrics for analysis
-            utilization_history = self._generate_synthetic_history(cpu, memory)
+            # Generate synthetic history from current metrics for analysis.
+            # Seeded per node id so a given node yields the same history on
+            # every run and regardless of the order nodes are processed in.
+            utilization_history = self._generate_synthetic_history(
+                cpu, memory, node_id
+            )
 
         # Extract metadata
         provider = node.get("provider", "unknown")
@@ -108,15 +132,23 @@ class DataCollector:
             return 0.0
         return max(0.0, min(1.0, (value - min_val) / (max_val - min_val)))
 
-    def _generate_synthetic_history(self, cpu: float, memory: float) -> List[Dict]:
+    def _generate_synthetic_history(
+        self, cpu: float, memory: float, node_id: str = ""
+    ) -> List[Dict]:
         """
         Generate synthetic utilization history when longitudinal data
         is not available. Uses Gaussian noise around current metrics.
+
+        Deterministic: the generator is seeded from the node id, so repeated
+        analyses of the same topology return identical results. Previously
+        this drew from numpy's global RNG, which made every response to an
+        identical request different from the last.
         """
+        rng = np.random.default_rng(_stable_seed(node_id))
         history = []
         for i in range(90):  # 90-day window per paper Section VIII
-            cpu_sample = max(0, min(1, cpu + np.random.normal(0, 0.05)))
-            mem_sample = max(0, min(1, memory + np.random.normal(0, 0.05)))
+            cpu_sample = max(0, min(1, cpu + rng.normal(0, 0.05)))
+            mem_sample = max(0, min(1, memory + rng.normal(0, 0.05)))
             history.append({
                 "day": i,
                 "cpu": float(cpu_sample),

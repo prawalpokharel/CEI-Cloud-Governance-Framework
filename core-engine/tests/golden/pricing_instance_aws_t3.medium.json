@@ -1,0 +1,12 @@
+{
+  "instance_type": "t3.medium",
+  "monthly_cost_usd": 91.1,
+  "provider": "aws",
+  "replicas": 3,
+  "spec": {
+    "hourly_usd": 0.0416,
+    "memory_gib": 4,
+    "tier": "burstable",
+    "vcpu": 2
+  }
+}

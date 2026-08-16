@@ -1,0 +1,14 @@
+{
+  "instance_counts": {
+    "aws": 15,
+    "azure": 10,
+    "gcp": 10,
+    "kubernetes": 4
+  },
+  "providers": [
+    "aws",
+    "azure",
+    "gcp",
+    "kubernetes"
+  ]
+}

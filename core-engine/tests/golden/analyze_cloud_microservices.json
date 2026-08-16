@@ -1,0 +1,694 @@
+{
+  "analysis": {
+    "graph_metrics": {
+      "avg_degree": 2.27,
+      "connected_components": 1,
+      "critical_nodes": [
+        "db-primary",
+        "cache-cluster"
+      ],
+      "density": 0.081,
+      "is_dag": true,
+      "longest_path_length": 5.0,
+      "total_edges": 17,
+      "total_nodes": 15
+    },
+    "nodes": [
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2655,
+        "centrality": 0.1629,
+        "classification": "moderate",
+        "entropy": 0.3851,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "lb-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.1081,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.6551,
+            "k_hop_count": 5,
+            "k_hop_nodes": [
+              "api-gateway",
+              "auth-svc",
+              "catalog-svc",
+              "order-svc",
+              "search-svc"
+            ],
+            "max_single_impact": 0.7923
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.5291,
+        "centrality": 0.7923,
+        "classification": "elevated",
+        "entropy": 0.3355,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "api-gateway",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.2825,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.9657,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "auth-svc",
+              "cache-cluster",
+              "catalog-svc",
+              "db-primary",
+              "inventory-svc",
+              "lb-01",
+              "order-svc",
+              "payment-svc",
+              "queue-broker",
+              "search-svc"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3644,
+        "centrality": 0.415,
+        "classification": "moderate",
+        "entropy": 0.3404,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "auth-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0324,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.8312,
+            "k_hop_count": 9,
+            "k_hop_nodes": [
+              "api-gateway",
+              "catalog-svc",
+              "db-primary",
+              "db-replica-01",
+              "inventory-svc",
+              "lb-01",
+              "order-svc",
+              "payment-svc",
+              "search-svc"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4971,
+        "centrality": 0.6808,
+        "classification": "moderate",
+        "entropy": 0.3989,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "order-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.1675,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 5.2593,
+            "k_hop_count": 11,
+            "k_hop_nodes": [
+              "analytics-svc",
+              "api-gateway",
+              "auth-svc",
+              "catalog-svc",
+              "db-primary",
+              "inventory-svc",
+              "lb-01",
+              "notif-svc",
+              "payment-svc",
+              "queue-broker",
+              "search-svc"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3687,
+        "centrality": 0.395,
+        "classification": "moderate",
+        "entropy": 0.389,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "payment-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0318,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.4911,
+            "k_hop_count": 7,
+            "k_hop_nodes": [
+              "api-gateway",
+              "auth-svc",
+              "db-primary",
+              "db-replica-01",
+              "inventory-svc",
+              "order-svc",
+              "queue-broker"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3624,
+        "centrality": 0.395,
+        "classification": "moderate",
+        "entropy": 0.3657,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "inventory-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0318,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.4911,
+            "k_hop_count": 7,
+            "k_hop_nodes": [
+              "api-gateway",
+              "auth-svc",
+              "db-primary",
+              "db-replica-01",
+              "order-svc",
+              "payment-svc",
+              "queue-broker"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.352,
+        "centrality": 0.3835,
+        "classification": "moderate",
+        "entropy": 0.3458,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "catalog-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0185,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.0147,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "api-gateway",
+              "auth-svc",
+              "cache-cluster",
+              "lb-01",
+              "order-svc",
+              "search-svc"
+            ],
+            "max_single_impact": 0.7923
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3496,
+        "centrality": 0.3835,
+        "classification": "moderate",
+        "entropy": 0.3369,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "search-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0185,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.0147,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "api-gateway",
+              "auth-svc",
+              "cache-cluster",
+              "catalog-svc",
+              "lb-01",
+              "order-svc"
+            ],
+            "max_single_impact": 0.7923
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2984,
+        "centrality": 0.3147,
+        "classification": "moderate",
+        "entropy": 0.2596,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "notif-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.6982,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "analytics-svc",
+              "order-svc",
+              "queue-broker"
+            ],
+            "max_single_impact": 0.6808
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.6319,
+        "centrality": 1.0,
+        "classification": "elevated",
+        "entropy": 0.3778,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "db-primary",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.03,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.3163,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "api-gateway",
+              "auth-svc",
+              "db-replica-01",
+              "inventory-svc",
+              "order-svc",
+              "payment-svc"
+            ],
+            "max_single_impact": 0.7923
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4766,
+        "centrality": 0.6382,
+        "classification": "moderate",
+        "entropy": 0.3922,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "db-replica-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.205,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "auth-svc",
+              "db-primary",
+              "inventory-svc",
+              "payment-svc"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4156,
+        "centrality": 0.5802,
+        "classification": "moderate",
+        "entropy": 0.2608,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "cache-cluster",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.5593,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "api-gateway",
+              "catalog-svc",
+              "search-svc"
+            ],
+            "max_single_impact": 0.7923
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4385,
+        "centrality": 0.5698,
+        "classification": "moderate",
+        "entropy": 0.3625,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "queue-broker",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0656,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.3994,
+            "k_hop_count": 7,
+            "k_hop_nodes": [
+              "analytics-svc",
+              "api-gateway",
+              "inventory-svc",
+              "notif-svc",
+              "order-svc",
+              "payment-svc",
+              "reporting-svc"
+            ],
+            "max_single_impact": 0.7923
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3134,
+        "centrality": 0.4476,
+        "classification": "moderate",
+        "entropy": 0.0985,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "analytics-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0197,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.9393,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "notif-svc",
+              "order-svc",
+              "queue-broker",
+              "reporting-svc"
+            ],
+            "max_single_impact": 0.6808
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3014,
+        "centrality": 0.374,
+        "classification": "moderate",
+        "entropy": 0.174,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "reporting-svc",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.0174,
+            "k_hop_count": 2,
+            "k_hop_nodes": [
+              "analytics-svc",
+              "queue-broker"
+            ],
+            "max_single_impact": 0.5698
+          },
+          "safety_threshold": 0.7
+        }
+      }
+    ],
+    "oscillation_status": {
+      "consecutive_oscillation_episodes": 1,
+      "hysteresis_window_minutes": 22,
+      "node_details": {
+        "analytics-svc": {
+          "direction_changes": 60,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7078
+        },
+        "api-gateway": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7048
+        },
+        "auth-svc": {
+          "direction_changes": 53,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6319
+        },
+        "cache-cluster": {
+          "direction_changes": 61,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7223
+        },
+        "catalog-svc": {
+          "direction_changes": 60,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7115
+        },
+        "db-primary": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6692
+        },
+        "db-replica-01": {
+          "direction_changes": 63,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7508
+        },
+        "inventory-svc": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6685
+        },
+        "lb-01": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7079
+        },
+        "notif-svc": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6874
+        },
+        "order-svc": {
+          "direction_changes": 50,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.5957
+        },
+        "payment-svc": {
+          "direction_changes": 55,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6572
+        },
+        "queue-broker": {
+          "direction_changes": 62,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7365
+        },
+        "reporting-svc": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7029
+        },
+        "search-svc": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6696
+        }
+      },
+      "oscillating_node_count": 15,
+      "oscillating_nodes": [
+        "lb-01",
+        "api-gateway",
+        "auth-svc",
+        "order-svc",
+        "payment-svc",
+        "inventory-svc",
+        "catalog-svc",
+        "search-svc",
+        "notif-svc",
+        "db-primary",
+        "db-replica-01",
+        "cache-cluster",
+        "queue-broker",
+        "analytics-svc",
+        "reporting-svc"
+      ],
+      "oscillation_ratio": 1.0,
+      "suppression_active": true,
+      "system_oscillation_score": 0.6883,
+      "threshold": 0.3,
+      "total_nodes": 15
+    },
+    "total_potential_savings": 0.0,
+    "weights": {
+      "alpha": 0.44,
+      "beta": 0.27,
+      "gamma": 0.29
+    }
+  },
+  "metadata": {
+    "description": "A 15-node e-commerce platform with tier-based availability requirements and PCI-DSS constraints. Exercises the primary embodiment of the CEI framework on a dependency-dense commercial cloud workload.",
+    "display_name": "E-Commerce Cloud Microservices",
+    "domain": "Commercial Cloud",
+    "icon": "cloud",
+    "patent_sections": [
+      "1-6 (primary embodiment)"
+    ]
+  },
+  "scenario_id": "cloud_microservices"
+}

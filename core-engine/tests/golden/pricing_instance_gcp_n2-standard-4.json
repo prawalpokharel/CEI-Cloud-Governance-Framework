@@ -1,0 +1,12 @@
+{
+  "instance_type": "n2-standard-4",
+  "monthly_cost_usd": 424.86,
+  "provider": "gcp",
+  "replicas": 3,
+  "spec": {
+    "hourly_usd": 0.194,
+    "memory_gib": 16,
+    "tier": "general",
+    "vcpu": 4
+  }
+}

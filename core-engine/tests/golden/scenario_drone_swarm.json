@@ -1,0 +1,250 @@
+{
+  "governance": {
+    "policies": [
+      {
+        "id": "coord-redundancy",
+        "rule": "hot_standby_required",
+        "targets": [
+          "drone-lead"
+        ],
+        "value": true
+      },
+      {
+        "id": "jamming-resilience",
+        "rule": "frequency_hopping",
+        "targets": [
+          "relay-01",
+          "relay-02"
+        ],
+        "value": true
+      },
+      {
+        "id": "data-encryption",
+        "rule": "link_encryption",
+        "targets": [
+          "all"
+        ],
+        "value": "AES-256-GCM"
+      }
+    ],
+    "tiers": {
+      "core": {
+        "latency_budget_ms": 100,
+        "loss_tolerance": 0.05,
+        "max_link_util": 0.85,
+        "min_redundancy": 1
+      },
+      "critical": {
+        "latency_budget_ms": 50,
+        "loss_tolerance": 0.01,
+        "max_link_util": 0.8,
+        "min_redundancy": 2
+      },
+      "supporting": {
+        "latency_budget_ms": 200,
+        "loss_tolerance": 0.1,
+        "max_link_util": 0.9,
+        "min_redundancy": 0
+      }
+    }
+  },
+  "metadata": {
+    "description": "A 14-node tactical UAV mesh with latency budgets, link redundancy requirements, and intermittent connectivity under EM jamming. Demonstrates CEI operating on a latency-critical edge mesh with adversarial conditions.",
+    "display_name": "Tactical Drone Swarm",
+    "domain": "Edge / Tactical",
+    "icon": "drone",
+    "patent_sections": [
+      "7.2"
+    ]
+  },
+  "scenario_id": "drone_swarm",
+  "telemetry": {
+    "__digest__": "8c1a474bb7446035257a577ff51d4bbab07f2887fe98ae39b1b7ad76d9b09470",
+    "__point_count__": 2520,
+    "__series_count__": 14
+  },
+  "topology": {
+    "edges": [
+      [
+        "gcs-primary",
+        "relay-01"
+      ],
+      [
+        "gcs-primary",
+        "relay-02"
+      ],
+      [
+        "gcs-backup",
+        "relay-01"
+      ],
+      [
+        "relay-01",
+        "drone-lead"
+      ],
+      [
+        "relay-02",
+        "drone-lead"
+      ],
+      [
+        "drone-lead",
+        "edge-fusion-node"
+      ],
+      [
+        "drone-lead",
+        "drone-01"
+      ],
+      [
+        "drone-lead",
+        "drone-02"
+      ],
+      [
+        "drone-lead",
+        "drone-03"
+      ],
+      [
+        "drone-lead",
+        "drone-04"
+      ],
+      [
+        "drone-lead",
+        "drone-05"
+      ],
+      [
+        "drone-lead",
+        "drone-06"
+      ],
+      [
+        "drone-lead",
+        "drone-07"
+      ],
+      [
+        "drone-01",
+        "edge-fusion-node"
+      ],
+      [
+        "drone-02",
+        "edge-fusion-node"
+      ],
+      [
+        "drone-03",
+        "edge-fusion-node"
+      ],
+      [
+        "drone-04",
+        "edge-fusion-node"
+      ],
+      [
+        "drone-05",
+        "edge-fusion-node"
+      ],
+      [
+        "edge-fusion-node",
+        "intelligence-feed"
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "gcs-primary",
+        "link_type": "fiber",
+        "location": "base",
+        "tier": "critical",
+        "type": "ground_station"
+      },
+      {
+        "id": "gcs-backup",
+        "link_type": "satcom",
+        "location": "forward_op_base",
+        "tier": "critical",
+        "type": "ground_station"
+      },
+      {
+        "id": "relay-01",
+        "link_type": "mesh_radio",
+        "location": "airborne",
+        "tier": "critical",
+        "type": "comms_relay"
+      },
+      {
+        "id": "relay-02",
+        "link_type": "mesh_radio",
+        "location": "airborne",
+        "tier": "critical",
+        "type": "comms_relay"
+      },
+      {
+        "id": "drone-lead",
+        "onboard_compute": "Jetson_Orin",
+        "role": "coordinator",
+        "tier": "critical",
+        "type": "drone"
+      },
+      {
+        "id": "drone-01",
+        "onboard_compute": "Jetson_Xavier",
+        "role": "sensor",
+        "tier": "core",
+        "type": "drone"
+      },
+      {
+        "id": "drone-02",
+        "onboard_compute": "Jetson_Xavier",
+        "role": "sensor",
+        "tier": "core",
+        "type": "drone"
+      },
+      {
+        "id": "drone-03",
+        "onboard_compute": "Jetson_Xavier",
+        "role": "sensor",
+        "tier": "core",
+        "type": "drone"
+      },
+      {
+        "id": "drone-04",
+        "onboard_compute": "Jetson_Xavier",
+        "role": "sensor",
+        "tier": "core",
+        "type": "drone"
+      },
+      {
+        "id": "drone-05",
+        "onboard_compute": "Jetson_Xavier",
+        "role": "sensor",
+        "tier": "core",
+        "type": "drone"
+      },
+      {
+        "id": "drone-06",
+        "onboard_compute": "Jetson_Nano",
+        "role": "relay",
+        "tier": "supporting",
+        "type": "drone"
+      },
+      {
+        "id": "drone-07",
+        "onboard_compute": "Jetson_Nano",
+        "role": "relay",
+        "tier": "supporting",
+        "type": "drone"
+      },
+      {
+        "gpu_count": 2,
+        "id": "edge-fusion-node",
+        "location": "airborne_platform",
+        "tier": "critical",
+        "type": "fusion_server"
+      },
+      {
+        "id": "intelligence-feed",
+        "link_type": "fiber",
+        "location": "base",
+        "tier": "core",
+        "type": "data_service"
+      }
+    ]
+  },
+  "writeup": {
+    "__chars__": 1510,
+    "__digest__": "0cac12a866f091a8d3afe390bfc362da68fe0660be162a21d0853a30f16b137d"
+  }
+}

@@ -1,0 +1,625 @@
+{
+  "analysis": {
+    "graph_metrics": {
+      "avg_degree": 2.14,
+      "connected_components": 1,
+      "critical_nodes": [
+        "uuv-alpha",
+        "uuv-beta"
+      ],
+      "density": 0.0824,
+      "is_dag": true,
+      "longest_path_length": 4.0,
+      "total_edges": 15,
+      "total_nodes": 14
+    },
+    "nodes": [
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4603,
+        "centrality": 0.634,
+        "classification": "moderate",
+        "entropy": 0.3387,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "surface-buoy-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0596,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.6708,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "relay-node-01",
+              "seafloor-anchor-01",
+              "shore-station",
+              "surface-buoy-02",
+              "surface-buoy-03",
+              "uuv-alpha"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4689,
+        "centrality": 0.634,
+        "classification": "moderate",
+        "entropy": 0.3707,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "surface-buoy-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0596,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.6708,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "relay-node-02",
+              "seafloor-anchor-02",
+              "shore-station",
+              "surface-buoy-01",
+              "surface-buoy-03",
+              "uuv-beta"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.5339,
+        "centrality": 0.8043,
+        "classification": "elevated",
+        "entropy": 0.3337,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "surface-buoy-03",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.1045,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.4419,
+            "k_hop_count": 7,
+            "k_hop_nodes": [
+              "seafloor-anchor-03",
+              "seafloor-anchor-04",
+              "shore-station",
+              "surface-buoy-01",
+              "surface-buoy-02",
+              "uuv-delta",
+              "uuv-gamma"
+            ],
+            "max_single_impact": 0.6857
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.6115,
+        "centrality": 0.9433,
+        "classification": "elevated",
+        "entropy": 0.3945,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "seafloor-anchor-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.067,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.9232,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "relay-node-01",
+              "shore-station",
+              "surface-buoy-01",
+              "uuv-alpha"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.6101,
+        "centrality": 0.9433,
+        "classification": "elevated",
+        "entropy": 0.3896,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "seafloor-anchor-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.067,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.9232,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "relay-node-02",
+              "shore-station",
+              "surface-buoy-02",
+              "uuv-beta"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4765,
+        "centrality": 0.6857,
+        "classification": "moderate",
+        "entropy": 0.3145,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "seafloor-anchor-03",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0259,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.681,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "seafloor-anchor-04",
+              "shore-station",
+              "surface-buoy-03",
+              "uuv-gamma"
+            ],
+            "max_single_impact": 0.8043
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4607,
+        "centrality": 0.6857,
+        "classification": "moderate",
+        "entropy": 0.2558,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "seafloor-anchor-04",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0259,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.681,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "seafloor-anchor-03",
+              "shore-station",
+              "surface-buoy-03",
+              "uuv-delta"
+            ],
+            "max_single_impact": 0.8043
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.5014,
+        "centrality": 0.7097,
+        "classification": "elevated",
+        "entropy": 0.3676,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "relay-node-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0263,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.5773,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "seafloor-anchor-01",
+              "surface-buoy-01",
+              "uuv-alpha"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.497,
+        "centrality": 0.7097,
+        "classification": "moderate",
+        "entropy": 0.351,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "relay-node-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0263,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.5773,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "seafloor-anchor-02",
+              "surface-buoy-02",
+              "uuv-beta"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.6354,
+        "centrality": 1.0,
+        "classification": "elevated",
+        "entropy": 0.3906,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "uuv-alpha",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.287,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "relay-node-01",
+              "seafloor-anchor-01",
+              "surface-buoy-01"
+            ],
+            "max_single_impact": 0.9433
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.6373,
+        "centrality": 1.0,
+        "classification": "elevated",
+        "entropy": 0.3979,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "uuv-beta",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.287,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "relay-node-02",
+              "seafloor-anchor-02",
+              "surface-buoy-02"
+            ],
+            "max_single_impact": 0.9433
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.463,
+        "centrality": 0.6115,
+        "classification": "moderate",
+        "entropy": 0.3853,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "uuv-gamma",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.49,
+            "k_hop_count": 2,
+            "k_hop_nodes": [
+              "seafloor-anchor-03",
+              "surface-buoy-03"
+            ],
+            "max_single_impact": 0.8043
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3778,
+        "centrality": 0.6115,
+        "classification": "moderate",
+        "entropy": 0.0697,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "uuv-delta",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.49,
+            "k_hop_count": 2,
+            "k_hop_nodes": [
+              "seafloor-anchor-04",
+              "surface-buoy-03"
+            ],
+            "max_single_impact": 0.8043
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4533,
+        "centrality": 0.5795,
+        "classification": "moderate",
+        "entropy": 0.4014,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "shore-station",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.2403,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 5.3303,
+            "k_hop_count": 7,
+            "k_hop_nodes": [
+              "seafloor-anchor-01",
+              "seafloor-anchor-02",
+              "seafloor-anchor-03",
+              "seafloor-anchor-04",
+              "surface-buoy-01",
+              "surface-buoy-02",
+              "surface-buoy-03"
+            ],
+            "max_single_impact": 0.9433
+          },
+          "safety_threshold": 0.7
+        }
+      }
+    ],
+    "oscillation_status": {
+      "consecutive_oscillation_episodes": 1,
+      "hysteresis_window_minutes": 22,
+      "node_details": {
+        "relay-node-01": {
+          "direction_changes": 55,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6521
+        },
+        "relay-node-02": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7035
+        },
+        "seafloor-anchor-01": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7014
+        },
+        "seafloor-anchor-02": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6696
+        },
+        "seafloor-anchor-03": {
+          "direction_changes": 65,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7724
+        },
+        "seafloor-anchor-04": {
+          "direction_changes": 63,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7491
+        },
+        "shore-station": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6966
+        },
+        "surface-buoy-01": {
+          "direction_changes": 57,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6777
+        },
+        "surface-buoy-02": {
+          "direction_changes": 56,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6668
+        },
+        "surface-buoy-03": {
+          "direction_changes": 50,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.5985
+        },
+        "uuv-alpha": {
+          "direction_changes": 60,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7153
+        },
+        "uuv-beta": {
+          "direction_changes": 65,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7768
+        },
+        "uuv-delta": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6935
+        },
+        "uuv-gamma": {
+          "direction_changes": 59,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7065
+        }
+      },
+      "oscillating_node_count": 14,
+      "oscillating_nodes": [
+        "surface-buoy-01",
+        "surface-buoy-02",
+        "surface-buoy-03",
+        "seafloor-anchor-01",
+        "seafloor-anchor-02",
+        "seafloor-anchor-03",
+        "seafloor-anchor-04",
+        "relay-node-01",
+        "relay-node-02",
+        "uuv-alpha",
+        "uuv-beta",
+        "uuv-gamma",
+        "uuv-delta",
+        "shore-station"
+      ],
+      "oscillation_ratio": 1.0,
+      "suppression_active": true,
+      "system_oscillation_score": 0.6986,
+      "threshold": 0.3,
+      "total_nodes": 14
+    },
+    "total_potential_savings": 0.0,
+    "weights": {
+      "alpha": 0.44,
+      "beta": 0.27,
+      "gamma": 0.29
+    }
+  },
+  "metadata": {
+    "description": "A 14-node GPS-denied positioning network with severe bandwidth scarcity, minimum positioning-source enforcement, and ocean noise adaptivity. Tests framework generalization to sparse-connectivity environments.",
+    "display_name": "Underwater Acoustic Positioning",
+    "domain": "Subsurface / GPS-Denied",
+    "icon": "waves",
+    "patent_sections": [
+      "7.3"
+    ]
+  },
+  "scenario_id": "underwater_aps"
+}

@@ -11,16 +11,7 @@ from typing import List, Dict, Optional
 import json
 import traceback
 
-from .cei.data_collector import DataCollector
-from .cei.cei_calculator import CEICalculator
-from .cei.stability_monitor import StabilityMonitor
-from .cei.adaptive_weights import AdaptiveWeightRecalibrator
-from .graph.dependency_graph import DependencyGraphConstructor
-from .governance.policy_store import GovernancePolicyStore
-from .oscillation.detector import OscillationDetector
-from .fault.propagation import FaultPropagationSimulator
-from .simulation.validator import PreModificationValidator
-from .recommendation.actuator import RecommendationActuator
+from .engine import build_pipeline
 from .rollback.manager import RollbackManager
 from .scenarios.loader import ScenarioLoader, ScenarioLoadError
 from .pricing import (
@@ -45,18 +36,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize patent component modules (refs 101-112)
-data_collector = DataCollector()              # Module 101
-graph_constructor = DependencyGraphConstructor()  # Module 103
-governance_store = GovernancePolicyStore()     # Module 104
-stability_monitor = StabilityMonitor()        # Module 105
-cei_calculator = CEICalculator()              # Module 106
-weight_recalibrator = AdaptiveWeightRecalibrator()  # Module 107
-oscillation_detector = OscillationDetector()  # Module 108
-fault_simulator = FaultPropagationSimulator() # Module 109
-pre_mod_validator = PreModificationValidator()  # Module 110
-actuator = RecommendationActuator()           # Module 111
+# Patent component modules 101-111 are built PER REQUEST via build_pipeline().
+# Several of them mutate self during a run (adaptive weights, oscillation
+# state), so sharing instances across requests let one caller's analysis
+# perturb the next caller's results. See src/engine.py.
+
+# Module 112 is genuinely long-lived: /rollback/revert/{id} must find the
+# snapshot a previous request created, so this one instance is shared.
+#
+# NOTE: this store is process-local and dies on restart, and does not work
+# across multiple Railway replicas. It moves to Postgres as part of the
+# Phase 1 persistence work.
 rollback_manager = RollbackManager()          # Module 112
+
+# Read-only; holds no mutable state between calls.
 scenario_loader = ScenarioLoader()
 
 
@@ -123,34 +116,37 @@ async def run_full_analysis(request: AnalysisRequest):
     9. Generate recommendations (Module 111)
     """
     try:
+        # Fresh, unshared modules for this request only.
+        p = build_pipeline()
+
         # Step 1: Data Collection (Patent Module 101)
-        telemetry_data = data_collector.collect(request.telemetry.nodes)
+        telemetry_data = p.data_collector.collect(request.telemetry.nodes)
 
         # Step 2: Graph Construction (Patent Module 103)
-        graph = graph_constructor.build(
+        graph = p.graph_constructor.build(
             telemetry_data,
             request.telemetry.edges
         )
 
         # Step 3: Governance Policy Application (Patent Module 104)
-        governance_store.load_policies(request.telemetry.governance_policies)
-        risk_factors = governance_store.compute_risk_factors(telemetry_data)
+        p.governance_store.load_policies(request.telemetry.governance_policies)
+        risk_factors = p.governance_store.compute_risk_factors(telemetry_data)
 
         # Step 4: Stability Monitoring (Patent Module 105)
-        stability_scores = stability_monitor.compute(
+        stability_scores = p.stability_monitor.compute(
             telemetry_data,
             window_days=request.analysis_window_days
         )
 
         # Step 5: Adaptive Weight Recalibration (Patent Module 107)
-        weights = weight_recalibrator.recalibrate(
+        weights = p.weight_recalibrator.recalibrate(
             stability_scores=stability_scores,
             oscillation_detected=False,
             topology_changed=False
         )
 
         # Step 6: CEI Calculation (Patent Module 106)
-        cei_results = cei_calculator.compute(
+        cei_results = p.cei_calculator.compute(
             graph=graph,
             telemetry=telemetry_data,
             risk_factors=risk_factors,
@@ -158,19 +154,19 @@ async def run_full_analysis(request: AnalysisRequest):
         )
 
         # Step 7: Oscillation Detection (Patent Module 108)
-        oscillation_status = oscillation_detector.detect(
+        oscillation_status = p.oscillation_detector.detect(
             telemetry_data,
             threshold=request.oscillation_threshold
         )
 
         # Update weights if oscillation detected
         if oscillation_status["suppression_active"]:
-            weights = weight_recalibrator.recalibrate(
+            weights = p.weight_recalibrator.recalibrate(
                 stability_scores=stability_scores,
                 oscillation_detected=True,
                 topology_changed=False
             )
-            cei_results = cei_calculator.compute(
+            cei_results = p.cei_calculator.compute(
                 graph=graph,
                 telemetry=telemetry_data,
                 risk_factors=risk_factors,
@@ -178,23 +174,23 @@ async def run_full_analysis(request: AnalysisRequest):
             )
 
         # Step 8: Fault Propagation Modeling (Patent Module 109)
-        fault_risks = fault_simulator.simulate(graph, cei_results, risk_factors)
+        fault_risks = p.fault_simulator.simulate(graph, cei_results, risk_factors)
 
         # Step 9: Pre-Modification Validation (Patent Module 110)
-        validated_results = pre_mod_validator.validate(
+        validated_results = p.pre_mod_validator.validate(
             graph=graph,
             cei_results=cei_results,
             fault_risks=fault_risks,
-            governance_policies=governance_store.get_policies(),
+            governance_policies=p.governance_store.get_policies(),
             safety_threshold=request.safety_threshold,
             k_hop=request.k_hop
         )
 
         # Step 10: Generate Recommendations (Patent Module 111)
-        recommendations = actuator.generate_recommendations(validated_results)
+        recommendations = p.actuator.generate_recommendations(validated_results)
 
         # Compute graph metrics
-        graph_metrics = graph_constructor.get_metrics(graph)
+        graph_metrics = p.graph_constructor.get_metrics(graph)
 
         # Build response
         node_results = []
@@ -233,30 +229,33 @@ async def run_full_analysis(request: AnalysisRequest):
 @app.post("/cei/compute")
 async def compute_cei(request: TelemetryInput):
     """Standalone CEI computation endpoint."""
-    telemetry_data = data_collector.collect(request.nodes)
-    graph = graph_constructor.build(telemetry_data, request.edges)
-    governance_store.load_policies(request.governance_policies)
-    risk_factors = governance_store.compute_risk_factors(telemetry_data)
-    weights = weight_recalibrator.get_current_weights()
-    results = cei_calculator.compute(graph, telemetry_data, risk_factors, weights)
+    p = build_pipeline()
+    telemetry_data = p.data_collector.collect(request.nodes)
+    graph = p.graph_constructor.build(telemetry_data, request.edges)
+    p.governance_store.load_policies(request.governance_policies)
+    risk_factors = p.governance_store.compute_risk_factors(telemetry_data)
+    weights = p.weight_recalibrator.get_current_weights()
+    results = p.cei_calculator.compute(graph, telemetry_data, risk_factors, weights)
     return {"cei_results": results, "weights": weights}
 
 
 @app.post("/oscillation/detect")
 async def detect_oscillation(request: TelemetryInput):
     """Standalone oscillation detection endpoint."""
-    telemetry_data = data_collector.collect(request.nodes)
-    status = oscillation_detector.detect(telemetry_data)
+    p = build_pipeline()
+    telemetry_data = p.data_collector.collect(request.nodes)
+    status = p.oscillation_detector.detect(telemetry_data)
     return status
 
 
 @app.post("/governance/validate")
 async def validate_governance(request: TelemetryInput):
     """Validate nodes against governance policies."""
-    governance_store.load_policies(request.governance_policies)
-    telemetry_data = data_collector.collect(request.nodes)
-    risk_factors = governance_store.compute_risk_factors(telemetry_data)
-    compliance = governance_store.check_compliance(telemetry_data)
+    p = build_pipeline()
+    p.governance_store.load_policies(request.governance_policies)
+    telemetry_data = p.data_collector.collect(request.nodes)
+    risk_factors = p.governance_store.compute_risk_factors(telemetry_data)
+    compliance = p.governance_store.check_compliance(telemetry_data)
     return {"risk_factors": risk_factors, "compliance": compliance}
 
 
@@ -322,19 +321,6 @@ async def analyze_scenario(scenario_id: str):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
-@app.get("/scenarios/_debug")
-async def scenarios_debug():
-    """Temporary diagnostic — shows what path the loader resolved."""
-    from .scenarios.loader import SCENARIOS_DIR
-    import os
-    return {
-        "scenarios_dir": str(SCENARIOS_DIR),
-        "exists": SCENARIOS_DIR.exists(),
-        "contents": os.listdir(str(SCENARIOS_DIR)) if SCENARIOS_DIR.exists() else [],
-        "cwd": os.getcwd(),
-        "cwd_contents": os.listdir(os.getcwd()),
-    }
-
 
 # ----------------------------------------------------------------------
 # Pricing & benchmark endpoints (PR 7 — feature/cost-savings-engine)

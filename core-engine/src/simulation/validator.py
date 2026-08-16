@@ -133,7 +133,12 @@ class PreModificationValidator:
             max_impact = max(max_impact, centrality)
 
         return {
-            "k_hop_nodes": list(neighbors),
+            # Sorted, not raw set order: Python salts string hashing per
+            # process (PYTHONHASHSEED), so list(set) returned the same
+            # neighborhood in a different order on every deploy. The values
+            # were always correct; only the ordering was unstable, which
+            # defeats response diffing and caching for clients.
+            "k_hop_nodes": sorted(neighbors),
             "k_hop_count": len(neighbors),
             "cumulative_centrality_change": round(total_centrality, 4),
             "max_single_impact": round(max_impact, 4),

@@ -1,0 +1,768 @@
+{
+  "analysis": {
+    "graph_metrics": {
+      "avg_degree": 2.12,
+      "connected_components": 1,
+      "critical_nodes": [
+        "bomber-term-01",
+        "silo-term-01"
+      ],
+      "density": 0.0662,
+      "is_dag": true,
+      "longest_path_length": 6.0,
+      "total_edges": 18,
+      "total_nodes": 17
+    },
+    "nodes": [
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.237,
+        "centrality": 0.1718,
+        "classification": "low",
+        "entropy": 0.2647,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "natl-cmd-authority",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0898,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.0978,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "alt-cmd-node",
+              "crypto-hsm-01",
+              "stratcom-hq",
+              "training-node"
+            ],
+            "max_single_impact": 0.7456
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.5209,
+        "centrality": 0.7456,
+        "classification": "elevated",
+        "entropy": 0.3812,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "stratcom-hq",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.2174,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.0671,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "alt-cmd-node",
+              "auth-gateway-01",
+              "crypto-hsm-01",
+              "crypto-hsm-02",
+              "natl-cmd-authority",
+              "training-node"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3329,
+        "centrality": 0.4637,
+        "classification": "moderate",
+        "entropy": 0.1445,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "alt-cmd-node",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0447,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.9387,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "auth-gateway-02",
+              "crypto-hsm-01",
+              "crypto-hsm-02",
+              "natl-cmd-authority",
+              "stratcom-hq",
+              "training-node"
+            ],
+            "max_single_impact": 0.7456
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4485,
+        "centrality": 0.5776,
+        "classification": "moderate",
+        "entropy": 0.387,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "satellite-relay-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0432,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.859,
+            "k_hop_count": 7,
+            "k_hop_nodes": [
+              "auth-gateway-01",
+              "bomber-term-01",
+              "crypto-hsm-01",
+              "hf-relay-01",
+              "mobile-term-01",
+              "satellite-relay-02",
+              "vlf-transmitter"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3608,
+        "centrality": 0.4415,
+        "classification": "moderate",
+        "entropy": 0.2837,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "satellite-relay-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0173,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.6546,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "auth-gateway-01",
+              "bomber-term-01",
+              "crypto-hsm-01",
+              "hf-relay-01",
+              "satellite-relay-01",
+              "vlf-transmitter"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4078,
+        "centrality": 0.461,
+        "classification": "moderate",
+        "entropy": 0.4262,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "hf-relay-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0176,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.4895,
+            "k_hop_count": 7,
+            "k_hop_nodes": [
+              "auth-gateway-01",
+              "crypto-hsm-01",
+              "hf-relay-02",
+              "satellite-relay-01",
+              "satellite-relay-02",
+              "silo-term-01",
+              "vlf-transmitter"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4207,
+        "centrality": 0.6069,
+        "classification": "moderate",
+        "entropy": 0.2363,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "hf-relay-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.02,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.416,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "auth-gateway-02",
+              "crypto-hsm-02",
+              "hf-relay-01",
+              "silo-term-01"
+            ],
+            "max_single_impact": 0.8222
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3816,
+        "centrality": 0.461,
+        "classification": "moderate",
+        "entropy": 0.3291,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "vlf-transmitter",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0176,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 3.4481,
+            "k_hop_count": 6,
+            "k_hop_nodes": [
+              "auth-gateway-01",
+              "crypto-hsm-01",
+              "hf-relay-01",
+              "satellite-relay-01",
+              "satellite-relay-02",
+              "sub-term-01"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4527,
+        "centrality": 0.5803,
+        "classification": "moderate",
+        "entropy": 0.3979,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "crypto-hsm-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.1127,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 4.6304,
+            "k_hop_count": 9,
+            "k_hop_nodes": [
+              "alt-cmd-node",
+              "auth-gateway-01",
+              "hf-relay-01",
+              "natl-cmd-authority",
+              "satellite-relay-01",
+              "satellite-relay-02",
+              "stratcom-hq",
+              "training-node",
+              "vlf-transmitter"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.408,
+        "centrality": 0.5431,
+        "classification": "moderate",
+        "entropy": 0.2931,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "crypto-hsm-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0415,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.4059,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "alt-cmd-node",
+              "auth-gateway-02",
+              "hf-relay-02",
+              "stratcom-hq"
+            ],
+            "max_single_impact": 0.7456
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.631,
+        "centrality": 1.0,
+        "classification": "elevated",
+        "entropy": 0.3744,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "auth-gateway-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.2052,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 5.3921,
+            "k_hop_count": 10,
+            "k_hop_nodes": [
+              "bomber-term-01",
+              "crypto-hsm-01",
+              "hf-relay-01",
+              "mobile-term-01",
+              "satellite-relay-01",
+              "satellite-relay-02",
+              "silo-term-01",
+              "stratcom-hq",
+              "sub-term-01",
+              "vlf-transmitter"
+            ],
+            "max_single_impact": 0.8222
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4127,
+        "centrality": 0.5897,
+        "classification": "moderate",
+        "entropy": 0.2346,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "auth-gateway-02",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0335,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.4359,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "alt-cmd-node",
+              "crypto-hsm-02",
+              "hf-relay-02",
+              "silo-term-01"
+            ],
+            "max_single_impact": 0.8222
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4392,
+        "centrality": 0.5747,
+        "classification": "moderate",
+        "entropy": 0.3574,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "bomber-term-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.3596,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "auth-gateway-01",
+              "mobile-term-01",
+              "satellite-relay-01",
+              "satellite-relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.2921,
+        "centrality": 0.3877,
+        "classification": "moderate",
+        "entropy": 0.117,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "sub-term-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.461,
+            "k_hop_count": 2,
+            "k_hop_nodes": [
+              "auth-gateway-01",
+              "vlf-transmitter"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.4877,
+        "centrality": 0.8222,
+        "classification": "moderate",
+        "entropy": 0.1333,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "silo-term-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.6576,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "auth-gateway-01",
+              "auth-gateway-02",
+              "hf-relay-01",
+              "hf-relay-02"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.3426,
+        "centrality": 0.3405,
+        "classification": "moderate",
+        "entropy": 0.381,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "mobile-term-01",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 2.1523,
+            "k_hop_count": 3,
+            "k_hop_nodes": [
+              "auth-gateway-01",
+              "bomber-term-01",
+              "satellite-relay-01"
+            ],
+            "max_single_impact": 1.0
+          },
+          "safety_threshold": 0.7
+        }
+      },
+      {
+        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
+        "action_type": "no_action",
+        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "cei_score": 0.328,
+        "centrality": 0.3082,
+        "classification": "moderate",
+        "entropy": 0.3797,
+        "estimated_savings": 0.0,
+        "is_safe": false,
+        "monthly_cost": 0.0,
+        "node_id": "training-node",
+        "recommendation": "no_action",
+        "risk_factor": 0.31,
+        "validation": {
+          "cascade_risk": 0.0,
+          "governance_check": {
+            "compliant": true,
+            "min_replicas": 1,
+            "violations": []
+          },
+          "k_hop_impact": {
+            "cumulative_centrality_change": 1.9614,
+            "k_hop_count": 4,
+            "k_hop_nodes": [
+              "alt-cmd-node",
+              "crypto-hsm-01",
+              "natl-cmd-authority",
+              "stratcom-hq"
+            ],
+            "max_single_impact": 0.7456
+          },
+          "safety_threshold": 0.7
+        }
+      }
+    ],
+    "oscillation_status": {
+      "consecutive_oscillation_episodes": 1,
+      "hysteresis_window_minutes": 22,
+      "node_details": {
+        "alt-cmd-node": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6797
+        },
+        "auth-gateway-01": {
+          "direction_changes": 61,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7254
+        },
+        "auth-gateway-02": {
+          "direction_changes": 54,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6418
+        },
+        "bomber-term-01": {
+          "direction_changes": 53,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6302
+        },
+        "crypto-hsm-01": {
+          "direction_changes": 63,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7527
+        },
+        "crypto-hsm-02": {
+          "direction_changes": 55,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6512
+        },
+        "hf-relay-01": {
+          "direction_changes": 61,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.735
+        },
+        "hf-relay-02": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6888
+        },
+        "mobile-term-01": {
+          "direction_changes": 57,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6813
+        },
+        "natl-cmd-authority": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6871
+        },
+        "satellite-relay-01": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6917
+        },
+        "satellite-relay-02": {
+          "direction_changes": 57,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6834
+        },
+        "silo-term-01": {
+          "direction_changes": 57,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6755
+        },
+        "stratcom-hq": {
+          "direction_changes": 51,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6101
+        },
+        "sub-term-01": {
+          "direction_changes": 58,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.6868
+        },
+        "training-node": {
+          "direction_changes": 54,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.641
+        },
+        "vlf-transmitter": {
+          "direction_changes": 62,
+          "is_oscillating": true,
+          "oscillation_frequency": 0.7367
+        }
+      },
+      "oscillating_node_count": 17,
+      "oscillating_nodes": [
+        "natl-cmd-authority",
+        "stratcom-hq",
+        "alt-cmd-node",
+        "satellite-relay-01",
+        "satellite-relay-02",
+        "hf-relay-01",
+        "hf-relay-02",
+        "vlf-transmitter",
+        "crypto-hsm-01",
+        "crypto-hsm-02",
+        "auth-gateway-01",
+        "auth-gateway-02",
+        "bomber-term-01",
+        "sub-term-01",
+        "silo-term-01",
+        "mobile-term-01",
+        "training-node"
+      ],
+      "oscillation_ratio": 1.0,
+      "suppression_active": true,
+      "system_oscillation_score": 0.6823,
+      "threshold": 0.3,
+      "total_nodes": 17
+    },
+    "total_potential_savings": 0.0,
+    "weights": {
+      "alpha": 0.44,
+      "beta": 0.27,
+      "gamma": 0.29
+    }
+  },
+  "metadata": {
+    "description": "A 17-node strategic communications network where low utilization is by design, with path-diversity requirements, crypto two-person integrity, and network segmentation. Demonstrates framework correctness on high-redundancy, low-utilization-by-design infrastructure.",
+    "display_name": "NC3 Strategic Communications",
+    "domain": "Strategic Communications",
+    "icon": "shield",
+    "patent_sections": [
+      "7.1"
+    ]
+  },
+  "scenario_id": "nc3_strategic_comms"
+}

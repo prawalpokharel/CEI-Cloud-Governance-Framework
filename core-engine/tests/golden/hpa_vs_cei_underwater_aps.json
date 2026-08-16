@@ -1,0 +1,36 @@
+{
+  "cei": {
+    "cascade_failures": 0,
+    "governance_violations": 0,
+    "notes": "Suppression active \u2014 modifications blocked this window",
+    "policy": "cei",
+    "recovery_time_minutes": 33.0,
+    "scaling_events": 0,
+    "total_monthly_cost_usd": 1431.97
+  },
+  "delta": {
+    "annual_savings_vs_hpa_usd": 0.0,
+    "cascade_failures_diff": 0,
+    "governance_violations_diff": 0,
+    "monthly_cost_diff_usd": 0.0,
+    "monthly_savings_vs_hpa_usd": 0.0,
+    "recovery_time_diff_minutes": 33.0,
+    "scaling_events_diff": 0
+  },
+  "hpa": {
+    "cascade_failures": 0,
+    "governance_violations": 0,
+    "notes": "Threshold-based; topology-blind; ignores governance",
+    "policy": "hpa",
+    "recovery_time_minutes": 0,
+    "scaling_events": 0,
+    "total_monthly_cost_usd": 1431.97
+  },
+  "scenario_summary": {
+    "critical_count": 0,
+    "edge_count": 15,
+    "elevated_count": 6,
+    "node_count": 14,
+    "suppression_active": true
+  }
+}

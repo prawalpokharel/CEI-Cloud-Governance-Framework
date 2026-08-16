@@ -1,0 +1,273 @@
+{
+  "governance": {
+    "policies": [
+      {
+        "id": "checkpoint-integrity",
+        "rule": "write_fence_required",
+        "targets": [
+          "checkpoint-store"
+        ],
+        "value": true
+      },
+      {
+        "id": "inference-slo",
+        "rule": "p99_latency_ms",
+        "targets": [
+          "gpu-worker-07",
+          "gpu-worker-08"
+        ],
+        "value": 100
+      },
+      {
+        "id": "data-residency",
+        "rule": "region",
+        "targets": [
+          "feature-store",
+          "data-ingest-01"
+        ],
+        "value": "us-gov-west-1"
+      }
+    ],
+    "tiers": {
+      "core": {
+        "availability_target": 0.99,
+        "max_gpu_pct": 0.9,
+        "min_replicas": 1,
+        "retraining_window": "opportunistic"
+      },
+      "critical": {
+        "availability_target": 0.999,
+        "max_gpu_pct": 0.95,
+        "min_replicas": 1,
+        "retraining_window": "scheduled"
+      },
+      "supporting": {
+        "availability_target": 0.95,
+        "max_gpu_pct": 0.95,
+        "min_replicas": 1,
+        "retraining_window": "any"
+      }
+    }
+  },
+  "metadata": {
+    "description": "A 15-node ML training infrastructure mixing A100, H100, and inference-tier accelerators under checkpoint-integrity and inference-SLO constraints. Exercises the framework on heterogeneous scheduling workloads.",
+    "display_name": "Heterogeneous GPU Training Cluster",
+    "domain": "GPU Computing",
+    "icon": "chip",
+    "patent_sections": [
+      "7.4"
+    ]
+  },
+  "scenario_id": "gpu_cluster",
+  "telemetry": {
+    "__digest__": "a12fb491369051beaacc687fba118d3b92e1839a89f02b0ee58407be3c259d06",
+    "__point_count__": 2700,
+    "__series_count__": 15
+  },
+  "topology": {
+    "edges": [
+      [
+        "data-ingest-01",
+        "feature-store"
+      ],
+      [
+        "data-ingest-02",
+        "feature-store"
+      ],
+      [
+        "feature-store",
+        "scheduler"
+      ],
+      [
+        "scheduler",
+        "gpu-worker-01"
+      ],
+      [
+        "scheduler",
+        "gpu-worker-02"
+      ],
+      [
+        "scheduler",
+        "gpu-worker-03"
+      ],
+      [
+        "scheduler",
+        "gpu-worker-04"
+      ],
+      [
+        "scheduler",
+        "gpu-worker-05"
+      ],
+      [
+        "scheduler",
+        "gpu-worker-06"
+      ],
+      [
+        "gpu-worker-01",
+        "checkpoint-store"
+      ],
+      [
+        "gpu-worker-02",
+        "checkpoint-store"
+      ],
+      [
+        "gpu-worker-03",
+        "checkpoint-store"
+      ],
+      [
+        "gpu-worker-04",
+        "checkpoint-store"
+      ],
+      [
+        "gpu-worker-05",
+        "checkpoint-store"
+      ],
+      [
+        "gpu-worker-06",
+        "checkpoint-store"
+      ],
+      [
+        "checkpoint-store",
+        "eval-service"
+      ],
+      [
+        "eval-service",
+        "gpu-worker-07"
+      ],
+      [
+        "eval-service",
+        "gpu-worker-08"
+      ],
+      [
+        "scheduler",
+        "metrics-collector"
+      ]
+    ],
+    "nodes": [
+      {
+        "cpu_limit": 32,
+        "gpu_count": 0,
+        "id": "scheduler",
+        "mem_gb": 128,
+        "tier": "critical",
+        "type": "scheduler"
+      },
+      {
+        "cpu_limit": 64,
+        "gpu_count": 0,
+        "id": "data-ingest-01",
+        "mem_gb": 256,
+        "tier": "core",
+        "type": "data_pipeline"
+      },
+      {
+        "cpu_limit": 64,
+        "gpu_count": 0,
+        "id": "data-ingest-02",
+        "mem_gb": 256,
+        "tier": "core",
+        "type": "data_pipeline"
+      },
+      {
+        "cpu_limit": 32,
+        "gpu_count": 0,
+        "id": "feature-store",
+        "mem_gb": 512,
+        "tier": "critical",
+        "type": "storage"
+      },
+      {
+        "gpu_count": 8,
+        "gpu_type": "H100",
+        "id": "gpu-worker-01",
+        "mem_gb": 640,
+        "tier": "core",
+        "type": "training"
+      },
+      {
+        "gpu_count": 8,
+        "gpu_type": "H100",
+        "id": "gpu-worker-02",
+        "mem_gb": 640,
+        "tier": "core",
+        "type": "training"
+      },
+      {
+        "gpu_count": 8,
+        "gpu_type": "H100",
+        "id": "gpu-worker-03",
+        "mem_gb": 640,
+        "tier": "core",
+        "type": "training"
+      },
+      {
+        "gpu_count": 8,
+        "gpu_type": "A100",
+        "id": "gpu-worker-04",
+        "mem_gb": 320,
+        "tier": "core",
+        "type": "training"
+      },
+      {
+        "gpu_count": 8,
+        "gpu_type": "A100",
+        "id": "gpu-worker-05",
+        "mem_gb": 320,
+        "tier": "core",
+        "type": "training"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "A100",
+        "id": "gpu-worker-06",
+        "mem_gb": 160,
+        "tier": "supporting",
+        "type": "training"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "H100",
+        "id": "gpu-worker-07",
+        "mem_gb": 320,
+        "tier": "critical",
+        "type": "inference"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "H100",
+        "id": "gpu-worker-08",
+        "mem_gb": 320,
+        "tier": "critical",
+        "type": "inference"
+      },
+      {
+        "cpu_limit": 16,
+        "gpu_count": 0,
+        "id": "checkpoint-store",
+        "mem_gb": 64,
+        "tier": "critical",
+        "type": "storage"
+      },
+      {
+        "gpu_count": 2,
+        "gpu_type": "A100",
+        "id": "eval-service",
+        "mem_gb": 80,
+        "tier": "core",
+        "type": "evaluation"
+      },
+      {
+        "cpu_limit": 8,
+        "gpu_count": 0,
+        "id": "metrics-collector",
+        "mem_gb": 32,
+        "tier": "supporting",
+        "type": "monitoring"
+      }
+    ]
+  },
+  "writeup": {
+    "__chars__": 1526,
+    "__digest__": "e94ac792919fc0489ede631a98dd3665ba76587e466caa91ee79b3aaf9ac469f"
+  }
+}

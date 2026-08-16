@@ -1,0 +1,276 @@
+{
+  "governance": {
+    "policies": [
+      {
+        "id": "pci-scope",
+        "rule": "encryption_at_rest",
+        "targets": [
+          "payment-svc",
+          "db-primary"
+        ],
+        "value": true
+      },
+      {
+        "id": "min-avail",
+        "rule": "min_replicas",
+        "targets": [
+          "payment-svc",
+          "order-svc"
+        ],
+        "value": 3
+      }
+    ],
+    "tiers": {
+      "core": {
+        "compliance": [
+          "SOC2"
+        ],
+        "dr_required": true,
+        "max_cpu_pct": 0.75,
+        "min_replicas": 2
+      },
+      "critical": {
+        "compliance": [
+          "PCI-DSS",
+          "SOC2"
+        ],
+        "dr_required": true,
+        "max_cpu_pct": 0.85,
+        "min_replicas": 2
+      },
+      "discretionary": {
+        "compliance": [],
+        "dr_required": false,
+        "max_cpu_pct": 0.9,
+        "min_replicas": 1
+      },
+      "edge": {
+        "compliance": [
+          "SOC2"
+        ],
+        "dr_required": true,
+        "max_cpu_pct": 0.7,
+        "min_replicas": 2
+      },
+      "supporting": {
+        "compliance": [],
+        "dr_required": false,
+        "max_cpu_pct": 0.8,
+        "min_replicas": 1
+      }
+    }
+  },
+  "metadata": {
+    "description": "A 15-node e-commerce platform with tier-based availability requirements and PCI-DSS constraints. Exercises the primary embodiment of the CEI framework on a dependency-dense commercial cloud workload.",
+    "display_name": "E-Commerce Cloud Microservices",
+    "domain": "Commercial Cloud",
+    "icon": "cloud",
+    "patent_sections": [
+      "1-6 (primary embodiment)"
+    ]
+  },
+  "scenario_id": "cloud_microservices",
+  "telemetry": {
+    "__digest__": "5021c6db9e5365b3f8f5e8a04915530ca3365c068e40fd8e3f230b254454fa22",
+    "__point_count__": 2700,
+    "__series_count__": 15
+  },
+  "topology": {
+    "edges": [
+      [
+        "lb-01",
+        "api-gateway"
+      ],
+      [
+        "api-gateway",
+        "auth-svc"
+      ],
+      [
+        "api-gateway",
+        "order-svc"
+      ],
+      [
+        "api-gateway",
+        "catalog-svc"
+      ],
+      [
+        "api-gateway",
+        "search-svc"
+      ],
+      [
+        "order-svc",
+        "payment-svc"
+      ],
+      [
+        "order-svc",
+        "inventory-svc"
+      ],
+      [
+        "order-svc",
+        "queue-broker"
+      ],
+      [
+        "payment-svc",
+        "db-primary"
+      ],
+      [
+        "inventory-svc",
+        "db-primary"
+      ],
+      [
+        "catalog-svc",
+        "cache-cluster"
+      ],
+      [
+        "search-svc",
+        "cache-cluster"
+      ],
+      [
+        "auth-svc",
+        "db-primary"
+      ],
+      [
+        "db-primary",
+        "db-replica-01"
+      ],
+      [
+        "queue-broker",
+        "notif-svc"
+      ],
+      [
+        "queue-broker",
+        "analytics-svc"
+      ],
+      [
+        "analytics-svc",
+        "reporting-svc"
+      ]
+    ],
+    "nodes": [
+      {
+        "cpu_limit": 4,
+        "id": "lb-01",
+        "mem_gb": 8,
+        "replicas": 3,
+        "tier": "edge",
+        "type": "load_balancer"
+      },
+      {
+        "cpu_limit": 8,
+        "id": "api-gateway",
+        "mem_gb": 16,
+        "replicas": 6,
+        "tier": "edge",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 4,
+        "id": "auth-svc",
+        "mem_gb": 8,
+        "replicas": 4,
+        "tier": "core",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 8,
+        "id": "order-svc",
+        "mem_gb": 16,
+        "replicas": 8,
+        "tier": "core",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 8,
+        "id": "payment-svc",
+        "mem_gb": 16,
+        "replicas": 6,
+        "tier": "critical",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 4,
+        "id": "inventory-svc",
+        "mem_gb": 8,
+        "replicas": 4,
+        "tier": "core",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 4,
+        "id": "catalog-svc",
+        "mem_gb": 8,
+        "replicas": 6,
+        "tier": "supporting",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 4,
+        "id": "search-svc",
+        "mem_gb": 8,
+        "replicas": 4,
+        "tier": "supporting",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 2,
+        "id": "notif-svc",
+        "mem_gb": 4,
+        "replicas": 2,
+        "tier": "supporting",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 16,
+        "id": "db-primary",
+        "mem_gb": 64,
+        "replicas": 1,
+        "tier": "critical",
+        "type": "database"
+      },
+      {
+        "cpu_limit": 16,
+        "id": "db-replica-01",
+        "mem_gb": 64,
+        "replicas": 1,
+        "tier": "critical",
+        "type": "database"
+      },
+      {
+        "cpu_limit": 8,
+        "id": "cache-cluster",
+        "mem_gb": 32,
+        "replicas": 3,
+        "tier": "core",
+        "type": "cache"
+      },
+      {
+        "cpu_limit": 4,
+        "id": "queue-broker",
+        "mem_gb": 16,
+        "replicas": 3,
+        "tier": "core",
+        "type": "messaging"
+      },
+      {
+        "cpu_limit": 8,
+        "id": "analytics-svc",
+        "mem_gb": 32,
+        "replicas": 4,
+        "tier": "discretionary",
+        "type": "service"
+      },
+      {
+        "cpu_limit": 4,
+        "id": "reporting-svc",
+        "mem_gb": 8,
+        "replicas": 2,
+        "tier": "discretionary",
+        "type": "service"
+      }
+    ]
+  },
+  "writeup": {
+    "__chars__": 1555,
+    "__digest__": "3d4552d69058ad1cce7d3bb907a6615cc21f2977b033b5a6db7a260a9e9d4921"
+  }
+}
