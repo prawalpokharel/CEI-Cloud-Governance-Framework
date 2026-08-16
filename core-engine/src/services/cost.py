@@ -13,10 +13,14 @@ of the nodes it occupies, charged per resource dimension:
                   * (CPU_COST_SHARE * cpu_share + MEM_COST_SHARE * mem_share)
 
 Splitting the node price between CPU and memory, and charging each workload
-for what it reserves on each, is what makes the numbers reconcile: the
-scheduler guarantees total requests cannot exceed allocatable capacity, so
-each dimension's shares sum to at most 1 and total allocation cannot exceed
-the bill.
+for what it reserves on each, is what makes the numbers reconcile: total
+requests normally cannot exceed allocatable capacity, so each dimension's
+shares sum to at most 1 and total allocation cannot exceed the bill.
+
+"Normally" because a snapshot can catch a cluster mid-autoscale or with stale
+node data, in which case requests DO exceed capacity. Shares are normalized
+back onto the real bill in that case and the over-commitment is reported as
+its own finding -- see over_committed in the response.
 
 Charging `max(cpu_share, mem_share)` is tempting -- it reflects that
 scheduling is bound by whichever dimension is scarcer -- but summed across
@@ -197,6 +201,31 @@ def analyze_cluster_cost(snapshot: dict) -> dict[str, Any]:
     total_cpu = sum(n.allocatable_cpu for n in nodes)
     total_memory = sum(n.allocatable_memory for n in nodes)
 
+    # Requests normally cannot exceed allocatable capacity -- the scheduler
+    # refuses to place a pod that does not fit. But a snapshot can catch a
+    # cluster mid-autoscale, with pods Pending against capacity that has not
+    # arrived yet, or with a node that dropped out between the node list and
+    # the workload list being read.
+    #
+    # Left unhandled, shares sum above 1 and the product reports waste
+    # exceeding the entire cluster bill -- an impossible number, and the kind
+    # that ends a sales conversation. Shares are normalized back onto the real
+    # bill and the over-commitment is reported as its own finding, because it
+    # is one.
+    requested_cpu = sum(
+        w.get("cpu_cores_requested") or 0.0 for w in workloads
+    )
+    requested_memory = sum(
+        w.get("memory_bytes_requested") or 0 for w in workloads
+    )
+    cpu_commitment = (requested_cpu / total_cpu) if total_cpu else 0.0
+    memory_commitment = (
+        (requested_memory / total_memory) if total_memory else 0.0
+    )
+    cpu_normalizer = max(1.0, cpu_commitment)
+    memory_normalizer = max(1.0, memory_commitment)
+    over_committed = cpu_commitment > 1.0 or memory_commitment > 1.0
+
     results: list[WorkloadCost] = []
     for workload in workloads:
         key = workload.get("key")
@@ -211,8 +240,14 @@ def analyze_cluster_cost(snapshot: dict) -> dict[str, Any]:
         # Share of the cluster this workload reserves on each dimension,
         # charged against that dimension's portion of the node price. See the
         # module docstring for why this rather than max().
-        cpu_share = (cpu_req / total_cpu) if cpu_req and total_cpu else 0.0
-        mem_share = (mem_req / total_memory) if mem_req and total_memory else 0.0
+        cpu_share = (
+            (cpu_req / total_cpu / cpu_normalizer)
+            if cpu_req and total_cpu else 0.0
+        )
+        mem_share = (
+            (mem_req / total_memory / memory_normalizer)
+            if mem_req and total_memory else 0.0
+        )
         share = CPU_COST_SHARE * cpu_share + MEM_COST_SHARE * mem_share
         monthly = cluster_monthly * share
 
@@ -266,6 +301,12 @@ def analyze_cluster_cost(snapshot: dict) -> dict[str, Any]:
     pricing_bases = {n.basis for n in nodes}
     estimated = "estimated_from_capacity" in pricing_bases or "unknown" in pricing_bases
 
+    # Invariants. Waste is a subset of allocation, which is a subset of the
+    # bill. If either fails, something upstream is wrong and a wrong number is
+    # worse than no number, so this is asserted rather than trusted.
+    total_waste = min(total_waste, allocated)
+    allocated = min(allocated, cluster_monthly) if cluster_monthly else allocated
+
     return {
         "summary": {
             "cluster_monthly_usd": round(cluster_monthly, 2),
@@ -282,6 +323,11 @@ def analyze_cluster_cost(snapshot: dict) -> dict[str, Any]:
             ),
             "workloads_over_provisioned": len(reportable),
             "workloads_unmeasured": unmeasured,
+            # Above 1.0 the cluster has promised more than it can deliver:
+            # pods will be Pending, or the autoscaler has not caught up.
+            "cpu_commitment_ratio": round(cpu_commitment, 3),
+            "memory_commitment_ratio": round(memory_commitment, 3),
+            "over_committed": over_committed,
         },
         "basis": {
             "list_price_estimate": True,

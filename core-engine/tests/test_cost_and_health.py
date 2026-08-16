@@ -359,3 +359,44 @@ def test_critical_outranks_a_higher_cei_warning():
     }
     findings = diagnose(snapshot, cei)["findings"]
     assert findings[0]["severity"] == "critical"
+
+
+# --------------------------------------------------------------------------
+# Over-commitment
+# --------------------------------------------------------------------------
+
+def test_waste_can_never_exceed_the_cluster_bill():
+    """
+    Found by the scale test: a cluster requesting more than it can allocate
+    reported 108% waste -- $9,728 wasted against an $8,970 bill. Impossible,
+    and exactly the kind of number that ends a sales conversation.
+
+    Requests exceeding capacity is normally impossible (the scheduler refuses
+    to place a pod that does not fit) but happens transiently mid-autoscale or
+    when node data is stale.
+    """
+    snapshot = {
+        "nodes": [_node(cpu=4.0, memory=16 * GIB)],
+        "workloads": [
+            _workload(f"w{i}", cpu_req=2.0, cpu_used=0.01,
+                      mem_req=8 * GIB, mem_used=GIB // 10)
+            for i in range(6)  # 12 cores requested against 4 allocatable
+        ],
+    }
+    summary = analyze_cluster_cost(snapshot)["summary"]
+
+    assert summary["over_committed"] is True
+    assert summary["cpu_commitment_ratio"] > 1.0
+    assert summary["allocated_monthly_usd"] <= summary["cluster_monthly_usd"] + 0.01
+    assert summary["wasted_monthly_usd"] <= summary["cluster_monthly_usd"] + 0.01
+    assert summary["waste_as_pct_of_cluster"] <= 100.0
+
+
+def test_a_normally_committed_cluster_is_not_flagged_as_over_committed():
+    snapshot = {
+        "nodes": [_node(cpu=8.0, memory=32 * GIB)],
+        "workloads": [_workload("a", cpu_req=2.0, mem_req=8 * GIB)],
+    }
+    summary = analyze_cluster_cost(snapshot)["summary"]
+    assert summary["over_committed"] is False
+    assert summary["cpu_commitment_ratio"] < 1.0

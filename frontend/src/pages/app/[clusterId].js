@@ -3,7 +3,12 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import ClusterTopologyMap from '../../components/app/ClusterTopologyMap';
-import { api, getToken } from '../../lib/appApi';
+import { api, getToken, isSandbox } from '../../lib/appApi';
+
+// Beyond this a force-directed layout is a hairball: nodes overlap, labels
+// collide, and the simulation is slow. Measured against a synthetic
+// 1000-workload cluster.
+const MAX_GRAPH_NODES = 150;
 
 /**
  * Live cluster view: dependency map plus the workload table behind it.
@@ -25,11 +30,12 @@ export default function ClusterView() {
   const [cost, setCost] = useState(null);
   const [health, setHealth] = useState(null);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('headroom');
+  const [sortBy, setSortBy] = useState('cei');
+  const [namespace, setNamespace] = useState('all');
 
   useEffect(() => {
     if (!clusterId) return undefined;
-    if (!getToken()) {
+    if (!getToken() && !isSandbox(clusterId)) {
       router.replace('/app');
       return undefined;
     }
@@ -66,23 +72,6 @@ export default function ClusterView() {
     };
   }, [clusterId, router, mode]);
 
-  // The map component expects {nodes:[{id}], edges:[{source,target,weight}]}.
-  const topology = useMemo(() => {
-    if (!data?.workloads) return null;
-    return {
-      nodes: data.workloads.map((w) => ({
-        id: w.key,
-        label: w.name,
-        tier: w.namespace,
-      })),
-      edges: (data.edges || []).map((e) => ({
-        source: e.source,
-        target: e.target,
-        weight: e.confidence ?? 1,
-      })),
-    };
-  }, [data]);
-
   const ceiByWorkload = useMemo(() => {
     const map = {};
     (cei?.nodes || []).forEach((n) => {
@@ -90,6 +79,44 @@ export default function ClusterView() {
     });
     return map;
   }, [cei]);
+
+  const namespaces = useMemo(() => {
+    const set = new Set((data?.workloads || []).map((w) => w.namespace));
+    return ['all', ...Array.from(set).sort()];
+  }, [data]);
+
+  // The map component expects {nodes:[{id}], edges:[{source,target,weight}]}.
+  //
+  // Capped at MAX_GRAPH_NODES. A force-directed layout past a few hundred
+  // nodes is an unreadable hairball no matter how fast it renders, so the
+  // highest-CEI workloads are kept and the rest dropped — with the count
+  // stated, because a silently truncated graph looks like a complete one.
+  const topology = useMemo(() => {
+    if (!data?.workloads) return null;
+
+    let visible = data.workloads;
+    if (namespace !== 'all') {
+      visible = visible.filter((w) => w.namespace === namespace);
+    }
+
+    const scored = visible
+      .map((w) => ({ w, score: ceiByWorkload[w.key]?.cei_score ?? 0 }))
+      .sort((a, b) => b.score - a.score);
+    const kept = scored.slice(0, MAX_GRAPH_NODES).map((x) => x.w);
+    const keptKeys = new Set(kept.map((w) => w.key));
+
+    return {
+      truncatedFrom: visible.length > kept.length ? visible.length : null,
+      nodes: kept.map((w) => ({ id: w.key, label: w.name, tier: w.namespace })),
+      edges: (data.edges || [])
+        .filter((e) => keptKeys.has(e.source) && keptKeys.has(e.target))
+        .map((e) => ({
+          source: e.source,
+          target: e.target,
+          weight: e.confidence ?? 1,
+        })),
+    };
+  }, [data, namespace, ceiByWorkload]);
 
   const rows = useMemo(() => {
     const list = (data?.workloads || []).map((w) => {
@@ -137,6 +164,13 @@ export default function ClusterView() {
   return (
     <Shell>
       <Link href="/app" style={s.back}>← All clusters</Link>
+      {isSandbox(clusterId) && (
+        <div style={s.sandboxBanner}>
+          <strong>Sample data.</strong> A synthetic 26-workload cluster, run
+          through the same analysis a connected cluster uses — nothing here is
+          a mock-up. Install the agent to see your own.
+        </div>
+      )}
       <div style={s.titleRow}>
         <h2 style={s.h2}>{c.name}</h2>
         <div style={s.meta}>
@@ -263,6 +297,17 @@ export default function ClusterView() {
         <div style={s.panelHeader}>
           <div style={s.panelTitle}>Dependency topology</div>
           <select
+            style={{ ...s.select, marginRight: 8 }}
+            value={namespace}
+            onChange={(e) => setNamespace(e.target.value)}
+          >
+            {namespaces.map((ns) => (
+              <option key={ns} value={ns}>
+                {ns === 'all' ? 'All namespaces' : ns}
+              </option>
+            ))}
+          </select>
+          <select
             style={s.select}
             value={mode}
             onChange={(e) => setMode(e.target.value)}
@@ -272,6 +317,13 @@ export default function ClusterView() {
             <option value="structural">Rank by structural position</option>
           </select>
         </div>
+        {topology?.truncatedFrom && (
+          <p style={s.truncated}>
+            Showing the {MAX_GRAPH_NODES} highest-CEI workloads of{' '}
+            {topology.truncatedFrom}. Filter by namespace to see the rest — a
+            force-directed graph is unreadable much beyond this.
+          </p>
+        )}
         {cei && (
           <p style={s.ceiNote}>
             α {cei.weights.alpha} · β {cei.weights.beta} · γ {cei.weights.gamma}
@@ -571,6 +623,26 @@ const s = {
   findingTitle: { fontSize: 13, fontWeight: 600 },
   findingDetail: { fontSize: 12, color: '#7B8A8B', marginTop: 2, lineHeight: 1.45 },
   findingCei: { fontSize: 11, color: '#7B8A8B', whiteSpace: 'nowrap' },
+  sandboxBanner: {
+    background: '#EAF4FB',
+    border: '1px solid #AED6F1',
+    borderLeft: '4px solid #2874A6',
+    borderRadius: 6,
+    padding: '10px 14px',
+    fontSize: 13,
+    color: '#1B4F72',
+    marginBottom: 14,
+    lineHeight: 1.5,
+  },
+  truncated: {
+    fontSize: 11,
+    color: '#7D6608',
+    background: '#FEF9E7',
+    padding: '6px 10px',
+    borderRadius: 4,
+    margin: '0 0 10px 0',
+    lineHeight: 1.5,
+  },
   ceiNote: {
     fontSize: 11,
     color: '#7B8A8B',

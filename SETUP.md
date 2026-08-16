@@ -19,8 +19,9 @@ only, holds scratch data, and is meant to be thrown away
 Run everything:
 
 ```bash
-cd core-engine && .venv/bin/python -m pytest -q     # 41 tests
-cd agent && .venv/bin/python -m pytest -q           # 40 tests
+cd core-engine && .venv/bin/python -m pytest -q     # core engine
+cd agent && .venv/bin/python -m pytest -q           # agent
+cd frontend && npm test                             # api client
 ```
 
 ---
@@ -88,6 +89,30 @@ railway run --service core-engine alembic upgrade head
 
 `railway run` injects the service's environment into a local process. The
 values pass through your shell's memory, not your clipboard or your history.
+
+### 6. Schedule retention
+
+Snapshots accumulate at roughly 1,440 per cluster per day. Nothing prunes them
+automatically — running a delete loop inside the web process would have every
+replica doing it at once and competing with request handling for the
+connection pool.
+
+Schedule this daily (Railway cron, or any scheduler that can run a one-off
+command against the service):
+
+```bash
+python -m src.cli prune
+```
+
+Check what it would remove first:
+
+```bash
+python -m src.cli prune --dry-run
+```
+
+Snapshots older than 24h and workload samples older than 30d are removed.
+Each cluster's most recent snapshot is always kept regardless of age, so a
+cluster whose agent went offline still renders its last known topology.
 
 ---
 

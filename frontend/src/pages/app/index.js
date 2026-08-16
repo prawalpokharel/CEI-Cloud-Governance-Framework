@@ -97,7 +97,11 @@ export default function AppDashboard() {
       {clusters.length === 0 && !newKey && (
         <div style={s.empty}>
           <p style={s.muted}>
-            No clusters yet. Add one to get an install command.
+            No clusters yet. Add one to get an install command — or{' '}
+            <Link href="/app/sandbox" style={s.inlineLink}>
+              explore sample data
+            </Link>{' '}
+            first.
           </p>
         </div>
       )}
@@ -456,6 +460,7 @@ const s = {
     borderRadius: 4,
   },
   empty: { padding: '30px 0' },
+  inlineLink: { color: '#2874A6', textDecoration: 'underline' },
   error: {
     background: '#FDEDEC',
     color: '#922B21',

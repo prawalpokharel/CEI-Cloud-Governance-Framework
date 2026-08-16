@@ -59,6 +59,12 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
   return payload;
 }
 
+// The sandbox mirrors the real cluster endpoints on a public, database-free
+// path. Routing by id rather than adding a parallel UI means the demo
+// exercises the same components a customer sees -- and cannot drift from them.
+const SANDBOX_ID = 'sandbox';
+const isSandbox = (id) => id === SANDBOX_ID;
+
 export const api = {
   signup: (body) =>
     request('/v1/auth/signup', { method: 'POST', body, auth: false }),
@@ -68,12 +74,26 @@ export const api = {
   listClusters: () => request('/v1/clusters'),
   createCluster: (name) =>
     request('/v1/clusters', { method: 'POST', body: { name } }),
-  topology: (id) => request(`/v1/clusters/${id}/topology`),
-  history: (id) => request(`/v1/clusters/${id}/history`),
+  topology: (id) =>
+    isSandbox(id)
+      ? request('/v1/sandbox/cluster', { auth: false })
+      : request(`/v1/clusters/${id}/topology`),
+  history: (id) =>
+    isSandbox(id)
+      ? request('/v1/sandbox/history', { auth: false })
+      : request(`/v1/clusters/${id}/history`),
   cei: (id, mode = 'blast_radius') =>
-    request(`/v1/clusters/${id}/cei?mode=${encodeURIComponent(mode)}`),
-  cost: (id) => request(`/v1/clusters/${id}/cost`),
-  health: (id) => request(`/v1/clusters/${id}/health`),
+    isSandbox(id)
+      ? request(`/v1/sandbox/cei?mode=${encodeURIComponent(mode)}`, { auth: false })
+      : request(`/v1/clusters/${id}/cei?mode=${encodeURIComponent(mode)}`),
+  cost: (id) =>
+    isSandbox(id)
+      ? request('/v1/sandbox/cost', { auth: false })
+      : request(`/v1/clusters/${id}/cost`),
+  health: (id) =>
+    isSandbox(id)
+      ? request('/v1/sandbox/health', { auth: false })
+      : request(`/v1/clusters/${id}/health`),
 };
 
-export { API_BASE };
+export { API_BASE, SANDBOX_ID, isSandbox };

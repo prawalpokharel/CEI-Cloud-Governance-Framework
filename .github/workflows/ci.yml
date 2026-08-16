@@ -75,6 +75,11 @@ jobs:
       - name: Run tests
         run: pytest -q
 
+      - name: Scale check
+        # Catches limits that a small fixture cannot: payload size, analysis
+        # latency, and the cost invariants under a realistically large graph.
+        run: python -m tests.scale_test --workloads 500
+
       - name: Verify golden files are reproducible
         # The goldens pin the NIW / USPTO demonstration surface. Regenerating
         # must be a no-op; if it is not, the engine is nondeterministic and
@@ -117,6 +122,7 @@ jobs:
         with:
           node-version: "20"
       - run: npm install --no-audit --no-fund
+      - run: npm test
       - run: npm run build
 
   agent:

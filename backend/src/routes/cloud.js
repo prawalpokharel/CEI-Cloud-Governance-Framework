@@ -14,6 +14,7 @@
  */
 
 const express = require('express');
+
 const crypto = require('crypto');
 const axios = require('axios');
 const {
@@ -25,6 +26,45 @@ const {
 } = require('../services/cloudOAuth');
 
 const router = express.Router();
+
+/**
+ * Gate for the whole cloud-provider surface.
+ *
+ * These routes were reachable by anyone: the OAuth callback wrote into a
+ * process-global token store, and /topology and /analyze read from it. Only
+ * mock tokens are issued today, so nothing real was exposed -- but an
+ * unauthenticated write path into a credential store is not something to
+ * leave open on the assumption that it stays mock.
+ *
+ * Disabled by default. Roadmap Phase 5 replaces this mechanism entirely with
+ * AWS cross-account roles, Azure multi-tenant consent, and GCP service
+ * accounts, so this code is throwaway; it is gated rather than deleted
+ * because the /connect pages still link to it and the frontend is frozen
+ * while the NIW petition is live.
+ *
+ * Set ENABLE_CLOUD_OAUTH=true to re-enable for local development.
+ */
+const CLOUD_OAUTH_ENABLED =
+  String(process.env.ENABLE_CLOUD_OAUTH || '').toLowerCase() === 'true';
+
+if (!CLOUD_OAUTH_ENABLED) {
+  console.warn(
+    '[cloud] /api/cloud/* is disabled. This is the mock OAuth scaffolding ' +
+      'that Phase 5 replaces with cross-account IAM roles. Set ' +
+      'ENABLE_CLOUD_OAUTH=true to re-enable for local development.'
+  );
+}
+
+router.use((req, res, next) => {
+  if (!CLOUD_OAUTH_ENABLED) {
+    return res.status(404).json({
+      error:
+        'Cloud provider connection is not enabled on this deployment. ' +
+        'Install the in-cluster agent instead.',
+    });
+  }
+  next();
+});
 
 // In-memory stores. For local single-user dev only; replace with Redis
 // or a per-user session table in any multi-tenant deployment.
