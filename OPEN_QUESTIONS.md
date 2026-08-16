@@ -126,6 +126,17 @@ The suite now refuses to start when `TEST_DATABASE_URL` equals
 `DATABASE_URL`, and CI creates a throwaway `cloudoptimizer_test` database.
 Noted because the lesson generalises: a comment is not a safeguard.
 
+### 17. Setting DATABASE_URL opens public signup **[opinion]**
+
+The product API mounts only when `DATABASE_URL` is present, so setting it on
+Railway makes `/v1/auth/signup` live to the internet — anyone can create an
+account and mint agent API keys. That is the intended self-serve shape, but it
+happens the moment the variable is set, not when you decide you are ready.
+
+Options in `SETUP.md`: leave it unset and keep developing locally, deploy the
+product API as a separate Railway service so the NIW evidence surface is
+untouched by product deploys, or add an invite-code gate first (~1 hour).
+
 ---
 
 ## Debt

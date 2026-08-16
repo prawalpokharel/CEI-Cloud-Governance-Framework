@@ -1,0 +1,38 @@
+# Local development database.
+#
+#   docker compose up -d
+#   cd core-engine && alembic upgrade head
+#
+# These credentials are intentionally trivial. This container binds to
+# localhost only, holds nothing but scratch data, and is meant to be deleted
+# and recreated freely:
+#
+#   docker compose down -v && docker compose up -d
+#
+# Production credentials never appear in this repository. On Railway the
+# Postgres service injects DATABASE_URL by reference, so the value is not
+# pasted into a file, a shell history, or a chat window.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: co-postgres
+    environment:
+      POSTGRES_USER: cloudopt
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: cloudoptimizer
+    ports:
+      # 55432, not 5432, so this cannot collide with a Postgres already
+      # running on the host and cannot be mistaken for one.
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - co-pgdata:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudopt -d cloudoptimizer"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  co-pgdata:
