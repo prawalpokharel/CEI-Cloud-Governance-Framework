@@ -29,6 +29,8 @@ from ..db.models import (
     WorkloadSample,
 )
 from ..services import audit
+from ..services.cost import analyze_cluster_cost
+from ..services.health import diagnose
 from ..services.live_cei import CentralityMode, _history_for, compute_live_cei
 from ..services.security import (
     SecretNotConfigured,
@@ -326,6 +328,24 @@ async def create_cluster(
     }
 
 
+async def _latest_snapshot(session: AsyncSession, cluster_id) -> Snapshot:
+    """Most recent snapshot, or a 409 explaining that none has arrived."""
+    latest = (
+        await session.execute(
+            select(Snapshot)
+            .where(Snapshot.cluster_id == cluster_id)
+            .order_by(desc(Snapshot.received_at))
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if latest is None:
+        raise HTTPException(
+            status_code=409,
+            detail="No snapshot received yet. Is the agent installed and running?",
+        )
+    return latest
+
+
 async def _owned_cluster(cluster_id: str, user: User, session: AsyncSession) -> Cluster:
     cluster = (
         await session.execute(
@@ -459,6 +479,49 @@ async def cluster_cei(
     payload["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     payload["captured_at"] = latest.captured_at.isoformat()
     return payload
+
+
+@router.get("/clusters/{cluster_id}/cost")
+async def cluster_cost(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Cost allocation and reserved-but-unused spend for the latest snapshot."""
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    result = analyze_cluster_cost(latest.payload or {})
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/health")
+async def cluster_health(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Health findings, ranked by the CEI of the affected workload.
+
+    Every Kubernetes dashboard can list CrashLoopBackOff pods. Ranking them by
+    how much depends on the workload is the part worth paying for, so CEI is
+    computed here rather than left to the caller to join.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+
+    # Ranking only; entropy history is not needed to order findings, so the
+    # cheaper no-history path is used deliberately.
+    cei = compute_live_cei(snapshot, {})
+    cei_by_workload = {n["node_id"]: n for n in cei.nodes}
+
+    result = diagnose(snapshot, cei_by_workload)
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
 
 
 @router.get("/clusters/{cluster_id}/history")

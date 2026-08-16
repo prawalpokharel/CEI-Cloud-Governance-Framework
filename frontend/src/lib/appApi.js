@@ -72,6 +72,8 @@ export const api = {
   history: (id) => request(`/v1/clusters/${id}/history`),
   cei: (id, mode = 'blast_radius') =>
     request(`/v1/clusters/${id}/cei?mode=${encodeURIComponent(mode)}`),
+  cost: (id) => request(`/v1/clusters/${id}/cost`),
+  health: (id) => request(`/v1/clusters/${id}/health`),
 };
 
 export { API_BASE };

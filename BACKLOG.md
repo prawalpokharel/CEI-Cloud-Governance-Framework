@@ -27,9 +27,20 @@ Legend: **[D]** decision needed · **[B]** bug · **[G]** gap, scheduled ·
 | # | Item | Status |
 |---|---|---|
 | B1 | `/api/cloud/*` on the Express backend is unauthenticated — including the OAuth callback and token store | Open. Mock-mode only today, so no real credentials at risk. Phase 5 replaces the mechanism entirely with cross-account IAM roles, so the code is throwaway; it should still be gated or deleted rather than left open. |
-| B2 | Rollback manager (Module 112) keeps snapshots in a process dict | Open — Week 5. Dies on restart, does not work across replicas. |
-| B3 | Snapshot retention documented (~24h) but not enforced | Open — Week 5. One cluster at 60s writes ~1,440 snapshots/day. |
+| B2 | Rollback manager (Module 112) keeps snapshots in a process dict | **Deferred on purpose.** Nothing writes to a cluster yet, so there is nothing to roll back; it matters at Phase 7 (Write Mode). Moving it to Postgres now would also make the `/rollback/*` endpoints require `DATABASE_URL`, which they currently do not. |
+| B3 | Snapshot retention | **Done.** `python -m src.cli prune` deletes snapshots >24h and samples >30d, chunked, always keeping each cluster's latest. Wire to a scheduler. |
 | B4 | `detect_provider()` may not recognise every managed offering | Unverified. Cosmetic but visible. Confirm during multi-cloud validation. |
+
+### Fixed this round
+
+- Agent reported `cpu_cores_requested` per pod but `cpu_cores_used` summed
+  across replicas, so a 3-replica workload looked 3x better utilized than it
+  was — and would have understated its cost by the replica count
+- CrashLoopBackOff detection keyed on a transient state, so a periodic
+  snapshot missed real crash loops most of the time; now keys on restart
+  count plus termination reason
+- Cost allocation summed `max(cpu_share, mem_share)`, which allocated $175
+  against a $140 bill
 
 ### Fixed, recorded so they are not reintroduced
 
@@ -52,13 +63,13 @@ Legend: **[D]** decision needed · **[B]** bug · **[G]** gap, scheduled ·
 |---|---|---|
 | G1 | Agent image not published to ghcr.io | One command: `git tag agent-v0.1.0 && git push origin agent-v0.1.0` |
 | G2 | Multi-cloud validation (EKS/AKS/GKE) not run | Yours — runbook at `docs/VALIDATION.md` |
-| G3 | Scale test at 500–1000 pods | Week 5 |
-| G4 | Real waste detection in dollars (requested-vs-used per pod) | Week 6 — Phase 2 |
-| G5 | Health diagnostics (CrashLoopBackOff, OOMKilled, pending, failing probes, single-replica critical) | Week 7 — Phase 2 |
-| G6 | Demo/sandbox mode with realistic sample data | Week 7 — Phase 2 |
+| G3 | Scale test at 500–1000 pods | Still open. Snapshot is ~29 KiB at 18 workloads; the questions are ingest latency, JSONB write cost, and D3 render above ~300 nodes. |
+| G4 | Waste detection in dollars | **Done.** `/v1/clusters/{id}/cost`. Node price split 70/30 CPU/memory and charged per dimension so allocation reconciles against the bill. |
+| G5 | Health diagnostics | **Done.** `/v1/clusters/{id}/health`, ranked by CEI. Crash loops, OOMKills, unschedulable pods, image-pull failures, under-replication, single-replica-with-dependents, missing requests. |
+| G9 | Retention needs a scheduler | `prune` exists; nothing invokes it. Railway cron or equivalent. |
 | G7 | Email verification never set | Deliberate; needs an email provider |
 | G8 | `APP_SECRET_KEY` required for `/app` | Deploy config, documented in `SETUP.md` |
-| G9 | Cost model for Kubernetes workloads | Week 6 — node instance type → per-pod cost allocation |
+| G6b | Demo/sandbox mode with realistic sample data | Still open — the last Phase 2 item. |
 
 ---
 
@@ -78,6 +89,6 @@ Legend: **[D]** decision needed · **[B]** bug · **[G]** gap, scheduled ·
 ## Phase roadmap position
 
 - **Phase 1** (agent + topology + CEI) — weeks 1–4 complete; validation outstanding (G2)
-- **Phase 2** (waste in $, health diagnostics) — weeks 5–7, in progress
+- **Phase 2** (waste in $, health diagnostics) — cost and health done; demo/sandbox mode outstanding
 - **Phase 3** (vulnerability scanning, reports, Slack) — Oct–Nov
 - **Phase 4+** — per `CloudOptimizer Roadmap v2`

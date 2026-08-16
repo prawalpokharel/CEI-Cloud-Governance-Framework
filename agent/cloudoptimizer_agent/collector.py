@@ -235,6 +235,23 @@ class ClusterCollector:
                         env_values.append(env.value)
 
             status = item.status
+            replicas_desired = (
+                getattr(spec, "replicas", None)
+                if kind != "DaemonSet"
+                else getattr(status, "desired_number_scheduled", None)
+            )
+
+            # Requests are declared per pod, but metrics are summed across
+            # every pod in the workload. Reporting one per-pod and the other
+            # fleet-wide made them incomparable: a 3-replica deployment
+            # appeared to use 3x more of its request than it did, understating
+            # waste and — once cost is attached — understating spend by the
+            # replica count.
+            #
+            # Both are reported fleet-wide. The per-pod values are kept
+            # alongside because rightsizing acts on the pod spec, not the
+            # fleet.
+            fleet = max(1, replicas_desired or 1)
             out.append({
                 "key": workload_key(ns, kind, item.metadata.name),
                 "name": item.metadata.name,
@@ -245,16 +262,18 @@ class ClusterCollector:
                 "pod_labels": (spec.template.metadata.labels or {})
                 if spec.template.metadata else {},
                 "images": images,
-                "replicas_desired": getattr(spec, "replicas", None)
-                if kind != "DaemonSet"
-                else getattr(status, "desired_number_scheduled", None),
+                "replicas_desired": replicas_desired,
                 "replicas_ready": getattr(status, "ready_replicas", None)
                 if kind != "DaemonSet"
                 else getattr(status, "number_ready", None),
-                "cpu_cores_requested": cpu_req or None,
-                "memory_bytes_requested": mem_req or None,
-                "cpu_cores_limit": cpu_lim or None,
-                "memory_bytes_limit": mem_lim or None,
+                # Fleet-wide, comparable to cpu_cores_used / memory_bytes_used.
+                "cpu_cores_requested": (cpu_req * fleet) if cpu_req else None,
+                "memory_bytes_requested": (mem_req * fleet) if mem_req else None,
+                "cpu_cores_limit": (cpu_lim * fleet) if cpu_lim else None,
+                "memory_bytes_limit": (mem_lim * fleet) if mem_lim else None,
+                # Per pod, which is what a rightsizing change actually edits.
+                "cpu_cores_requested_per_pod": cpu_req or None,
+                "memory_bytes_requested_per_pod": mem_req or None,
                 "env_summary": safe_env_summary(env_names),
                 "_env_values": env_values,  # stripped before transmission
                 "service_account": pod_spec.service_account_name,

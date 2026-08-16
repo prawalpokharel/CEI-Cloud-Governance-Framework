@@ -22,6 +22,8 @@ export default function ClusterView() {
   const [cei, setCei] = useState(null);
   const [mode, setMode] = useState('blast_radius');
   const [history, setHistory] = useState(null);
+  const [cost, setCost] = useState(null);
+  const [health, setHealth] = useState(null);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('headroom');
 
@@ -41,6 +43,14 @@ export default function ClusterView() {
         .history(clusterId)
         .then((h) => active && setHistory(h))
         .catch(() => {});
+      api
+        .cost(clusterId)
+        .then((c) => active && setCost(c))
+        .catch(() => active && setCost(null));
+      api
+        .health(clusterId)
+        .then((h) => active && setHealth(h))
+        .catch(() => active && setHealth(null));
       api
         .cei(clusterId, mode)
         // A cluster with no snapshot yet returns 409; that is a normal
@@ -153,6 +163,92 @@ export default function ClusterView() {
           {history.entropy_samples_required} observations collected. Workload
           variability cannot be measured until enough history exists, so
           scores are withheld rather than estimated from too little data.
+        </div>
+      )}
+
+      {cost && (
+        <div style={s.wastePanel}>
+          <div style={s.wasteHead}>
+            <div>
+              <div style={s.wasteLabel}>Reserved but unused</div>
+              <div style={s.wasteValue}>
+                ${cost.summary.wasted_monthly_usd.toLocaleString()}
+                <span style={s.wasteUnit}>/month</span>
+              </div>
+              <div style={s.wasteSub}>
+                ${cost.summary.wasted_annual_usd.toLocaleString()}/year across{' '}
+                {cost.summary.workloads_over_provisioned} workload(s)
+              </div>
+            </div>
+            <div style={s.wasteBreakdown}>
+              <Small label="cluster" value={`$${cost.summary.cluster_monthly_usd.toLocaleString()}/mo`} />
+              <Small label="allocated" value={`$${cost.summary.allocated_monthly_usd.toLocaleString()}/mo`} />
+              <Small
+                label="unallocated"
+                value={`$${cost.summary.unallocated_monthly_usd.toLocaleString()}/mo`}
+                hint="Node capacity nothing reserves. Shrink the node pool, not requests."
+              />
+            </div>
+          </div>
+          <p style={s.wasteNote}>{cost.basis.note}</p>
+          {cost.opportunities.length > 0 && (
+            <table style={s.table}>
+              <thead>
+                <tr>
+                  <th style={s.th}>Opportunity</th>
+                  <th style={s.thNum}>CPU used</th>
+                  <th style={s.thNum}>Reclaimable</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cost.opportunities.slice(0, 5).map((o) => (
+                  <tr key={o.workload_key}>
+                    <td style={s.td}>
+                      <strong>{o.name}</strong>
+                      <div style={s.oppDetail}>{o.recommendation}</div>
+                    </td>
+                    <td style={s.tdNum}>
+                      {o.cpu_utilization !== null
+                        ? `${(o.cpu_utilization * 100).toFixed(0)}%`
+                        : '–'}
+                    </td>
+                    <td style={{ ...s.tdNum, fontWeight: 700, color: '#196F3D' }}>
+                      ${o.wasted_monthly_usd.toFixed(0)}/mo
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {health && health.summary.total > 0 && (
+        <div style={s.panel}>
+          <div style={s.panelTitle}>
+            Health — {health.summary.critical} critical, {health.summary.warning} warning
+            {health.summary.ranked_by_cei && ' · ranked by blast radius'}
+          </div>
+          {health.findings.slice(0, 6).map((f, i) => (
+            <div key={i} style={s.finding}>
+              <span
+                style={{
+                  ...s.sev,
+                  background: f.severity === 'critical' ? '#FDEDEC' : '#FEF9E7',
+                  color: f.severity === 'critical' ? '#922B21' : '#7D6608',
+                }}
+              >
+                {f.severity}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={s.findingTitle}>{f.title}</div>
+                <div style={s.findingDetail}>{f.detail}</div>
+              </div>
+              {f.cei_score !== null && f.cei_score !== undefined && (
+                <span style={s.findingCei}>CEI {f.cei_score.toFixed(2)}</span>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -277,6 +373,15 @@ export default function ClusterView() {
         </div>
       </div>
     </Shell>
+  );
+}
+
+function Small({ label, value, hint }) {
+  return (
+    <div style={s.small} title={hint || undefined}>
+      <div style={s.smallValue}>{value}</div>
+      <div style={s.smallLabel}>{label}</div>
+    </div>
   );
 }
 
@@ -411,6 +516,61 @@ const s = {
     textAlign: 'right',
     fontVariantNumeric: 'tabular-nums',
   },
+  wastePanel: {
+    background: 'white',
+    border: '1px solid #A9DFBF',
+    borderLeft: '4px solid #196F3D',
+    borderRadius: 8,
+    padding: 20,
+    marginBottom: 20,
+  },
+  wasteHead: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 20,
+  },
+  wasteLabel: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    color: '#7B8A8B',
+  },
+  wasteValue: { fontSize: 34, fontWeight: 700, color: '#196F3D', lineHeight: 1.1 },
+  wasteUnit: { fontSize: 15, fontWeight: 500, color: '#7B8A8B', marginLeft: 4 },
+  wasteSub: { fontSize: 12, color: '#566573', marginTop: 4 },
+  wasteBreakdown: { display: 'flex', gap: 22 },
+  wasteNote: {
+    fontSize: 11,
+    color: '#7B8A8B',
+    lineHeight: 1.5,
+    margin: '14px 0',
+    paddingTop: 12,
+    borderTop: '1px solid #EAEDED',
+  },
+  small: {},
+  smallValue: { fontSize: 15, fontWeight: 600, color: '#1C2833' },
+  smallLabel: { fontSize: 10, color: '#7B8A8B', textTransform: 'uppercase' },
+  oppDetail: { fontSize: 11, color: '#7B8A8B', marginTop: 3, lineHeight: 1.45 },
+  finding: {
+    display: 'flex',
+    gap: 12,
+    alignItems: 'flex-start',
+    padding: '10px 0',
+    borderBottom: '1px solid #F2F4F4',
+  },
+  sev: {
+    fontSize: 10,
+    fontWeight: 700,
+    padding: '3px 8px',
+    borderRadius: 10,
+    textTransform: 'uppercase',
+    whiteSpace: 'nowrap',
+  },
+  findingTitle: { fontSize: 13, fontWeight: 600 },
+  findingDetail: { fontSize: 12, color: '#7B8A8B', marginTop: 2, lineHeight: 1.45 },
+  findingCei: { fontSize: 11, color: '#7B8A8B', whiteSpace: 'nowrap' },
   ceiNote: {
     fontSize: 11,
     color: '#7B8A8B',
