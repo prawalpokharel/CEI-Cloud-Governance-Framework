@@ -1,0 +1,143 @@
+# Open questions & known gaps
+
+Things that are inconsistent, incorrect, or need a product decision. Macro
+work continues around these; none of them block Week 3.
+
+Status key: **[opinion]** needs your call · **[gap]** known, scheduled ·
+**[debt]** works, wants cleanup
+
+---
+
+## Needs your opinion
+
+### 1. Rightsizing marks nearly every workload **[opinion]**
+
+`RecommendationActuator` treats a node as a rightsizing candidate when
+`cei_score < 0.70 and risk_factor < 0.7 and monthly_cost > 0`. Most nodes
+satisfy that, so `cloud_microservices` returns `rightsize` for 15 of 15
+workloads at a flat 15% of spend. That is not an analysis; it is "15% of your
+bill" with extra steps.
+
+Eligibility keys on CEI — a measure of *criticality* — when the question is
+*utilization headroom*. A low-CEI workload can be running hot; a high-CEI one
+can be idle.
+
+The live cluster already shows what the right basis looks like: 86–98% unused
+CPU per workload, measured. Roadmap Phase 2 specifies exactly this
+("requested-vs-used per pod"), so the cleanest path is to leave the current
+heuristic as an acknowledged placeholder and build real rightsizing on
+measured headroom in Phase 2.
+
+**Decision:** replace now, or let Phase 2 do it?
+
+### 2. What does centrality mean? **[opinion]**
+
+On Online Boutique, `frontend` ranks #1. It has in-degree 1 and out-degree 7,
+so PageRank says low and degree/betweenness say high; the current composite
+(0.35 PageRank / 0.30 betweenness / 0.20 degree / 0.15 closeness) happens to
+favour the latter.
+
+Both readings are defensible:
+
+- **Internal blast radius** — frontend fails, no other service breaks → rank low
+- **User-facing importance** — frontend fails, total outage → rank first
+
+This is the claim the whole wedge rests on ("the 5 that can take your system
+down"), so it should be chosen deliberately. Needed before CEI tuning in Week 3.
+
+### 3. Scenario instance types are now derived, not declared **[opinion]**
+
+Scenario topologies declare `cpu_limit` / `mem_gb` but no instance type, so
+savings were structurally $0. `smallest_fitting_instance()` now picks the
+cheapest instance satisfying the declared requirement, which is what makes
+`cloud_microservices` price at $11,267/mo with $1,690/mo identified.
+
+That is an inference the scenario files do not state. It is documented and
+deterministic, but if the NIW submission describes these scenarios as having
+specific cost characteristics, you may prefer to write explicit
+`instance_type` values into the topology JSONs instead.
+
+**Decision:** keep the derivation, or declare instance types explicitly?
+
+### 4. npm lockfiles are untracked **[opinion — you said flag it]**
+
+`npm install` generated `backend/package-lock.json` and
+`frontend/package-lock.json`. Committing them pins versions Railway currently
+resolves freely. Normally you want them committed; it is a deploy-affecting
+change nobody has validated against your environment.
+
+---
+
+## Known gaps, scheduled
+
+### 5. CEI is not computed on live clusters **[gap — Week 3]**
+
+The agent reports topology and the dashboard renders it, but no CEI scores are
+attached. Week 3 in the plan. Depends on decision #2.
+
+### 6. Entropy still needs real history **[gap — Week 3]**
+
+`workload_samples` accumulates on every ingest, and `/v1/clusters/{id}/history`
+reports whether 30 samples exist. Nothing consumes it yet — the CEI path still
+falls back to seeded synthetic history when none is supplied. Wire it up when
+CEI moves onto live clusters.
+
+### 7. Snapshot retention is documented but not enforced **[gap]**
+
+Schema comments say ~24h; no job prunes them. At 60s intervals one cluster
+writes ~1,440 snapshots/day. Needs a scheduled delete before any real fleet.
+
+### 8. The chart points at an image that does not exist **[gap]**
+
+`ghcr.io/prawalpokharel/cloudoptimizer-agent:0.1.0` is not published. Local
+testing used `--set image.repository=cloudoptimizer-agent --set
+image.pullPolicy=Never` against a kind-loaded image. Needs a release workflow
+building linux/amd64 + linux/arm64 (the Dockerfile is written for both, but
+only arm64 has been built and run).
+
+### 9. Rollback manager is still in-process **[gap]**
+
+Module 112 keeps snapshots in a dict that dies on restart and does not work
+across replicas. Postgres tables exist; migrating it was not in Weeks 1–2.
+
+### 10. Email verification is not implemented **[gap]**
+
+`users.email_verified_at` exists and is never set. Deliberate — the GTM target
+is signup-to-dashboard in under 10 minutes, so verification should be
+asynchronous, not a gate. Needs an email provider.
+
+### 11. `APP_SECRET_KEY` is required for /app **[gap — deploy config]**
+
+Dashboard auth returns 503 until it is set (32+ chars). Deliberately lazy so
+the scenario endpoints keep working without it.
+
+---
+
+## Debt
+
+### 12. Duplicate `scenarios/` tree **[debt]**
+
+Repo root and `core-engine/` hold byte-identical copies (~120k lines twice).
+The duplicate is load-bearing: Railway deploys the `core-engine` subtree, and
+`loader.py`'s path fallback depends on it. Deduplicating requires changing the
+Railway root directory first — confirm that setting before touching it.
+
+### 13. `/api/cloud/*` is unauthenticated **[debt]**
+
+The Express backend's OAuth routes, including the callback and token store,
+have no auth. Currently mock-mode only, so no real credentials are at risk.
+Roadmap Phase 5 replaces this mechanism entirely with cross-account IAM roles,
+so the work is throwaway — but it should be gated or removed rather than left
+open.
+
+### 14. `ClusterTopologyMap` is a copy of `D3DependencyGraph` **[debt]**
+
+Deliberate: the original renders the NIW evidence pages and should not be one
+refactor away from a regression while the petition is live. Reconcile once the
+petition clears.
+
+### 15. Agent is not yet open-sourced **[debt — your call, after Phase 1]**
+
+`agent/` is structured to split out cleanly. The trust story is already
+testable: read-only RBAC with no secrets/configmaps, values-never-transmitted
+verified by canary test, `--dry-run` to inspect payloads before sending.
