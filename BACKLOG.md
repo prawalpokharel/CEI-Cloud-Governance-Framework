@@ -3,7 +3,7 @@
 Single tracked list: decisions waiting on you, bugs, gaps, and debt.
 Supersedes `OPEN_QUESTIONS.md`.
 
-Last updated: Phase 2 complete.
+Last updated: Phase 3 complete.
 
 Legend: **[D]** decision needed · **[B]** bug · **[G]** gap, scheduled ·
 **[T]** debt
@@ -30,6 +30,16 @@ Legend: **[D]** decision needed · **[B]** bug · **[G]** gap, scheduled ·
 | B2 | Rollback manager (Module 112) keeps snapshots in a process dict | **Deferred on purpose.** Nothing writes to a cluster yet, so there is nothing to roll back; it matters at Phase 7 (Write Mode). Moving it to Postgres now would also make the `/rollback/*` endpoints require `DATABASE_URL`, which they currently do not. |
 | B3 | Snapshot retention | **Done.** `python -m src.cli prune` deletes snapshots >24h and samples >30d, chunked, always keeping each cluster's latest. Wire to a scheduler. |
 | B4 | `detect_provider()` may not recognise every managed offering | Unverified. Cosmetic but visible. Confirm during multi-cloud validation. |
+
+### Fixed this round (Phase 3)
+
+- Top-risk list showed one OpenSSL CVE three times (libssl3, openssl,
+  openssl-provider-legacy all ship the same code), filling "the 5 that can
+  take your system down" with three copies of one problem. Now deduplicated
+  per (CVE, image) with affected packages listed together.
+- The `captured_at` migration cannot be rolled back once real data exists,
+  because seq duplicates are expected under the new schema. The downgrade now
+  explains that instead of raising an opaque IntegrityError.
 
 ### Fixed this round (Phase 2 completion)
 
@@ -78,6 +88,9 @@ Legend: **[D]** decision needed · **[B]** bug · **[G]** gap, scheduled ·
 | G5 | Health diagnostics | **Done.** `/v1/clusters/{id}/health`, ranked by CEI. Crash loops, OOMKills, unschedulable pods, image-pull failures, under-replication, single-replica-with-dependents, missing requests. |
 | G9 | Retention scheduler | Documented in `SETUP.md` step 6; needs wiring to Railway cron when you deploy. |
 | G7 | Email verification never set | Deliberate; needs an email provider |
+| G10 | Scanner image not published | `ghcr.io/prawalpokharel/cloudoptimizer-scanner`. Built and verified locally (333 MB, Trivy 0.58.0, non-root). Needs a release job like the agent's. |
+| G11 | Report/alert schedulers | `python -m src.cli report` and `alert` exist and are verified; need weekly/periodic cron alongside `prune`. |
+| G12 | SMTP and Slack webhook unconfigured | Both degrade to "not delivered" and log. Set `SMTP_HOST`/`SLACK_WEBHOOK_URL` when you have them. |
 | G8 | `APP_SECRET_KEY` required for `/app` | Deploy config, documented in `SETUP.md` |
 | G6b | Demo/sandbox mode | **Done.** `/v1/sandbox/*`, public and database-free. 26-workload cluster through the real analysis path, deterministic. At `/app/sandbox`. |
 
@@ -101,5 +114,7 @@ Legend: **[D]** decision needed · **[B]** bug · **[G]** gap, scheduled ·
 - **Phase 1** (agent + topology + CEI) — weeks 1–4 complete; validation outstanding (G2)
 - **Phase 2** (waste in $, health diagnostics, demo mode) — complete
 - **Next up:** Phase 3 — Trivy scanning, CEI-weighted vulnerability priority, weekly report, Slack alerts
-- **Phase 3** (vulnerability scanning, reports, Slack) — Oct–Nov
+- **Phase 3** (vulnerability scanning, reports, Slack) — complete
+- **Next up:** Phase 4 — Fix with AI: GitHub/GitLab integration, LLM-generated
+  dependency fixes, sandboxed test execution, auto-created PRs
 - **Phase 4+** — per `CloudOptimizer Roadmap v2`

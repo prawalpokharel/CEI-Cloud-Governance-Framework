@@ -255,3 +255,78 @@ def build_sandbox_history(snapshot: dict, samples: int = 40) -> dict[str, list[d
         history[workload["key"]] = points
 
     return history
+
+
+# --------------------------------------------------------------------------
+# Vulnerability scan results
+# --------------------------------------------------------------------------
+
+# Modelled on what a real Debian-based image returns: a long tail dominated by
+# OS packages, a handful of criticals, and several findings with no published
+# fix. The point of the demo is that severity alone does not order these.
+_SANDBOX_CVES = [
+    # (cve, severity, cvss, package, class, fixed)
+    ("CVE-2026-31789", "CRITICAL", 9.8, "openssl", "os-pkgs", "3.0.15-1"),
+    ("CVE-2026-31789", "CRITICAL", 9.8, "libssl3", "os-pkgs", "3.0.15-1"),
+    ("CVE-2026-22047", "CRITICAL", 9.1, "glibc", "os-pkgs", "2.36-9+deb12u9"),
+    ("CVE-2026-19881", "HIGH", 8.8, "libxml2", "os-pkgs", "2.9.14+dfsg-1.3"),
+    ("CVE-2026-17402", "HIGH", 7.5, "zlib1g", "os-pkgs", None),
+    ("CVE-2026-15990", "HIGH", 7.4, "requests", "lang-pkgs", "2.32.4"),
+    ("CVE-2026-11238", "MEDIUM", 6.5, "urllib3", "lang-pkgs", "2.2.3"),
+    ("CVE-2026-10087", "MEDIUM", 5.9, "perl-base", "os-pkgs", "5.36.0-7"),
+    ("CVE-2025-98221", "MEDIUM", 5.3, "libgcrypt20", "os-pkgs", None),
+]
+
+# Which sandbox workloads run which image. Chosen so the demo contains the
+# comparison the product is sold on: the same CVE in a shared backend and in
+# an internal tool nobody depends on.
+_SANDBOX_IMAGES = {
+    "registry.internal/catalog-api:2.14.3": ["shop/Deployment/catalog-api"],
+    "registry.internal/postgres-primary:15.4": ["data/Deployment/postgres-primary"],
+    "registry.internal/payments:2.14.7": ["payments/Deployment/payments"],
+    "registry.internal/legacy-reports:1.2.0": ["internal/Deployment/legacy-reports"],
+    "registry.internal/ci-runner:3.0.1": ["internal/Deployment/ci-runner"],
+}
+
+
+def build_sandbox_scans() -> list[dict]:
+    """Scan results in the shape the scan ingest stores."""
+    scans = []
+    for index, (reference, workload_keys) in enumerate(sorted(_SANDBOX_IMAGES.items())):
+        # Vary the finding set per image so the demo is not five identical rows.
+        cves = _SANDBOX_CVES[index % 3:] if index else _SANDBOX_CVES
+        vulns = [
+            {
+                "id": cve,
+                "severity": severity,
+                "cvss_score": cvss,
+                "pkg_name": package,
+                "installed_version": "1.0.0",
+                "fixed_version": fixed,
+                "pkg_class": pkg_class,
+                "title": f"{package}: {cve}",
+                "primary_url": f"https://avd.aquasec.com/nvd/{cve.lower()}",
+            }
+            for cve, severity, cvss, package, pkg_class, fixed in cves
+        ]
+        counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "UNKNOWN": 0}
+        for v in vulns:
+            counts[v["severity"]] += 1
+        # A real image carries far more low-severity findings than the
+        # scanner transmits; the counts reflect that even though the detail
+        # does not.
+        counts["LOW"] = 40 + index * 11
+        counts["UNKNOWN"] = 8 + index
+
+        scans.append({
+            "image_reference": reference,
+            "workload_keys": workload_keys,
+            "vulnerabilities": vulns,
+            "counts": counts,
+            "fixable_count": sum(1 for v in vulns if v["fixed_version"]),
+            "os_family": "debian",
+            "os_name": "12.4",
+            "scanned_at": SANDBOX_EPOCH.isoformat(),
+            "scan_error": None,
+        })
+    return scans

@@ -29,6 +29,7 @@ export default function ClusterView() {
   const [history, setHistory] = useState(null);
   const [cost, setCost] = useState(null);
   const [health, setHealth] = useState(null);
+  const [vulns, setVulns] = useState(null);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('cei');
   const [namespace, setNamespace] = useState('all');
@@ -57,6 +58,10 @@ export default function ClusterView() {
         .health(clusterId)
         .then((h) => active && setHealth(h))
         .catch(() => active && setHealth(null));
+      api
+        .vulnerabilities(clusterId)
+        .then((v) => active && setVulns(v))
+        .catch(() => active && setVulns(null));
       api
         .cei(clusterId, mode)
         // A cluster with no snapshot yet returns 409; that is a normal
@@ -253,6 +258,57 @@ export default function ClusterView() {
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+      )}
+
+      {vulns && vulns.summary.total_vulnerabilities > 0 && (
+        <div style={s.panel}>
+          <div style={s.panelTitle}>
+            Vulnerabilities — ranked by what they put at risk
+          </div>
+          <p style={s.vulnHeadline}>{vulns.summary.headline}</p>
+          <div style={s.vulnCounts}>
+            {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((sev) => (
+              <span key={sev} style={s.vulnCount}>
+                <strong>{vulns.summary.by_severity?.[sev] ?? 0}</strong> {sev.toLowerCase()}
+              </span>
+            ))}
+            <span style={s.vulnCount}>
+              {vulns.summary.images_scanned} images scanned
+              {vulns.summary.images_failed > 0 &&
+                ` · ${vulns.summary.images_failed} failed`}
+            </span>
+          </div>
+          {vulns.top_risks.map((r) => (
+            <div key={`${r.vulnerability_id}-${r.image_reference}`} style={s.finding}>
+              <span
+                style={{
+                  ...s.sev,
+                  background: r.severity === 'CRITICAL' ? '#FDEDEC' : '#FEF9E7',
+                  color: r.severity === 'CRITICAL' ? '#922B21' : '#7D6608',
+                }}
+              >
+                {r.severity}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={s.findingTitle}>
+                  {r.vulnerability_id} in {r.package}
+                </div>
+                <div style={s.findingDetail}>{r.rationale}</div>
+                <div style={s.vulnMeta}>
+                  {r.image_reference}
+                  {r.fixed_version && ` · fix: ${r.fixed_version}`}
+                </div>
+              </div>
+              <span style={s.findingCei}>{r.priority_score.toFixed(1)}</span>
+            </div>
+          ))}
+          {vulns.base_image_recommendations?.length > 0 && (
+            <div style={s.rebase}>
+              <strong>Base image:</strong>{' '}
+              {vulns.base_image_recommendations[0].recommendation}
+            </div>
           )}
         </div>
       )}
@@ -641,6 +697,38 @@ const s = {
     padding: '6px 10px',
     borderRadius: 4,
     margin: '0 0 10px 0',
+    lineHeight: 1.5,
+  },
+  vulnHeadline: {
+    fontSize: 13,
+    color: '#566573',
+    margin: '0 0 10px 0',
+    lineHeight: 1.5,
+  },
+  vulnCounts: {
+    display: 'flex',
+    gap: 16,
+    flexWrap: 'wrap',
+    fontSize: 11,
+    color: '#7B8A8B',
+    paddingBottom: 12,
+    marginBottom: 4,
+    borderBottom: '1px solid #F2F4F4',
+  },
+  vulnCount: {},
+  vulnMeta: {
+    fontSize: 10,
+    color: '#95A5A6',
+    marginTop: 3,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  },
+  rebase: {
+    marginTop: 12,
+    padding: '10px 12px',
+    background: '#EAF4FB',
+    borderRadius: 4,
+    fontSize: 12,
+    color: '#1B4F72',
     lineHeight: 1.5,
   },
   ceiNote: {

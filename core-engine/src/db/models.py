@@ -398,3 +398,120 @@ class AuditLog(Base):
     created_at: Mapped[object] = mapped_column(
         TZDateTime, nullable=False, server_default=func.now(), index=True
     )
+
+
+# --------------------------------------------------------------------------
+# Vulnerability scanning (Phase 3)
+# --------------------------------------------------------------------------
+
+class Severity(str, enum.Enum):
+    critical = "CRITICAL"
+    high = "HIGH"
+    medium = "MEDIUM"
+    low = "LOW"
+    unknown = "UNKNOWN"
+
+
+class ImageScan(Base):
+    """
+    One scan of one container image.
+
+    Only the latest scan per image is retained -- superseded results describe
+    an image nobody is running any more, and vulnerability history is better
+    answered by "when did this CVE first appear" than by keeping every scan.
+    """
+
+    __tablename__ = "image_scans"
+    __table_args__ = (
+        UniqueConstraint(
+            "cluster_id", "image_reference", name="uq_image_scans_cluster_image"
+        ),
+        Index("ix_image_scans_cluster_scanned", "cluster_id", "scanned_at"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cluster_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("clusters.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    image_reference: Mapped[str] = mapped_column(String(512), nullable=False)
+    image_digest: Mapped[str | None] = mapped_column(String(128))
+
+    # Base image identity, used for upgrade recommendations: most OS-package
+    # findings are inherited rather than introduced by the application.
+    os_family: Mapped[str | None] = mapped_column(String(60))
+    os_name: Mapped[str | None] = mapped_column(String(60))
+
+    # Which workloads run this image. Denormalized because the join to
+    # workloads goes through a snapshot payload, and this is the field the
+    # prioritizer reads on every request.
+    workload_keys: Mapped[list | None] = mapped_column(JSONB)
+
+    scanned_at: Mapped[object] = mapped_column(TZDateTime, nullable=False)
+    received_at: Mapped[object] = mapped_column(
+        TZDateTime, nullable=False, server_default=func.now()
+    )
+    scanner_version: Mapped[str | None] = mapped_column(String(60))
+
+    critical_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    high_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    medium_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    low_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    unknown_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Findings with a fixed version available. The rest cannot be acted on
+    # today no matter how severe, which is the difference between a work item
+    # and an anxiety.
+    fixable_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # Scanning fails routinely: private registries, rate limits, images that
+    # have been deleted. Recorded rather than silently producing a clean bill.
+    scan_error: Mapped[str | None] = mapped_column(Text)
+
+
+class ImageVulnerability(Base):
+    __tablename__ = "image_vulnerabilities"
+    __table_args__ = (
+        Index("ix_image_vulns_scan", "scan_id"),
+        Index("ix_image_vulns_cluster_severity", "cluster_id", "severity"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cluster_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("clusters.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    scan_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("image_scans.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    vulnerability_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    severity: Mapped[str] = mapped_column(String(16), nullable=False)
+    cvss_score: Mapped[float | None] = mapped_column(Numeric(4, 1))
+
+    pkg_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    installed_version: Mapped[str | None] = mapped_column(String(128))
+    fixed_version: Mapped[str | None] = mapped_column(String(256))
+
+    # "os-pkgs" or "lang-pkgs". OS findings are inherited from the base image
+    # and cleared by rebasing; language findings need a dependency bump.
+    pkg_class: Mapped[str | None] = mapped_column(String(32))
+
+    title: Mapped[str | None] = mapped_column(Text)
+    primary_url: Mapped[str | None] = mapped_column(String(512))

@@ -75,9 +75,10 @@ def _mount_product_routers() -> bool:
     """
     if not os.environ.get("DATABASE_URL", "").strip():
         return False
-    from .routers import app_api, ingest
+    from .routers import app_api, ingest, scan
 
     app.include_router(ingest.router)
+    app.include_router(scan.router)
     app.include_router(app_api.router)
     return True
 

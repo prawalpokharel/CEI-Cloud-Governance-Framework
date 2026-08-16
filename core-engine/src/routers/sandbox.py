@@ -20,7 +20,12 @@ from fastapi import APIRouter, HTTPException
 from ..services.cost import analyze_cluster_cost
 from ..services.health import diagnose
 from ..services.live_cei import CentralityMode, compute_live_cei
-from ..services.sandbox import build_sandbox_history, build_sandbox_snapshot
+from ..services.sandbox import (
+    build_sandbox_history,
+    build_sandbox_scans,
+    build_sandbox_snapshot,
+)
+from ..services.vulnerability import base_image_recommendations, prioritize
 
 router = APIRouter(prefix="/v1/sandbox", tags=["sandbox"])
 
@@ -114,3 +119,15 @@ async def sandbox_history():
         "entropy_ready": True,
         "entropy_samples_required": 30,
     }
+
+
+@router.get("/vulnerabilities")
+async def sandbox_vulnerabilities():
+    snapshot = _snapshot()
+    cei = compute_live_cei(snapshot, _history())
+    scans = build_sandbox_scans()
+    result = prioritize(scans, {n["node_id"]: n for n in cei.nodes}, snapshot)
+    result["base_image_recommendations"] = base_image_recommendations(scans)
+    result["cluster"] = {"id": "sandbox", "name": "acme-production (sample data)"}
+    result["scanned_at"] = snapshot["captured_at"]
+    return result

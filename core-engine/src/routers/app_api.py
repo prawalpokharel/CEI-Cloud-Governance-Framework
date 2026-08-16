@@ -23,6 +23,8 @@ from ..db.models import (
     ActorType,
     ApiKey,
     Cluster,
+    ImageScan,
+    ImageVulnerability,
     Snapshot,
     Tenant,
     User,
@@ -32,6 +34,7 @@ from ..services import audit
 from ..services.cost import analyze_cluster_cost
 from ..services.health import diagnose
 from ..services.live_cei import CentralityMode, _history_for, compute_live_cei
+from ..services.vulnerability import base_image_recommendations, prioritize
 from ..services.security import (
     SecretNotConfigured,
     generate_api_key,
@@ -521,6 +524,101 @@ async def cluster_health(
     result = diagnose(snapshot, cei_by_workload)
     result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+async def _load_scans(session: AsyncSession, cluster_id) -> list[dict]:
+    """Reassemble stored scans into the shape the prioritizer expects."""
+    scans = (
+        await session.execute(
+            select(ImageScan).where(ImageScan.cluster_id == cluster_id)
+        )
+    ).scalars().all()
+    if not scans:
+        return []
+
+    vulns = (
+        await session.execute(
+            select(ImageVulnerability).where(
+                ImageVulnerability.cluster_id == cluster_id
+            )
+        )
+    ).scalars().all()
+    by_scan: dict = {}
+    for v in vulns:
+        by_scan.setdefault(v.scan_id, []).append({
+            "id": v.vulnerability_id,
+            "severity": v.severity,
+            "cvss_score": float(v.cvss_score) if v.cvss_score is not None else None,
+            "pkg_name": v.pkg_name,
+            "installed_version": v.installed_version,
+            "fixed_version": v.fixed_version,
+            "pkg_class": v.pkg_class,
+            "title": v.title,
+            "primary_url": v.primary_url,
+        })
+
+    return [
+        {
+            "image_reference": s.image_reference,
+            "digest": s.image_digest,
+            "os_family": s.os_family,
+            "os_name": s.os_name,
+            "workload_keys": s.workload_keys or [],
+            "scanned_at": s.scanned_at.isoformat(),
+            "scan_error": s.scan_error,
+            "counts": {
+                "CRITICAL": s.critical_count,
+                "HIGH": s.high_count,
+                "MEDIUM": s.medium_count,
+                "LOW": s.low_count,
+                "UNKNOWN": s.unknown_count,
+            },
+            "fixable_count": s.fixable_count,
+            "vulnerabilities": by_scan.get(s.id, []),
+        }
+        for s in scans
+    ]
+
+
+@router.get("/clusters/{cluster_id}/vulnerabilities")
+async def cluster_vulnerabilities(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Vulnerabilities ranked by what they put at risk, not by severity alone.
+
+    A CVSS 9.8 in a workload nothing depends on is a smaller problem than a
+    7.5 in the database every service reaches. Sorting by severity puts them
+    in the wrong order, which is why 400-item vulnerability lists go unread.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    scans = await _load_scans(session, cluster.id)
+    if not scans:
+        return {
+            "cluster": {"id": str(cluster.id), "name": cluster.name},
+            "summary": {
+                "images_scanned": 0,
+                "total_vulnerabilities": 0,
+                "headline": "No scan results yet. Enable the scanner CronJob "
+                            "in the Helm chart to begin scanning images.",
+            },
+            "top_risks": [],
+            "findings": [],
+            "base_image_recommendations": [],
+        }
+
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei = compute_live_cei(snapshot, {})
+    cei_by_workload = {n["node_id"]: n for n in cei.nodes}
+
+    result = prioritize(scans, cei_by_workload, snapshot)
+    result["base_image_recommendations"] = base_image_recommendations(scans)
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["scanned_at"] = max(s["scanned_at"] for s in scans)
     return result
 
 

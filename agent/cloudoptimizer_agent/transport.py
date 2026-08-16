@@ -63,6 +63,10 @@ class Transport:
                 "use this only against a local development endpoint."
             )
 
+    def send_scan(self, payload: bytes) -> dict[str, Any]:
+        """Submit vulnerability scan results."""
+        return self._post("/v1/scan", payload)
+
     def send_snapshot(self, payload: bytes) -> dict[str, Any]:
         """
         POST a snapshot, retrying transient failures with exponential backoff
@@ -72,6 +76,9 @@ class Transport:
         interval, so a brief server outage would otherwise synchronise the
         entire fleet into retrying in lockstep.
         """
+        return self._post("/v1/ingest", payload)
+
+    def _post(self, path: str, payload: bytes) -> dict[str, Any]:
         body = gzip.compress(payload, compresslevel=6)
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -79,7 +86,7 @@ class Transport:
             "Content-Encoding": "gzip",
             "User-Agent": f"cloudoptimizer-agent/{AGENT_VERSION}",
         }
-        url = f"{self.endpoint}/v1/ingest"
+        url = f"{self.endpoint}{path}"
 
         last_error: Exception | None = None
         for attempt in range(1, self.max_retries + 1):

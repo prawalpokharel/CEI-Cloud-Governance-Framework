@@ -115,3 +115,44 @@ securityContext:
       - ALL
 
 logLevel: INFO
+
+# ---------------------------------------------------------------------------
+# Vulnerability scanner (Phase 3)
+# ---------------------------------------------------------------------------
+#
+# Runs as a separate CronJob, not inside the agent. The agent is read-only and
+# small; a scanner pulls images, which means registry credentials and a ~1 GiB
+# vulnerability database. Keeping them apart preserves the agent's security
+# posture and lets you run the agent without ever enabling this.
+#
+# Images are pulled and scanned INSIDE your cluster, using the registry access
+# it already has. Only findings leave. Registry credentials never do.
+scanner:
+  enabled: false
+
+  # Daily, at a quiet hour. Base image CVE lists change on the order of days,
+  # so scanning more often costs registry bandwidth for no new information.
+  schedule: "0 3 * * *"
+
+  image:
+    # Bundles Trivy alongside the agent code.
+    repository: ghcr.io/prawalpokharel/cloudoptimizer-scanner
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # Scanning is CPU- and IO-heavy in bursts. Generous limits because the job
+  # is short-lived and off-peak; being OOMKilled halfway through a scan wastes
+  # everything already pulled.
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+  # Hard stop. A scan that has run this long is stuck on a registry that is
+  # not going to answer.
+  timeoutSeconds: 3600
+
+  cacheSizeLimit: 4Gi

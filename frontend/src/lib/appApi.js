@@ -94,6 +94,10 @@ export const api = {
     isSandbox(id)
       ? request('/v1/sandbox/health', { auth: false })
       : request(`/v1/clusters/${id}/health`),
+  vulnerabilities: (id) =>
+    isSandbox(id)
+      ? request('/v1/sandbox/vulnerabilities', { auth: false })
+      : request(`/v1/clusters/${id}/vulnerabilities`),
 };
 
 export { API_BASE, SANDBOX_ID, isSandbox };

@@ -1,0 +1,99 @@
+{{- if .Values.scanner.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "cloudoptimizer-agent.fullname" . }}-scanner
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cloudoptimizer-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scanner
+spec:
+  schedule: {{ .Values.scanner.schedule | quote }}
+  # A scan that has not finished by the time the next one is due should be
+  # skipped, not stacked: two concurrent scans double registry bandwidth and
+  # pull the same layers twice.
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 600
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      # A scan is worth retrying tomorrow, not immediately: the usual causes
+      # (registry rate limits, a slow vulnerability DB download) do not clear
+      # in seconds.
+      activeDeadlineSeconds: {{ .Values.scanner.timeoutSeconds }}
+      template:
+        metadata:
+          labels:
+            {{- include "cloudoptimizer-agent.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: scanner
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ include "cloudoptimizer-agent.serviceAccountName" . }}
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+            - name: scanner
+              image: "{{ .Values.scanner.image.repository }}:{{ .Values.scanner.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.scanner.image.pullPolicy }}
+              args: ["-m", "cloudoptimizer_agent.scanner"]
+              command: ["python"]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              env:
+                - name: CLOUDOPTIMIZER_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "cloudoptimizer-agent.secretName" . }}
+                      key: {{ include "cloudoptimizer-agent.secretKey" . }}
+                - name: CLOUDOPTIMIZER_ENDPOINT
+                  value: {{ .Values.endpoint | quote }}
+                - name: CLOUDOPTIMIZER_LOG_LEVEL
+                  value: {{ .Values.logLevel | quote }}
+                {{- if .Values.namespaces }}
+                - name: CLOUDOPTIMIZER_NAMESPACES
+                  value: {{ join "," .Values.namespaces | quote }}
+                {{- end }}
+                {{- if .Values.excludeNamespaces }}
+                - name: CLOUDOPTIMIZER_EXCLUDE_NAMESPACES
+                  value: {{ join "," .Values.excludeNamespaces | quote }}
+                {{- end }}
+                {{- if .Values.insecureSkipTLSVerify }}
+                - name: CLOUDOPTIMIZER_VERIFY_TLS
+                  value: "false"
+                {{- end }}
+                # Trivy needs somewhere writable for its vulnerability
+                # database; the root filesystem is read-only.
+                - name: TRIVY_CACHE_DIR
+                  value: /tmp/trivy
+              resources:
+                {{- toYaml .Values.scanner.resources | nindent 16 }}
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            # The vulnerability database is ~1 GiB uncompressed. emptyDir
+            # rather than a PVC: it is a cache, re-downloading it daily is
+            # cheaper than provisioning storage, and a stale cached DB is
+            # worse than a fresh download.
+            - name: tmp
+              emptyDir:
+                sizeLimit: {{ .Values.scanner.cacheSizeLimit }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
