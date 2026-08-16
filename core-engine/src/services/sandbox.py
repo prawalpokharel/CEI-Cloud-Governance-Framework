@@ -264,17 +264,21 @@ def build_sandbox_history(snapshot: dict, samples: int = 40) -> dict[str, list[d
 # Modelled on what a real Debian-based image returns: a long tail dominated by
 # OS packages, a handful of criticals, and several findings with no published
 # fix. The point of the demo is that severity alone does not order these.
+# Version pairs are chosen to exercise every branch of the remediation policy
+# engine: patch, minor, major, unparseable distro versions, and findings with
+# no published fix. A demo where every finding lands in one bucket shows
+# nothing about how the engine decides.
 _SANDBOX_CVES = [
-    # (cve, severity, cvss, package, class, fixed)
-    ("CVE-2026-31789", "CRITICAL", 9.8, "openssl", "os-pkgs", "3.0.15-1"),
-    ("CVE-2026-31789", "CRITICAL", 9.8, "libssl3", "os-pkgs", "3.0.15-1"),
-    ("CVE-2026-22047", "CRITICAL", 9.1, "glibc", "os-pkgs", "2.36-9+deb12u9"),
-    ("CVE-2026-19881", "HIGH", 8.8, "libxml2", "os-pkgs", "2.9.14+dfsg-1.3"),
-    ("CVE-2026-17402", "HIGH", 7.5, "zlib1g", "os-pkgs", None),
-    ("CVE-2026-15990", "HIGH", 7.4, "requests", "lang-pkgs", "2.32.4"),
-    ("CVE-2026-11238", "MEDIUM", 6.5, "urllib3", "lang-pkgs", "2.2.3"),
-    ("CVE-2026-10087", "MEDIUM", 5.9, "perl-base", "os-pkgs", "5.36.0-7"),
-    ("CVE-2025-98221", "MEDIUM", 5.3, "libgcrypt20", "os-pkgs", None),
+    # (cve, severity, cvss, package, class, installed, fixed)
+    ("CVE-2026-31789", "CRITICAL", 9.8, "openssl", "os-pkgs", "3.0.11", "3.0.15"),
+    ("CVE-2026-31789", "CRITICAL", 9.8, "libssl3", "os-pkgs", "3.0.11", "3.0.15"),
+    ("CVE-2026-22047", "CRITICAL", 9.1, "glibc", "os-pkgs", "2.36-9", "2.36-9+deb12u9"),
+    ("CVE-2026-19881", "HIGH", 8.8, "libxml2", "os-pkgs", "2.9.14", "2.10.1"),
+    ("CVE-2026-17402", "HIGH", 7.5, "zlib1g", "os-pkgs", "1.2.13", None),
+    ("CVE-2026-15990", "HIGH", 7.4, "requests", "lang-pkgs", "2.31.0", "2.32.4"),
+    ("CVE-2026-11238", "MEDIUM", 6.5, "urllib3", "lang-pkgs", "1.26.18", "2.2.3"),
+    ("CVE-2026-10087", "MEDIUM", 5.9, "perl-base", "os-pkgs", "5.36.0", "5.36.1"),
+    ("CVE-2025-98221", "MEDIUM", 5.3, "libgcrypt20", "os-pkgs", "1.10.2", None),
 ]
 
 # Which sandbox workloads run which image. Chosen so the demo contains the
@@ -301,13 +305,13 @@ def build_sandbox_scans() -> list[dict]:
                 "severity": severity,
                 "cvss_score": cvss,
                 "pkg_name": package,
-                "installed_version": "1.0.0",
+                "installed_version": installed,
                 "fixed_version": fixed,
                 "pkg_class": pkg_class,
                 "title": f"{package}: {cve}",
                 "primary_url": f"https://avd.aquasec.com/nvd/{cve.lower()}",
             }
-            for cve, severity, cvss, package, pkg_class, fixed in cves
+            for cve, severity, cvss, package, pkg_class, installed, fixed in cves
         ]
         counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "UNKNOWN": 0}
         for v in vulns:

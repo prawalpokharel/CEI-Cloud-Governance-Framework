@@ -297,3 +297,97 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --------------------------------------------------------------------------
+# IaC misconfiguration scanning (Phase 5)
+# --------------------------------------------------------------------------
+
+# Trivy's config scanner covers Terraform, CloudFormation, Kubernetes
+# manifests, Helm charts, and Dockerfiles with one engine. Adding a second
+# tool for each format would multiply maintenance for findings that largely
+# overlap.
+IAC_SEVERITIES = {"CRITICAL", "HIGH", "MEDIUM"}
+
+
+def scan_iac(path: str, timeout: int = 600) -> dict:
+    """
+    Scan a directory of infrastructure-as-code for misconfigurations.
+
+    Runs against a checked-out repository, not against the cluster: the point
+    is to catch a misconfiguration in the manifest that produced the cluster,
+    where fixing it is a pull request rather than a live change.
+    """
+    log.info("Scanning IaC at %s", path)
+    try:
+        proc = subprocess.run(
+            [
+                _trivy_binary(), "config",
+                "--format", "json",
+                "--quiet",
+                "--timeout", f"{timeout}s",
+                path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout + 60,
+        )
+    except subprocess.TimeoutExpired:
+        return {"path": path, "scan_error": "scan timed out"}
+    except Exception as exc:
+        return {"path": path, "scan_error": str(exc)}
+
+    # trivy config exits non-zero when findings exist, which is not an error.
+    if proc.returncode not in (0, 1) or not proc.stdout.strip():
+        return {
+            "path": path,
+            "scan_error": (proc.stderr or "trivy config failed").strip()[:500],
+        }
+
+    try:
+        report = json.loads(proc.stdout)
+    except Exception as exc:
+        return {"path": path, "scan_error": f"unparseable output: {exc}"}
+
+    return normalize_iac_report(path, report)
+
+
+def normalize_iac_report(path: str, report: dict) -> dict:
+    counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "UNKNOWN": 0}
+    findings = []
+
+    for result in report.get("Results") or []:
+        target = result.get("Target")
+        for issue in result.get("Misconfigurations") or []:
+            severity = (issue.get("Severity") or "UNKNOWN").upper()
+            counts[severity] = counts.get(severity, 0) + 1
+            if severity not in IAC_SEVERITIES:
+                continue
+            # Only failures. Trivy reports passing checks too, and shipping
+            # those would bury the failures they are meant to contrast with.
+            if (issue.get("Status") or "").upper() == "PASS":
+                continue
+
+            findings.append({
+                "id": issue.get("ID"),
+                "severity": severity,
+                "title": issue.get("Title"),
+                "description": (issue.get("Description") or "")[:600] or None,
+                "resolution": (issue.get("Resolution") or "")[:600] or None,
+                "target": target,
+                "start_line": (issue.get("CauseMetadata") or {}).get("StartLine"),
+                "resource": (issue.get("CauseMetadata") or {}).get("Resource"),
+                "primary_url": issue.get("PrimaryURL"),
+                "service": (issue.get("CauseMetadata") or {}).get("Service"),
+            })
+
+    order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2}
+    findings.sort(key=lambda f: order.get(f["severity"], 9))
+
+    return {
+        "path": path,
+        "counts": counts,
+        "findings": findings[:200],
+        "truncated": max(0, len(findings) - 200),
+        "scan_error": None,
+    }

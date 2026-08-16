@@ -34,6 +34,8 @@ from ..services import audit
 from ..services.cost import analyze_cluster_cost
 from ..services.health import diagnose
 from ..services.live_cei import CentralityMode, _history_for, compute_live_cei
+from ..services.network import analyze_segmentation, generate_all_policies
+from ..services.policy import plan_remediation
 from ..services.vulnerability import base_image_recommendations, prioritize
 from ..services.security import (
     SecretNotConfigured,
@@ -619,6 +621,74 @@ async def cluster_vulnerabilities(
     result["base_image_recommendations"] = base_image_recommendations(scans)
     result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     result["scanned_at"] = max(s["scanned_at"] for s in scans)
+    return result
+
+
+@router.get("/clusters/{cluster_id}/network")
+async def cluster_network(
+    cluster_id: str,
+    generate: bool = False,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Segmentation coverage, and optionally generated NetworkPolicies.
+
+    Policies are derived from observed dependencies. A dependency resolved
+    only at runtime produces no edge and would be blocked, which is why every
+    generated policy carries that warning and is never applied from here.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+
+    cei = compute_live_cei(snapshot, {})
+    cei_by_workload = {n["node_id"]: n for n in cei.nodes}
+
+    result = analyze_segmentation(snapshot, cei_by_workload)
+    if generate:
+        result["generated_policies"] = generate_all_policies(
+            snapshot, cei_by_workload
+        )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/remediation")
+async def cluster_remediation(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    What may be done automatically about each finding, and what may not.
+
+    Decision only. Nothing here executes: applying a change requires the Git
+    or cluster-write integration, which is separately gated.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    scans = await _load_scans(session, cluster.id)
+    if not scans:
+        return {
+            "cluster": {"id": str(cluster.id), "name": cluster.name},
+            "summary": {"total": 0, "by_action": {}, "auto_apply_enabled": False},
+            "plan": [],
+        }
+
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei = compute_live_cei(snapshot, {})
+    ranked = prioritize(scans, {n["node_id"]: n for n in cei.nodes}, snapshot)
+
+    namespaces = {
+        w["key"]: w.get("namespace", "default")
+        for w in (snapshot.get("workloads") or [])
+    }
+    result = plan_remediation(
+        ranked["findings"], workload_namespaces=namespaces
+    )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     return result
 
 

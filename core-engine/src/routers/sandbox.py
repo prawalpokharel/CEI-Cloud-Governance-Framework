@@ -25,6 +25,8 @@ from ..services.sandbox import (
     build_sandbox_scans,
     build_sandbox_snapshot,
 )
+from ..services.network import analyze_segmentation, generate_all_policies
+from ..services.policy import plan_remediation
 from ..services.vulnerability import base_image_recommendations, prioritize
 
 router = APIRouter(prefix="/v1/sandbox", tags=["sandbox"])
@@ -130,4 +132,31 @@ async def sandbox_vulnerabilities():
     result["base_image_recommendations"] = base_image_recommendations(scans)
     result["cluster"] = {"id": "sandbox", "name": "acme-production (sample data)"}
     result["scanned_at"] = snapshot["captured_at"]
+    return result
+
+
+@router.get("/network")
+async def sandbox_network(generate: bool = False):
+    snapshot = _snapshot()
+    cei = compute_live_cei(snapshot, _history())
+    by_workload = {n["node_id"]: n for n in cei.nodes}
+    result = analyze_segmentation(snapshot, by_workload)
+    if generate:
+        result["generated_policies"] = generate_all_policies(snapshot, by_workload)
+    result["cluster"] = {"id": "sandbox", "name": "acme-production (sample data)"}
+    return result
+
+
+@router.get("/remediation")
+async def sandbox_remediation():
+    snapshot = _snapshot()
+    cei = compute_live_cei(snapshot, _history())
+    scans = build_sandbox_scans()
+    ranked = prioritize(scans, {n["node_id"]: n for n in cei.nodes}, snapshot)
+    namespaces = {
+        w["key"]: w.get("namespace", "default")
+        for w in (snapshot.get("workloads") or [])
+    }
+    result = plan_remediation(ranked["findings"], workload_namespaces=namespaces)
+    result["cluster"] = {"id": "sandbox", "name": "acme-production (sample data)"}
     return result
