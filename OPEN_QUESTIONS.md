@@ -70,30 +70,41 @@ change nobody has validated against your environment.
 
 ## Known gaps, scheduled
 
-### 5. CEI is not computed on live clusters **[gap — Week 3]**
+### 5. CEI on live clusters **[done — Week 3]**
 
-The agent reports topology and the dashboard renders it, but no CEI scores are
-attached. Week 3 in the plan. Depends on decision #2.
+`GET /v1/clusters/{id}/cei` computes CEI over the latest snapshot, and the
+dashboard colours and sizes the map by it. Centrality mode is switchable in
+the UI, so decision #2 can be made by looking at real output rather than
+reasoning about it.
 
-### 6. Entropy still needs real history **[gap — Week 3]**
+### 6. Entropy from real history **[done — Week 3]**
 
-`workload_samples` accumulates on every ingest, and `/v1/clusters/{id}/history`
-reports whether 30 samples exist. Nothing consumes it yet — the CEI path still
-falls back to seeded synthetic history when none is supplied. Wire it up when
-CEI moves onto live clusters.
+Live CEI reads accumulated `workload_samples`. Below 30 samples the entropy
+term is withheld and beta redistributed across alpha and gamma, and the
+response reports the effective weights actually used. Nothing is fabricated on
+the live path.
+
+Note the scenario path still synthesizes history when none is supplied — that
+fallback is what the NIW goldens are pinned against, so it stays until you
+decide otherwise.
 
 ### 7. Snapshot retention is documented but not enforced **[gap]**
 
 Schema comments say ~24h; no job prunes them. At 60s intervals one cluster
 writes ~1,440 snapshots/day. Needs a scheduled delete before any real fleet.
 
-### 8. The chart points at an image that does not exist **[gap]**
+### 8. The agent image is not published yet **[gap — one command]**
 
-`ghcr.io/prawalpokharel/cloudoptimizer-agent:0.1.0` is not published. Local
-testing used `--set image.repository=cloudoptimizer-agent --set
-image.pullPolicy=Never` against a kind-loaded image. Needs a release workflow
-building linux/amd64 + linux/arm64 (the Dockerfile is written for both, but
-only arm64 has been built and run).
+`.github/workflows/release-agent.yml` builds and pushes multi-arch to ghcr.io
+and fails if either architecture is missing from the manifest. Both platforms
+verified building locally. Publish with:
+
+```
+git tag agent-v0.1.0 && git push origin agent-v0.1.0
+```
+
+Until then the chart's default `image.repository` points at an image that does
+not exist.
 
 ### 9. Rollback manager is still in-process **[gap]**
 

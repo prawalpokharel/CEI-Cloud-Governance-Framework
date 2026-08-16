@@ -8,15 +8,19 @@ import { api, getToken } from '../../lib/appApi';
 /**
  * Live cluster view: dependency map plus the workload table behind it.
  *
- * CEI is not computed on live clusters yet -- that is Week 3 -- so the map
- * renders structure without scores. The table already shows requested-vs-used
- * headroom, which is the Phase 2 waste signal and is available as soon as
- * metrics-server is present.
+ * CEI colours and sizes the map. The centrality mode is switchable because
+ * "central" has two defensible readings that rank workloads very differently
+ * -- see services/live_cei.CentralityMode.
+ *
+ * The table shows requested-vs-used headroom alongside the score, which is
+ * the Phase 2 waste signal and is available as soon as metrics-server is.
  */
 export default function ClusterView() {
   const router = useRouter();
   const { clusterId } = router.query;
   const [data, setData] = useState(null);
+  const [cei, setCei] = useState(null);
+  const [mode, setMode] = useState('blast_radius');
   const [history, setHistory] = useState(null);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('headroom');
@@ -37,6 +41,12 @@ export default function ClusterView() {
         .history(clusterId)
         .then((h) => active && setHistory(h))
         .catch(() => {});
+      api
+        .cei(clusterId, mode)
+        // A cluster with no snapshot yet returns 409; that is a normal
+        // early state, not an error worth surfacing.
+        .then((c) => active && setCei(c))
+        .catch(() => active && setCei(null));
     };
     load();
     const timer = setInterval(load, 15000);
@@ -44,7 +54,7 @@ export default function ClusterView() {
       active = false;
       clearInterval(timer);
     };
-  }, [clusterId, router]);
+  }, [clusterId, router, mode]);
 
   // The map component expects {nodes:[{id}], edges:[{source,target,weight}]}.
   const topology = useMemo(() => {
@@ -63,21 +73,31 @@ export default function ClusterView() {
     };
   }, [data]);
 
+  const ceiByWorkload = useMemo(() => {
+    const map = {};
+    (cei?.nodes || []).forEach((n) => {
+      map[n.node_id] = n;
+    });
+    return map;
+  }, [cei]);
+
   const rows = useMemo(() => {
     const list = (data?.workloads || []).map((w) => {
       const req = w.cpu_cores_requested;
       const used = w.cpu_cores_used;
       const headroom =
         req && used !== null && used !== undefined ? 1 - used / req : null;
-      return { ...w, headroom };
+      return { ...w, headroom, cei: ceiByWorkload[w.key] || null };
     });
-    if (sortBy === 'headroom') {
+    if (sortBy === 'cei') {
+      list.sort((a, b) => (b.cei?.cei_score ?? -1) - (a.cei?.cei_score ?? -1));
+    } else if (sortBy === 'headroom') {
       list.sort((a, b) => (b.headroom ?? -1) - (a.headroom ?? -1));
     } else {
       list.sort((a, b) => a.key.localeCompare(b.key));
     }
     return list;
-  }, [data, sortBy]);
+  }, [data, sortBy, ceiByWorkload]);
 
   if (error) {
     return (
@@ -144,9 +164,36 @@ export default function ClusterView() {
       </div>
 
       <div style={s.panel}>
-        <div style={s.panelTitle}>Dependency topology</div>
+        <div style={s.panelHeader}>
+          <div style={s.panelTitle}>Dependency topology</div>
+          <select
+            style={s.select}
+            value={mode}
+            onChange={(e) => setMode(e.target.value)}
+            title="What 'central' means. Blast radius asks what breaks if this fails; structural ranks hubs and entrypoints."
+          >
+            <option value="blast_radius">Rank by blast radius</option>
+            <option value="structural">Rank by structural position</option>
+          </select>
+        </div>
+        {cei && (
+          <p style={s.ceiNote}>
+            α {cei.weights.alpha} · β {cei.weights.beta} · γ {cei.weights.gamma}
+            {cei.entropy && !cei.entropy.ready && (
+              <>
+                {' '}— entropy withheld ({cei.entropy.samples}/
+                {cei.entropy.samples_required} observations), its weight
+                redistributed across centrality and governance risk.
+              </>
+            )}
+          </p>
+        )}
         {topology?.edges?.length ? (
-          <ClusterTopologyMap topology={topology} analysis={null} height={520} />
+          <ClusterTopologyMap
+            topology={topology}
+            analysis={cei ? { nodes: cei.nodes, weights: cei.weights } : null}
+            height={520}
+          />
         ) : (
           <p style={s.muted}>
             No dependencies inferred yet. Edges are derived from Service
@@ -164,6 +211,7 @@ export default function ClusterView() {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
+            <option value="cei">Sort by CEI</option>
             <option value="headroom">Sort by unused CPU</option>
             <option value="name">Sort by name</option>
           </select>
@@ -174,6 +222,7 @@ export default function ClusterView() {
               <tr>
                 <th style={s.th}>Workload</th>
                 <th style={s.th}>Namespace</th>
+                <th style={s.thNum}>CEI</th>
                 <th style={s.thNum}>Replicas</th>
                 <th style={s.thNum}>CPU req</th>
                 <th style={s.thNum}>CPU used</th>
@@ -185,6 +234,15 @@ export default function ClusterView() {
                 <tr key={w.key}>
                   <td style={s.td}>{w.name}</td>
                   <td style={s.tdMuted}>{w.namespace}</td>
+                  <td style={s.tdNum}>
+                    {w.cei ? (
+                      <span style={{ fontWeight: 600 }}>
+                        {w.cei.cei_score.toFixed(3)}
+                      </span>
+                    ) : (
+                      '–'
+                    )}
+                  </td>
                   <td style={s.tdNum}>
                     {w.replicas_ready ?? '–'}/{w.replicas_desired ?? '–'}
                   </td>
@@ -352,6 +410,12 @@ const s = {
     borderBottom: '1px solid #F2F4F4',
     textAlign: 'right',
     fontVariantNumeric: 'tabular-nums',
+  },
+  ceiNote: {
+    fontSize: 11,
+    color: '#7B8A8B',
+    margin: '0 0 12px 0',
+    lineHeight: 1.5,
   },
   error: {
     background: '#FDEDEC',

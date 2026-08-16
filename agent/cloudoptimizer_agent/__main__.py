@@ -18,6 +18,7 @@ import time
 
 from kubernetes import config as k8s_config
 
+from .buffer import SnapshotBuffer
 from .collector import ClusterCollector, attach_service_references
 from .config import AgentConfig
 from .inference import edge_summary
@@ -58,6 +59,7 @@ def run_cycle(
     transport: Transport | None,
     seq: int,
     collect_metrics: bool,
+    buffer: SnapshotBuffer | None = None,
 ) -> dict:
     nodes = collector.collect_nodes()
     services = collector.collect_services()
@@ -115,7 +117,27 @@ def run_cycle(
     )
 
     if transport is not None:
-        response = transport.send_snapshot(payload)
+        # Clear any backlog first, so history is replayed in the order it was
+        # observed rather than interleaved with the current snapshot.
+        if buffer is not None and len(buffer):
+            buffer.drain(transport.send_snapshot)
+
+        try:
+            response = transport.send_snapshot(payload)
+        except IngestError as exc:
+            # Fatal errors (bad key, duplicate cluster) will not resolve by
+            # retrying later, so buffering them would fill the buffer with
+            # snapshots that can never be delivered.
+            if buffer is None or exc.fatal:
+                raise
+            buffer.add(payload)
+            log.warning(
+                "Ingest unavailable; buffered snapshot seq=%d "
+                "(%d queued, %.1f KiB): %s",
+                seq, len(buffer), buffer.nbytes / 1024, exc,
+            )
+            return {}
+
         status = response.get("status", "unknown")
         cluster_id = response.get("cluster_id", "?")
 
@@ -187,6 +209,8 @@ def main() -> int:
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
+    buffer = SnapshotBuffer()
+
     seq = 0
     interval = config.interval_seconds
 
@@ -194,7 +218,8 @@ def main() -> int:
         seq += 1
         try:
             response = run_cycle(
-                collector, metrics, transport, seq, config.collect_metrics
+                collector, metrics, transport, seq, config.collect_metrics,
+                buffer,
             )
             # The server controls cadence, so it can back a noisy fleet off
             # without anyone editing a Helm value.

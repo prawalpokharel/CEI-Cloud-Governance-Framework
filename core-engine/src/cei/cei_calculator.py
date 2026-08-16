@@ -29,6 +29,23 @@ class CEICalculator:
     ELEVATED_THRESHOLD = 0.50
     MODERATE_THRESHOLD = 0.25
 
+    def __init__(
+        self,
+        centrality_mode: str = "structural",
+        suppress_entropy: bool = False,
+    ):
+        # "structural" is the original composite and remains the default, so
+        # the scenario endpoints behind the USPTO/NIW pages are unaffected.
+        # "blast_radius" emphasizes dependents and is used for live clusters.
+        # See services/live_cei.CentralityMode for why this is explicit.
+        self.centrality_mode = centrality_mode
+
+        # When set, the entropy term is withheld and beta is redistributed
+        # across alpha and gamma. Used when too little history exists to
+        # measure workload variability -- withholding is honest, whereas the
+        # alternative is a score built partly on fabricated data.
+        self.suppress_entropy = suppress_entropy
+
     def compute(
         self,
         graph: nx.DiGraph,
@@ -44,6 +61,27 @@ class CEICalculator:
         alpha = weights.get("alpha", 0.4)
         beta = weights.get("beta", 0.35)
         gamma = weights.get("gamma", 0.25)
+
+        # Not enough history to measure variability. Redistribute beta across
+        # the two terms that ARE measurable, in their existing proportion, so
+        # scores stay on a [0, 1] scale and remain comparable to scores
+        # computed once history exists.
+        if self.suppress_entropy:
+            measurable = alpha + gamma
+            if measurable > 0:
+                alpha += beta * (alpha / measurable)
+                gamma += beta * (gamma / measurable)
+            beta = 0.0
+
+        # The weights actually applied, which differ from the recalibrator's
+        # output when entropy is suppressed. Reporting the recalibrator's
+        # values would have the response claim beta=0.35 while scoring with
+        # beta=0 -- stating a number the result was not computed from.
+        self.effective_weights = {
+            "alpha": round(alpha, 4),
+            "beta": round(beta, 4),
+            "gamma": round(gamma, 4),
+        }
 
         # Compute centrality metrics for all nodes (Patent: graph centrality)
         centrality_scores = self._compute_centrality(graph)
@@ -102,6 +140,9 @@ class CEICalculator:
         except nx.PowerIterationFailedConvergence:
             pagerank = {n: 1.0 / len(graph.nodes()) for n in graph.nodes()}
 
+        if self.centrality_mode == "blast_radius":
+            return self._blast_radius_centrality(graph, pagerank)
+
         # Betweenness centrality
         betweenness = nx.betweenness_centrality(graph)
 
@@ -129,6 +170,49 @@ class CEICalculator:
         if max_score > 0:
             composite = {k: v / max_score for k, v in composite.items()}
 
+        return composite
+
+    def _blast_radius_centrality(
+        self, graph: nx.DiGraph, pagerank: Dict[str, float]
+    ) -> Dict[str, float]:
+        """
+        Centrality as "how much breaks if this fails".
+
+        Edges run caller -> callee, so a node's DEPENDENTS are its
+        predecessors. Two signals, both about being depended upon:
+
+          * PageRank, which flows along edges toward callees, so a workload
+            that many important callers reach scores highly.
+          * Reachable-dependents: the share of the graph that can reach this
+            node, i.e. the set that would be affected by its failure. Direct
+            in-degree alone misses transitive impact -- a database behind one
+            service that the whole system calls is not a leaf.
+
+        Betweenness, out-degree, and closeness are excluded on purpose. They
+        reward being a hub in either direction, which is what ranked an API
+        gateway above the database everything depends on.
+        """
+        nodes = list(graph.nodes())
+        total_others = max(1, len(nodes) - 1)
+
+        reachable_dependents = {}
+        reversed_graph = graph.reverse(copy=False)
+        for node in nodes:
+            # Descendants in the reversed graph = everything upstream that
+            # transitively depends on this node.
+            reachable_dependents[node] = (
+                len(nx.descendants(reversed_graph, node)) / total_others
+            )
+
+        max_pagerank = max(pagerank.values()) if pagerank else 0.0
+        composite = {}
+        for node in nodes:
+            pr = (pagerank.get(node, 0.0) / max_pagerank) if max_pagerank else 0.0
+            composite[node] = 0.5 * pr + 0.5 * reachable_dependents[node]
+
+        peak = max(composite.values()) if composite else 0.0
+        if peak > 0:
+            composite = {k: v / peak for k, v in composite.items()}
         return composite
 
     def _compute_entropy(self, node_telemetry: Dict) -> float:
@@ -180,7 +264,9 @@ class CEICalculator:
         probs = hist / total
         # Shannon entropy: -sum(p * log2(p))
         entropy = -sum(p * np.log2(p) for p in probs if p > 0)
-        return float(entropy)
+        # A single occupied bin gives p=1 and log2(1)=0, so the negation
+        # yields -0.0, which renders as "-0.000" and reads like a defect.
+        return max(0.0, float(entropy))
 
     def _classify(self, cei_score: float) -> str:
         """

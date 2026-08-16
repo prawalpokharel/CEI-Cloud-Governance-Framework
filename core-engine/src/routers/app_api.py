@@ -26,8 +26,10 @@ from ..db.models import (
     Snapshot,
     Tenant,
     User,
+    WorkloadSample,
 )
 from ..services import audit
+from ..services.live_cei import CentralityMode, _history_for, compute_live_cei
 from ..services.security import (
     SecretNotConfigured,
     generate_api_key,
@@ -206,6 +208,27 @@ async def me(user: User = Depends(current_user)):
 # Clusters
 # --------------------------------------------------------------------------
 
+# An agent reports on a fixed interval, so silence for several intervals means
+# it is gone -- crashed, evicted, network-partitioned, or uninstalled. Three
+# intervals tolerates one missed cycle plus retry backoff without flapping.
+STALE_AFTER_SECONDS = 180
+
+
+def _connection_state(last_seen_at) -> tuple[str, int | None]:
+    """
+    Return (state, seconds_since_last_report).
+
+    "connected" previously meant "has reported at least once, ever", so a
+    cluster whose agent died days ago still displayed as healthy. That is the
+    opposite of useful: the entire value of a monitoring agent is knowing when
+    it stops reporting.
+    """
+    if last_seen_at is None:
+        return "never_connected", None
+    age = (datetime.now(timezone.utc) - last_seen_at).total_seconds()
+    return ("connected" if age <= STALE_AFTER_SECONDS else "stale"), int(age)
+
+
 @router.get("/clusters")
 async def list_clusters(
     user: User = Depends(current_user),
@@ -229,6 +252,7 @@ async def list_clusters(
                 .limit(1)
             )
         ).scalar_one_or_none()
+        state, age = _connection_state(cluster.last_seen_at)
         out.append({
             "id": str(cluster.id),
             "name": cluster.name,
@@ -237,7 +261,9 @@ async def list_clusters(
             "agent_version": cluster.agent_version,
             "metrics_available": cluster.metrics_available,
             "last_seen_at": cluster.last_seen_at.isoformat() if cluster.last_seen_at else None,
-            "connected": cluster.last_seen_at is not None,
+            "state": state,
+            "seconds_since_report": age,
+            "connected": state == "connected",
             "workload_count": latest.workload_count if latest else 0,
             "node_count": latest.node_count if latest else 0,
             "pod_count": latest.pod_count if latest else 0,
@@ -361,6 +387,78 @@ async def cluster_topology(
         "edges": payload.get("edges", []),
         "summary": payload.get("summary", {}),
     }
+
+
+@router.get("/clusters/{cluster_id}/cei")
+async def cluster_cei(
+    cluster_id: str,
+    mode: str = "blast_radius",
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    CEI over the cluster's latest snapshot.
+
+    Entropy is computed from accumulated workload_samples, not from a
+    fabricated series. Until enough history exists the term is withheld and
+    its weight redistributed, and the response says so.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+
+    try:
+        centrality_mode = CentralityMode(mode)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unknown centrality mode {mode!r}. Valid values: "
+                f"{', '.join(m.value for m in CentralityMode)}"
+            ),
+        )
+
+    latest = (
+        await session.execute(
+            select(Snapshot)
+            .where(Snapshot.cluster_id == cluster.id)
+            .order_by(desc(Snapshot.received_at))
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if latest is None:
+        raise HTTPException(
+            status_code=409,
+            detail="No snapshot received yet. Is the agent installed and running?",
+        )
+
+    # Ordered oldest-first: entropy is computed over a time series, and the
+    # binning is order-independent but the stability monitor's windowing is
+    # not.
+    rows = (
+        await session.execute(
+            select(WorkloadSample)
+            .where(WorkloadSample.cluster_id == cluster.id)
+            .order_by(WorkloadSample.observed_at)
+        )
+    ).scalars().all()
+
+    history: dict[str, list[dict]] = {}
+    for row in rows:
+        history.setdefault(row.workload_key, []).append({
+            "cpu_cores_used": row.cpu_cores_used,
+            "cpu_cores_requested": row.cpu_cores_requested,
+            "mem_bytes_used": row.mem_bytes_used,
+            "mem_bytes_requested": row.mem_bytes_requested,
+        })
+
+    result = compute_live_cei(
+        latest.payload or {},
+        {k: _history_for(v) for k, v in history.items()},
+        centrality_mode=centrality_mode,
+    )
+    payload = result.to_dict()
+    payload["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    payload["captured_at"] = latest.captured_at.isoformat()
+    return payload
 
 
 @router.get("/clusters/{cluster_id}/history")

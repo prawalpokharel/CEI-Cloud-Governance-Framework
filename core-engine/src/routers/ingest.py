@@ -15,6 +15,7 @@ import gzip
 import io
 import json
 import logging
+import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -130,6 +131,27 @@ async def _read_body(request: Request) -> dict:
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Snapshot must be a JSON object")
     return payload
+
+
+def _cadence_directive() -> dict:
+    """
+    Optionally instruct the agent to change its poll interval.
+
+    Returned only when INGEST_FORCED_INTERVAL_SECONDS is set. The mechanism
+    exists so a noisy fleet can be backed off without anyone editing a Helm
+    value and redeploying -- but an unconditional value silently overrode the
+    operator's configured interval, so a cluster installed with
+    intervalSeconds=20 quietly ran at 60. Absent an actual reason to
+    intervene, the agent keeps what it was configured with.
+    """
+    raw = os.environ.get("INGEST_FORCED_INTERVAL_SECONDS", "").strip()
+    if not raw:
+        return {}
+    try:
+        seconds = int(raw)
+    except ValueError:
+        return {}
+    return {"next_interval_seconds": max(10, seconds)}
 
 
 def _parse_timestamp(value) -> datetime:
@@ -328,7 +350,7 @@ async def ingest_snapshot(
             "status": "duplicate",
             "cluster_id": cluster_id_str,
             "seq": seq,
-            "next_interval_seconds": 60,
+            **_cadence_directive(),
         }
 
     return {

@@ -70,6 +70,8 @@ export const api = {
     request('/v1/clusters', { method: 'POST', body: { name } }),
   topology: (id) => request(`/v1/clusters/${id}/topology`),
   history: (id) => request(`/v1/clusters/${id}/history`),
+  cei: (id, mode = 'blast_radius') =>
+    request(`/v1/clusters/${id}/cei?mode=${encodeURIComponent(mode)}`),
 };
 
 export { API_BASE };

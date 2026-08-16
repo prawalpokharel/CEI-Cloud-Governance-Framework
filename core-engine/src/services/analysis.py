@@ -11,7 +11,9 @@ from ..engine import build_pipeline
 from ..schemas import AnalysisRequest, AnalysisResponse, NodeCEIResult
 
 
-def run_analysis(request: AnalysisRequest) -> AnalysisResponse:
+def run_analysis(
+    request: AnalysisRequest, pipeline=None
+) -> AnalysisResponse:
     """
     Execute the complete CEI analysis pipeline:
 
@@ -28,8 +30,14 @@ def run_analysis(request: AnalysisRequest) -> AnalysisResponse:
     Pure function of its input: the pipeline modules are constructed fresh
     for each call, so repeated invocations return identical results and
     concurrent callers cannot perturb one another.
+
+    ``pipeline`` accepts a pre-configured module set, which the live-cluster
+    path uses to select centrality semantics and to suppress the entropy term
+    when there is too little history to measure it. It must still be a fresh
+    instance per call -- passing a shared one reintroduces exactly the
+    cross-request coupling this design removed.
     """
-    p = build_pipeline()
+    p = pipeline if pipeline is not None else build_pipeline()
 
     # Step 1: Data Collection (Patent Module 101)
     telemetry_data = p.data_collector.collect(request.telemetry.nodes)
