@@ -3,7 +3,7 @@
 Single tracked list: decisions waiting on you, what was skipped and why, bugs,
 gaps, and debt.
 
-Last updated: Phases 1–3 complete; 5–7 partially built; 4, 6.5, 8 not started.
+Last updated: Phases 1–4 complete; 5–7 partially built; 6.5 and 8 not started.
 
 ---
 
@@ -17,10 +17,12 @@ These change what gets built. None is blocked on engineering.
 | **D2** | **Derived instance types in scenarios** | `smallest_fitting_instance()` infers cost from `cpu_limit`/`mem_gb`, which the scenario files never declare. Keep, or write explicit `instance_type` into the topology JSONs? Affects NIW-facing figures. |
 | **D3** | **npm lockfiles** | Untracked. Committing pins versions Railway currently resolves freely. |
 | **D4** | **Setting `DATABASE_URL` opens public signup** | `/v1/auth/signup` goes live the moment the variable is set. Options in `SETUP.md`: leave unset, run the product API as a second Railway service, or add an invite gate (~1h). |
-| **D5** | **Does the product get write access to customer repos?** | Blocks Phase 4 entirely. See §2. |
+| **D5** | **Open a live pull request?** | The whole chain is verified against your real repo in dry run. Opening one for real is an outward-facing write to a public repository — one command away, but yours to authorize. |
 | **D6** | **Does the agent get write RBAC?** | Blocks Phase 7 execution. Currently `get/list/watch` only, which is the whole trust story. |
 | **D7** | **Auto-apply defaults** | The engine ships with `auto_apply_enabled=False` and `has_tests=False`, so nothing is ever applied automatically today. Confirm that stays the default at GA. |
 | **D8** | **Log platform for Phase 6.5** | ClickHouse vs OpenSearch. Adds a second datastore and materially changes hosting cost. |
+| **D9** | **Rotate the GitHub App private key** | The PEM was pasted into a chat transcript. Nothing depends on that specific key. |
+| **D10** | **Pin the Gemini model or track an alias** | `gemini-3.7-flash` is pinned now. `gemini-flash-latest` auto-tracks but changes fix quality under you without notice. |
 
 ---
 
@@ -28,25 +30,20 @@ These change what gets built. None is blocked on engineering.
 
 Not stubbed, not half-built. Each has a real blocker.
 
-### Phase 4 — Fix with AI · **not started**
+### Phase 4 — Fix with AI · **built, one authorization from live**
 
-Needs, all of which are yours to grant:
+Verified end to end against `prawalpokharel/CEI-Cloud-Governance-Framework`
+with real GitHub and real Gemini calls, stopping short of the push.
 
-- A GitHub/GitLab App with write access to customer repositories
-- An Anthropic API key for fix generation
-- Sandboxed test execution — untrusted customer code runs somewhere, and
-  choosing where is a security decision (isolated runner, ephemeral container,
-  network-isolated namespace)
+Still outstanding:
 
-The *decision* surface is already built and tested: `services/policy.py`
-decides what may be auto-applied, PR'd, or only alerted on, and it dry-runs
-against real findings today. What is missing is execution, which is
-deliberately the part that touches a credential capable of changing a
-customer's system.
-
-**Recommendation:** build behind a per-customer opt-in, PR-only in v1 (no
-direct commits), with branch, commit author, and PR body all attributable to
-the product rather than to a person.
+- **Sandboxed test execution.** `has_tests` is hardcoded False, so nothing
+  can reach `auto_apply` regardless of settings. Running customer test suites
+  needs an isolated runner, and choosing where is a security decision.
+- **Base-image rebase PRs.** OS-package findings — the majority of image
+  vulnerabilities — are correctly routed away from manifest edits, but
+  choosing the replacement tag needs registry queries not yet implemented.
+- **GitLab.** Only GitHub is implemented.
 
 ### Phase 5 — CSPM and cloud account connect · **partial**
 

@@ -7,3 +7,6 @@ __pycache__/
 .venv/
 venv/
 agent/.venv/
+.env
+.env
+cei-governance-bot.2026-08-16.private-key.pem

@@ -5,6 +5,8 @@ Operational commands.
     python -m src.cli prune --dry-run
     python -m src.cli report         weekly governance report per cluster
     python -m src.cli alert          Slack alerts for high-CEI critical issues
+    python -m src.cli fix --repo O/R  open fix PRs for approved findings
+    python -m src.cli integrations    report credential/config state
 
 Run `prune` on a schedule (Railway cron, or any scheduler that can invoke a
 one-off command against the service). It is idempotent and safe to run
@@ -26,6 +28,7 @@ import sys
 
 from .db.base import dispose_engine, get_session_factory
 from .services import notify, retention
+from .services.llm import load_env_file
 
 log = logging.getLogger("cloudoptimizer.cli")
 
@@ -78,11 +81,28 @@ async def _prune(dry_run: bool) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Local development keeps credentials in a .env at the repository root.
+    # Real deployments inject them, and those always win.
+    load_env_file()
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)-7s %(name)s: %(message)s"
     )
     parser = argparse.ArgumentParser(prog="cloudoptimizer")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    fix_cmd = sub.add_parser("fix", help="Open fix PRs for approved findings")
+    fix_cmd.add_argument("--repo", required=True, help="owner/name")
+    fix_cmd.add_argument(
+        "--manifest", action="append", default=[],
+        help="Manifest path to edit; repeatable. Defaults to common locations.",
+    )
+    fix_cmd.add_argument("--limit", type=int, default=3)
+    fix_cmd.add_argument(
+        "--execute", action="store_true",
+        help="Actually push branches and open PRs. Without this, dry run.",
+    )
+
+    sub.add_parser("integrations", help="Report credential and config state")
 
     prune_cmd = sub.add_parser("prune", help="Delete expired snapshots/samples")
     prune_cmd.add_argument(
@@ -111,6 +131,10 @@ def main(argv: list[str] | None = None) -> int:
                 return await _report(args.dry_run)
             if args.command == "alert":
                 return await _alert(args.dry_run)
+            if args.command == "fix":
+                return await _fix(args.repo, args.manifest, args.limit, args.execute)
+            if args.command == "integrations":
+                return _integrations()
             return 1
         finally:
             await dispose_engine()
@@ -252,6 +276,130 @@ async def _alert(dry_run: bool) -> int:
     if not dry_run:
         print(json.dumps({"alerts": total_alerts}, indent=2))
     return 0
+
+
+# Where dependency declarations usually live. Used when --manifest is omitted;
+# a missing path is skipped rather than treated as an error.
+DEFAULT_MANIFESTS = [
+    "requirements.txt",
+    "core-engine/requirements.txt",
+    "agent/requirements.txt",
+    "package.json",
+    "frontend/package.json",
+    "backend/package.json",
+]
+
+
+def _integrations() -> int:
+    """Report what is configured, without printing any secret."""
+    from .services.git_provider import GitHubApp, GitProviderError
+    from .services.llm import LLMClient
+
+    llm = LLMClient()
+    print("LLM")
+    for key, value in llm.describe().items():
+        print(f"  {key:22s} {value}")
+    if llm.configured:
+        try:
+            probe = llm.complete("Reply with exactly: OK", max_output_tokens=2048)
+            print(f"  {'live check':22s} OK ({probe.model})")
+        except Exception as exc:
+            print(f"  {'live check':22s} FAILED - {exc}")
+
+    github = GitHubApp()
+    print("")
+    print("GitHub App")
+    for key, value in github.describe().items():
+        print(f"  {key:22s} {value}")
+    if github.configured:
+        try:
+            repos = github.list_repositories()
+            print(f"  {'live check':22s} OK - {len(repos)} repository(ies)")
+            for repo in repos:
+                print(f"      {repo['full_name']} (default {repo['default_branch']})")
+        except GitProviderError as exc:
+            print(f"  {'live check':22s} FAILED - {exc}")
+    return 0
+
+
+async def _fix(repo: str, manifests: list[str], limit: int, execute: bool) -> int:
+    from sqlalchemy import desc, select
+
+    from .db.models import Cluster, Snapshot
+    from .routers.app_api import _load_scans
+    from .services.fix import fix_finding
+    from .services.git_provider import GitHubApp
+    from .services.live_cei import compute_live_cei
+    from .services.llm import LLMClient
+    from .services.policy import plan_remediation
+    from .services.vulnerability import prioritize
+
+    github, llm = GitHubApp(), LLMClient()
+    if not github.configured:
+        log.error("GitHub App is not configured; nothing to do.")
+        return 2
+
+    manifests = manifests or DEFAULT_MANIFESTS
+    factory = get_session_factory()
+    results = []
+
+    async with factory() as session:
+        clusters = (await session.execute(select(Cluster))).scalars().all()
+        for cluster in clusters:
+            scans = await _load_scans(session, cluster.id)
+            if not scans:
+                continue
+            latest = (
+                await session.execute(
+                    select(Snapshot)
+                    .where(Snapshot.cluster_id == cluster.id)
+                    .order_by(desc(Snapshot.received_at))
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+            if latest is None:
+                continue
+
+            snapshot = latest.payload or {}
+            cei = compute_live_cei(snapshot, {})
+            ranked = prioritize(scans, {n["node_id"]: n for n in cei.nodes}, snapshot)
+            namespaces = {
+                w["key"]: w.get("namespace", "default")
+                for w in (snapshot.get("workloads") or [])
+            }
+            plan = plan_remediation(ranked["findings"], workload_namespaces=namespaces)
+
+            approved = [
+                item for item in plan["plan"]
+                if item["decision"]["action"] in ("open_pr", "auto_apply")
+            ][:limit]
+            log.info(
+                "%s: %d finding(s), %d approved for a pull request",
+                cluster.name, len(plan["plan"]), len(approved),
+            )
+
+            for item in approved:
+                finding = next(
+                    (
+                        f for f in ranked["findings"]
+                        if f["vulnerability_id"] == item["vulnerability_id"]
+                        and f["package"] == item["package"]
+                    ),
+                    None,
+                )
+                if finding is None:
+                    continue
+                results.append(
+                    fix_finding(
+                        finding, item["decision"], repo=repo,
+                        manifest_paths=manifests, github=github, llm=llm,
+                        dry_run=not execute,
+                    ).to_dict()
+                )
+
+    print(json.dumps({"executed": execute, "results": results}, indent=2))
+    return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
