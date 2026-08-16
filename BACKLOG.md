@@ -1,120 +1,177 @@
 # Backlog
 
-Single tracked list: decisions waiting on you, bugs, gaps, and debt.
-Supersedes `OPEN_QUESTIONS.md`.
+Single tracked list: decisions waiting on you, what was skipped and why, bugs,
+gaps, and debt.
 
-Last updated: Phase 3 complete.
-
-Legend: **[D]** decision needed · **[B]** bug · **[G]** gap, scheduled ·
-**[T]** debt
+Last updated: Phases 1–3 complete; 5–7 partially built; 4, 6.5, 8 not started.
 
 ---
 
-## Waiting on you
+## 1 · Decisions waiting on you
 
-| # | Item | Why it matters |
+These change what gets built. None is blocked on engineering.
+
+| # | Decision | Why it matters |
 |---|---|---|
-| D1 | **Centrality mode** — `blast_radius` (default) or `structural` | Now answerable by looking: the dashboard has a switcher. On Online Boutique they rank `productcatalogservice` vs `frontend` first. This is the "5 that can take your system down" claim. |
-| D2 | **Rightsizing basis** | Being replaced in Week 6 with measured requested-vs-used. Confirm you want that rather than keeping the CEI-based heuristic. |
-| D3 | **Derived instance types in scenarios** | `smallest_fitting_instance()` infers cost from `cpu_limit`/`mem_gb`, which the scenario files do not declare. Keep, or write explicit `instance_type` values into the topology JSONs? Affects NIW-facing figures. |
-| D4 | **npm lockfiles** | Untracked. Committing pins versions Railway currently resolves freely. |
-| D5 | **Setting `DATABASE_URL` opens public signup** | `/v1/auth/signup` goes live the moment the variable is set. Options in `SETUP.md`: leave unset, deploy the product API as a separate Railway service, or add an invite gate (~1h). |
+| **D1** | **Centrality mode** — `blast_radius` (default) or `structural` | Switcher is live in the dashboard. On Online Boutique they rank `productcatalogservice` vs `frontend` first. This underpins the "5 that can take your system down" claim, vulnerability priority, alert filtering, and the automation gate — one setting, four features. |
+| **D2** | **Derived instance types in scenarios** | `smallest_fitting_instance()` infers cost from `cpu_limit`/`mem_gb`, which the scenario files never declare. Keep, or write explicit `instance_type` into the topology JSONs? Affects NIW-facing figures. |
+| **D3** | **npm lockfiles** | Untracked. Committing pins versions Railway currently resolves freely. |
+| **D4** | **Setting `DATABASE_URL` opens public signup** | `/v1/auth/signup` goes live the moment the variable is set. Options in `SETUP.md`: leave unset, run the product API as a second Railway service, or add an invite gate (~1h). |
+| **D5** | **Does the product get write access to customer repos?** | Blocks Phase 4 entirely. See §2. |
+| **D6** | **Does the agent get write RBAC?** | Blocks Phase 7 execution. Currently `get/list/watch` only, which is the whole trust story. |
+| **D7** | **Auto-apply defaults** | The engine ships with `auto_apply_enabled=False` and `has_tests=False`, so nothing is ever applied automatically today. Confirm that stays the default at GA. |
+| **D8** | **Log platform for Phase 6.5** | ClickHouse vs OpenSearch. Adds a second datastore and materially changes hosting cost. |
 
 ---
 
-## Bugs
+## 2 · Skipped, and why
+
+Not stubbed, not half-built. Each has a real blocker.
+
+### Phase 4 — Fix with AI · **not started**
+
+Needs, all of which are yours to grant:
+
+- A GitHub/GitLab App with write access to customer repositories
+- An Anthropic API key for fix generation
+- Sandboxed test execution — untrusted customer code runs somewhere, and
+  choosing where is a security decision (isolated runner, ephemeral container,
+  network-isolated namespace)
+
+The *decision* surface is already built and tested: `services/policy.py`
+decides what may be auto-applied, PR'd, or only alerted on, and it dry-runs
+against real findings today. What is missing is execution, which is
+deliberately the part that touches a credential capable of changing a
+customer's system.
+
+**Recommendation:** build behind a per-customer opt-in, PR-only in v1 (no
+direct commits), with branch, commit author, and PR body all attributable to
+the product rather than to a person.
+
+### Phase 5 — CSPM and cloud account connect · **partial**
+
+Built: IaC misconfiguration scanning (Terraform, CloudFormation, Kubernetes,
+Helm, Dockerfiles) via Trivy config.
+
+Skipped: CSPM checks (public buckets, over-permissioned IAM, open security
+groups) and the cloud-account connect flow. Both need real cloud credentials —
+AWS cross-account role + External ID, Azure multi-tenant consent, GCP service
+account. The check logic is writable without them; the value is not
+demonstrable without them, and untested cloud-permission code is worse than
+none.
+
+The existing Express OAuth scaffolding is **not** what Phase 5 describes and
+should be deleted rather than extended (T4).
+
+### Phase 6 — Egress traffic analysis · **partial**
+
+Built: segmentation coverage analysis and NetworkPolicy generation from the
+dependency graph.
+
+Skipped: egress traffic analysis — "flag pods communicating with unexpected
+external destinations". That needs flow data: eBPF (Cilium Hubble), a service
+mesh, or VPC flow logs. All three are substantial infrastructure decisions and
+none is inferable from the Kubernetes API.
+
+This is also why generated NetworkPolicies are audit-first rather than
+enforce-first. Real flow data would close that gap and is the single
+highest-value addition to this phase.
+
+### Phase 6.5 — Observability Lite · **not started**
+
+Needs a second datastore (ClickHouse or OpenSearch) plus Fluent Bit in the
+chart. Largest infrastructure addition in the roadmap and the one least
+related to what exists — every other phase reuses the CEI graph; log storage
+does not.
+
+The one piece that *does* reuse it — CEI-correlated alerting, where anomalies
+on high-centrality workloads page and the same anomaly on an idle pod does not
+— is already implemented in `services/notify.py` and applies to health
+findings today. Pointing it at logs is small once logs exist.
+
+### Phase 8 — SAST · **not started**
+
+Semgrep integrates the way Trivy did, so the scanner pattern is proven.
+Blocked on the same thing as Phase 4: access to customer source code. Sequence
+after Phase 4, since both need the Git integration and it should be built once.
+
+---
+
+## 3 · Bugs
 
 | # | Item | Status |
 |---|---|---|
-| B1 | `/api/cloud/*` unauthenticated | **Done.** Disabled entirely; returns 404 unless `ENABLE_CLOUD_OAUTH=true`. Gated rather than deleted because the frozen `/connect` pages still link to it. Phase 5 replaces the mechanism. |
-| B2 | Rollback manager (Module 112) keeps snapshots in a process dict | **Deferred on purpose.** Nothing writes to a cluster yet, so there is nothing to roll back; it matters at Phase 7 (Write Mode). Moving it to Postgres now would also make the `/rollback/*` endpoints require `DATABASE_URL`, which they currently do not. |
-| B3 | Snapshot retention | **Done.** `python -m src.cli prune` deletes snapshots >24h and samples >30d, chunked, always keeping each cluster's latest. Wire to a scheduler. |
-| B4 | `detect_provider()` may not recognise every managed offering | Unverified. Cosmetic but visible. Confirm during multi-cloud validation. |
-
-### Fixed this round (Phase 3)
-
-- Top-risk list showed one OpenSSL CVE three times (libssl3, openssl,
-  openssl-provider-legacy all ship the same code), filling "the 5 that can
-  take your system down" with three copies of one problem. Now deduplicated
-  per (CVE, image) with affected packages listed together.
-- The `captured_at` migration cannot be rolled back once real data exists,
-  because seq duplicates are expected under the new schema. The downgrade now
-  explains that instead of raising an opaque IntegrityError.
-
-### Fixed this round (Phase 2 completion)
-
-- Cost model reported **108% waste** — $9,728 against an $8,970 bill — when
-  requests exceeded allocatable capacity. Found by the scale test. Shares are
-  now normalized onto the real bill and over-commitment is reported as its
-  own finding.
-- Topology map rendered every workload; a force-directed layout past ~300
-  nodes is an unreadable hairball. Now capped at 150 highest-CEI with a
-  namespace filter, and states how many were dropped.
-
-### Fixed the round before
-
-- Agent reported `cpu_cores_requested` per pod but `cpu_cores_used` summed
-  across replicas, so a 3-replica workload looked 3x better utilized than it
-  was — and would have understated its cost by the replica count
-- CrashLoopBackOff detection keyed on a transient state, so a periodic
-  snapshot missed real crash loops most of the time; now keys on restart
-  count plus termination reason
-- Cost allocation summed `max(cpu_share, mem_share)`, which allocated $175
-  against a $140 bill
+| B1 | `detect_provider()` may not recognise every managed offering | Unverified. Cosmetic but visible. Confirm during multi-cloud validation. |
+| B2 | Rollback manager (Module 112) keeps snapshots in a process dict | **Deferred deliberately.** Nothing writes to a cluster, so there is nothing to roll back; it matters at Phase 7 execution. Migrating now would make `/rollback/*` require `DATABASE_URL`, which it does not today. |
+| B3 | `captured_at` migration is one-way once data exists | **By design, now explained.** Duplicate `seq` values are expected under the new schema, so the older stricter constraint cannot be restored. The downgrade says so instead of raising an opaque IntegrityError. Clean round-trip still verified in CI. |
 
 ### Fixed, recorded so they are not reintroduced
 
-- Scenario telemetry never reached the pipeline (path mismatch + `mem` vs `memory` key)
+**Engine correctness**
+- Scenario telemetry never reached the pipeline (path mismatch + `mem` vs `memory`)
 - Oscillation detector was amplitude-blind, flagging 100% of nodes forever
-- k-hop safety check compared an unbounded sum against a ratio, so savings were always $0
+- k-hop safety check compared an unbounded sum against a ratio → savings always $0
 - Cross-request state leak: β decayed 0.27 → 0.09 over four identical calls
+- Response reported `beta: 0.35` while scoring with `beta: 0`
+
+**Data integrity**
 - Registering one cluster twice caused silent permanent data loss (HTTP 200, nothing stored)
 - Restarted agents went permanently silent (`seq` resets, idempotency keyed on it)
-- `connected` meant "reported once, ever" — a dead agent showed as healthy
-- Server silently overrode the operator's configured poll interval
-- Response reported `beta: 0.35` while scoring with `beta: 0`
+- Agent reported requests per-pod but usage fleet-wide → 3-replica workloads looked 3× better utilized, and would have understated cost by the replica count
 - Test suite wiped the dev database (guard added)
 
+**Analysis quality**
+- Cost allocation could exceed the cluster bill — 108% waste, $9,728 against $8,970
+- CrashLoopBackOff detection keyed on a transient state, missing most real crash loops
+- Top-risk list showed one OpenSSL CVE three times, filling "the 5 that matter" with one problem
+- `connected` meant "reported once, ever" — a dead agent showed as healthy
+- Server silently overrode the operator's configured poll interval
+- Two divergent "system namespace" lists across modules
+
 ---
 
-## Gaps
+## 4 · Gaps
 
-| # | Item | When |
+| # | Item | Note |
 |---|---|---|
-| G1 | Agent image not published to ghcr.io | One command: `git tag agent-v0.1.0 && git push origin agent-v0.1.0` |
-| G2 | Multi-cloud validation (EKS/AKS/GKE) not run | Yours — runbook at `docs/VALIDATION.md` |
-| G3 | Scale test | **Done.** `python -m tests.scale_test --workloads 1000`, now in CI at 500. 1000 workloads / 2,435 pods = 104 KiB gzipped, 950 ms total analysis. Found the over-commitment bug. |
-| G4 | Waste detection in dollars | **Done.** `/v1/clusters/{id}/cost`. Node price split 70/30 CPU/memory and charged per dimension so allocation reconciles against the bill. |
-| G5 | Health diagnostics | **Done.** `/v1/clusters/{id}/health`, ranked by CEI. Crash loops, OOMKills, unschedulable pods, image-pull failures, under-replication, single-replica-with-dependents, missing requests. |
-| G9 | Retention scheduler | Documented in `SETUP.md` step 6; needs wiring to Railway cron when you deploy. |
-| G7 | Email verification never set | Deliberate; needs an email provider |
-| G10 | Scanner image not published | `ghcr.io/prawalpokharel/cloudoptimizer-scanner`. Built and verified locally (333 MB, Trivy 0.58.0, non-root). Needs a release job like the agent's. |
-| G11 | Report/alert schedulers | `python -m src.cli report` and `alert` exist and are verified; need weekly/periodic cron alongside `prune`. |
-| G12 | SMTP and Slack webhook unconfigured | Both degrade to "not delivered" and log. Set `SMTP_HOST`/`SLACK_WEBHOOK_URL` when you have them. |
-| G8 | `APP_SECRET_KEY` required for `/app` | Deploy config, documented in `SETUP.md` |
-| G6b | Demo/sandbox mode | **Done.** `/v1/sandbox/*`, public and database-free. 26-workload cluster through the real analysis path, deterministic. At `/app/sandbox`. |
+| G1 | Agent image not published | `git tag agent-v0.1.0 && git push origin agent-v0.1.0` |
+| G2 | Scanner image not published | Built and verified locally (333 MB, Trivy 0.58.0, non-root). Needs a release job like the agent's. |
+| G3 | Multi-cloud validation not run | Yours — runbook at `docs/VALIDATION.md` |
+| G4 | Schedulers not wired | `prune`, `report`, and `alert` all work and are verified. Need cron. |
+| G5 | SMTP and Slack webhook unconfigured | Both degrade to "not delivered" and log. Set `SMTP_HOST` / `SLACK_WEBHOOK_URL`. |
+| G6 | Email verification never set | Deliberate; needs an email provider. |
+| G7 | `APP_SECRET_KEY` required for `/app` | Deploy config, documented in `SETUP.md`. |
+| G8 | IaC scanning not wired to a source | The scanner function exists and is tested; nothing checks out a repo to point it at. Lands with the Phase 4 Git integration. |
+| G9 | Network and remediation views not in the UI | Both APIs are live (`/network`, `/remediation`) and in the sandbox. No dashboard panels yet. |
 
 ---
 
-## Debt
+## 5 · Debt
 
 | # | Item | Note |
 |---|---|---|
 | T1 | Duplicate `scenarios/` tree (~120k lines twice) | Load-bearing: Railway deploys the `core-engine` subtree and `loader.py`'s path fallback depends on it. Confirm the Railway root directory before touching. |
 | T2 | `ClusterTopologyMap` is a copy of `D3DependencyGraph` | Deliberate while the NIW petition is live. Reconcile after. |
-| T3 | Agent not yet open-sourced | Your call, after Phase 1 validation. Structured to split cleanly. |
-| T4 | Frontend tests | **Started.** vitest with 8 tests over the API client's sandbox routing and error handling. Components still untested. |
-| T5 | Backend has only a syntax check | No real test suite. Low priority — it is frozen. |
-| T6 | Scenario path still synthesizes history when none is supplied | Only fires when a caller supplies no history at all. Scenarios now supply real telemetry, so it is dormant there. The live path never uses it. |
+| T3 | Agent not open-sourced | Your call, after Phase 1 validation. Structured to split cleanly. |
+| T4 | Express `/api/cloud/*` OAuth scaffolding | Gated off (404 unless `ENABLE_CLOUD_OAUTH=true`). Implements a mechanism Phase 5 does not use. Delete once `/connect` pages can change. |
+| T5 | Frontend component tests | API client covered (8 tests); components are not. |
+| T6 | Backend has only a syntax check | Low priority — it is frozen. |
+| T7 | Scenario path still synthesizes history when none is supplied | Dormant: scenarios supply real telemetry, and the live path never uses it. |
 
 ---
 
-## Phase roadmap position
+## 6 · Where things stand
 
-- **Phase 1** (agent + topology + CEI) — weeks 1–4 complete; validation outstanding (G2)
-- **Phase 2** (waste in $, health diagnostics, demo mode) — complete
-- **Next up:** Phase 3 — Trivy scanning, CEI-weighted vulnerability priority, weekly report, Slack alerts
-- **Phase 3** (vulnerability scanning, reports, Slack) — complete
-- **Next up:** Phase 4 — Fix with AI: GitHub/GitLab integration, LLM-generated
-  dependency fixes, sandboxed test execution, auto-created PRs
-- **Phase 4+** — per `CloudOptimizer Roadmap v2`
+| Phase | Status |
+|---|---|
+| 1 — Agent, topology, CEI | Complete. Multi-cloud validation outstanding (G3). |
+| 2 — Waste in $, health, demo mode | Complete. |
+| 3 — Vulnerability scanning, reports, Slack | Complete. |
+| 4 — Fix with AI | Not started. Decision surface built; execution blocked on D5. |
+| 5 — IaC + CSPM + cloud connect | IaC done. CSPM and cloud connect blocked on credentials. |
+| 6 — Network layer | Segmentation and policy generation done. Egress analysis needs flow data. |
+| 6.5 — Observability Lite | Not started. Blocked on D8. |
+| 7 — Write mode | Policy engine done and tested. Execution blocked on D6. |
+| 8 — SAST | Not started. Sequence after Phase 4. |
+
+**206 tests** — 153 core-engine, 45 agent, 8 frontend.
