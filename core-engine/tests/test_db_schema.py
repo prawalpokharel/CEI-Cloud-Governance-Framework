@@ -149,11 +149,10 @@ async def test_full_object_graph_round_trips(session):
 
 
 @pytest.mark.asyncio
-async def test_snapshot_seq_is_idempotent_per_cluster(session):
+async def test_snapshot_idempotency_keys_on_capture_time(session):
     """
-    A retried ingest carrying the same agent sequence must not double-insert.
-
-    This is the constraint the ingest endpoint relies on to make retries safe.
+    A retried ingest resends identical bytes, so captured_at is the same and
+    the second insert must be rejected.
     """
     t = await _tenant(session)
     cluster = Cluster(tenant_id=t.id, name="c1")
@@ -172,11 +171,44 @@ async def test_snapshot_seq_is_idempotent_per_cluster(session):
     session.add(
         Snapshot(
             tenant_id=t.id, cluster_id=cluster.id, seq=7,
-            captured_at=now + timedelta(seconds=1), payload={}, payload_bytes=2,
+            captured_at=now, payload={}, payload_bytes=2,
         )
     )
     with pytest.raises(IntegrityError):
         await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_restarted_agent_can_still_ingest(session):
+    """
+    seq resets to 1 when the agent pod restarts. Keying idempotency on seq
+    made every post-restart snapshot look like a duplicate, so the agent went
+    permanently silent after its first restart. Different capture times must
+    be accepted regardless of repeated seq values.
+    """
+    t = await _tenant(session)
+    cluster = Cluster(tenant_id=t.id, name="c1")
+    session.add(cluster)
+    await session.flush()
+
+    now = datetime.now(timezone.utc)
+    for offset in range(3):
+        session.add(
+            Snapshot(
+                tenant_id=t.id, cluster_id=cluster.id,
+                seq=1,  # reset by a restart every time
+                captured_at=now + timedelta(seconds=offset),
+                payload={}, payload_bytes=2,
+            )
+        )
+    await session.commit()
+
+    stored = (
+        await session.execute(
+            select(Snapshot).where(Snapshot.cluster_id == cluster.id)
+        )
+    ).scalars().all()
+    assert len(stored) == 3
 
 
 @pytest.mark.asyncio

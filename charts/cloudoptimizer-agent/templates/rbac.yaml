@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "cloudoptimizer-agent.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cloudoptimizer-agent.labels" . | nindent 4 }}
+---
+# Read-only, and deliberately enumerated rather than wildcarded.
+#
+# There is no `secrets` rule and no `configmaps` rule. That is the point:
+# people put credentials in both, and an agent that cannot request them
+# cannot leak them regardless of what its code does. The permission boundary
+# enforces the promise instead of relying on the implementation to keep it.
+#
+# Verbs are get/list/watch only. The agent never creates, updates, patches,
+# or deletes anything in Phase 1.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cloudoptimizer-agent.fullname" . }}
+  labels:
+    {{- include "cloudoptimizer-agent.labels" . | nindent 4 }}
+rules:
+  # Workload topology and scheduling state.
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - namespaces
+      - pods
+      - services
+      - endpoints
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+      - replicasets
+    verbs: ["get", "list", "watch"]
+
+  # Ingress and NetworkPolicy contribute declarative dependency edges.
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+      - networkpolicies
+    verbs: ["get", "list", "watch"]
+
+  # Actual CPU/memory usage. Optional: metrics-server may not be installed,
+  # and the agent degrades to requested/limit values when it is absent.
+  - apiGroups: ["metrics.k8s.io"]
+    resources:
+      - pods
+      - nodes
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "cloudoptimizer-agent.fullname" . }}
+  labels:
+    {{- include "cloudoptimizer-agent.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "cloudoptimizer-agent.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cloudoptimizer-agent.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}

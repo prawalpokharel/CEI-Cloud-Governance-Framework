@@ -1,0 +1,397 @@
+"""
+Dashboard API: signup, login, clusters, API keys, topology.
+
+Backs the /app frontend. Separate from the ingest router because the callers
+and threat models differ -- browsers with sessions here, agents with API keys
+there.
+"""
+
+from __future__ import annotations
+
+import re
+from datetime import datetime, timezone
+from typing import Any
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from pydantic import BaseModel
+from sqlalchemy import desc, func, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..db.base import get_session
+from ..db.models import (
+    ActorType,
+    ApiKey,
+    Cluster,
+    Snapshot,
+    Tenant,
+    User,
+)
+from ..services import audit
+from ..services.security import (
+    SecretNotConfigured,
+    generate_api_key,
+    hash_password,
+    issue_session,
+    password_problems,
+    read_session,
+    verify_password,
+)
+
+router = APIRouter(prefix="/v1", tags=["dashboard"])
+
+_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+# --------------------------------------------------------------------------
+# Schemas
+# --------------------------------------------------------------------------
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+    name: str | None = None
+    organization: str | None = None
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class CreateClusterRequest(BaseModel):
+    name: str
+
+
+# --------------------------------------------------------------------------
+# Session dependency
+# --------------------------------------------------------------------------
+
+async def current_user(
+    session: AsyncSession = Depends(get_session),
+    authorization: str | None = Header(default=None),
+) -> User:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = authorization.split(None, 1)[1].strip()
+    try:
+        claims = read_session(token)
+    except SecretNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    if not claims:
+        raise HTTPException(status_code=401, detail="Session expired or invalid")
+
+    user = (
+        await session.execute(select(User).where(User.id == claims["sub"]))
+    ).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=401, detail="Session expired or invalid")
+    return user
+
+
+# --------------------------------------------------------------------------
+# Auth
+# --------------------------------------------------------------------------
+
+@router.post("/auth/signup", status_code=201)
+async def signup(
+    body: SignupRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    email = body.email.strip().lower()
+    if not _EMAIL.match(email):
+        raise HTTPException(status_code=400, detail="Enter a valid email address")
+    problems = password_problems(body.password)
+    if problems:
+        raise HTTPException(status_code=400, detail="; ".join(problems))
+
+    # One tenant per signup. Inviting teammates into an existing tenant is a
+    # later concern; giving every account a tenant now means no migration
+    # when it arrives.
+    tenant = Tenant(
+        name=body.organization or email.split("@")[0],
+        slug=f"{email.split('@')[0][:40]}-{datetime.now(timezone.utc).timestamp():.0f}",
+    )
+    session.add(tenant)
+    await session.flush()
+
+    user = User(
+        tenant_id=tenant.id,
+        email=email,
+        password_hash=hash_password(body.password),
+        name=body.name,
+    )
+    session.add(user)
+
+    await audit.record(
+        session,
+        action="user.signup",
+        actor_type=ActorType.user,
+        actor_id=email,
+        tenant_id=tenant.id,
+        target_type="user",
+        source_ip=audit.client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="An account with that email already exists")
+
+    try:
+        token = issue_session(user.id, tenant.id)
+    except SecretNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    return {
+        "token": token,
+        "user": {"email": user.email, "name": user.name},
+        "tenant": {"id": str(tenant.id), "name": tenant.name},
+    }
+
+
+@router.post("/auth/login")
+async def login(
+    body: LoginRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    email = body.email.strip().lower()
+    user = (
+        await session.execute(select(User).where(User.email == email))
+    ).scalar_one_or_none()
+
+    # Same response whether the account is unknown or the password is wrong,
+    # so this endpoint cannot be used to enumerate registered emails.
+    if user is None or not verify_password(body.password, user.password_hash):
+        await audit.record(
+            session,
+            action="user.login_failed",
+            actor_type=ActorType.user,
+            actor_id=email,
+            tenant_id=user.tenant_id if user else None,
+            source_ip=audit.client_ip(request),
+        )
+        await session.commit()
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    user.last_login_at = datetime.now(timezone.utc)
+    await audit.record(
+        session,
+        action="user.login",
+        actor_type=ActorType.user,
+        actor_id=email,
+        tenant_id=user.tenant_id,
+        source_ip=audit.client_ip(request),
+    )
+    await session.commit()
+
+    try:
+        token = issue_session(user.id, user.tenant_id)
+    except SecretNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    return {"token": token, "user": {"email": user.email, "name": user.name}}
+
+
+@router.get("/auth/me")
+async def me(user: User = Depends(current_user)):
+    return {"email": user.email, "name": user.name, "tenant_id": str(user.tenant_id)}
+
+
+# --------------------------------------------------------------------------
+# Clusters
+# --------------------------------------------------------------------------
+
+@router.get("/clusters")
+async def list_clusters(
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    rows = (
+        await session.execute(
+            select(Cluster)
+            .where(Cluster.tenant_id == user.tenant_id)
+            .order_by(Cluster.created_at)
+        )
+    ).scalars().all()
+
+    out = []
+    for cluster in rows:
+        latest = (
+            await session.execute(
+                select(Snapshot)
+                .where(Snapshot.cluster_id == cluster.id)
+                .order_by(desc(Snapshot.received_at))
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        out.append({
+            "id": str(cluster.id),
+            "name": cluster.name,
+            "provider": cluster.provider.value,
+            "k8s_version": cluster.k8s_version,
+            "agent_version": cluster.agent_version,
+            "metrics_available": cluster.metrics_available,
+            "last_seen_at": cluster.last_seen_at.isoformat() if cluster.last_seen_at else None,
+            "connected": cluster.last_seen_at is not None,
+            "workload_count": latest.workload_count if latest else 0,
+            "node_count": latest.node_count if latest else 0,
+            "pod_count": latest.pod_count if latest else 0,
+        })
+    return {"clusters": out}
+
+
+@router.post("/clusters", status_code=201)
+async def create_cluster(
+    body: CreateClusterRequest,
+    request: Request,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Register a cluster and mint its agent key.
+
+    The key is returned exactly once, in this response. It is stored only as
+    a hash, so it genuinely cannot be shown again -- the UI must make that
+    clear at the moment of creation.
+    """
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Cluster name is required")
+
+    cluster = Cluster(tenant_id=user.tenant_id, name=name)
+    session.add(cluster)
+    await session.flush()
+
+    full_key, handle, key_hash = generate_api_key()
+    session.add(
+        ApiKey(
+            tenant_id=user.tenant_id,
+            cluster_id=cluster.id,
+            prefix=handle,
+            key_hash=key_hash,
+            label=f"agent key for {name}",
+            created_by_user_id=user.id,
+        )
+    )
+
+    await audit.record(
+        session,
+        action="api_key.created",
+        actor_type=ActorType.user,
+        actor_id=user.email,
+        tenant_id=user.tenant_id,
+        target_type="cluster",
+        target_id=str(cluster.id),
+        source_ip=audit.client_ip(request),
+        details={"cluster_name": name, "key_prefix": handle},
+    )
+    await session.commit()
+
+    return {
+        "cluster": {"id": str(cluster.id), "name": cluster.name},
+        "api_key": full_key,
+        "api_key_prefix": handle,
+        "warning": "This key is shown once and cannot be retrieved later.",
+    }
+
+
+async def _owned_cluster(cluster_id: str, user: User, session: AsyncSession) -> Cluster:
+    cluster = (
+        await session.execute(
+            select(Cluster).where(
+                Cluster.id == cluster_id, Cluster.tenant_id == user.tenant_id
+            )
+        )
+    ).scalar_one_or_none()
+    # 404 rather than 403 for a cluster owned by someone else: a 403 would
+    # confirm that the id exists.
+    if cluster is None:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+    return cluster
+
+
+@router.get("/clusters/{cluster_id}/topology")
+async def cluster_topology(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    """Latest snapshot, reshaped for the topology map."""
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = (
+        await session.execute(
+            select(Snapshot)
+            .where(Snapshot.cluster_id == cluster.id)
+            .order_by(desc(Snapshot.received_at))
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+
+    if latest is None:
+        return {
+            "cluster": {"id": str(cluster.id), "name": cluster.name, "connected": False},
+            "workloads": [],
+            "edges": [],
+            "message": "No snapshot received yet. Is the agent installed and running?",
+        }
+
+    payload = latest.payload or {}
+    return {
+        "cluster": {
+            "id": str(cluster.id),
+            "name": cluster.name,
+            "provider": cluster.provider.value,
+            "k8s_version": cluster.k8s_version,
+            "metrics_available": cluster.metrics_available,
+            "metrics_reason": (payload.get("cluster") or {}).get("metrics_reason"),
+            "connected": True,
+            "last_seen_at": cluster.last_seen_at.isoformat() if cluster.last_seen_at else None,
+        },
+        "captured_at": latest.captured_at.isoformat(),
+        "seq": latest.seq,
+        "nodes": payload.get("nodes", []),
+        "workloads": payload.get("workloads", []),
+        "services": payload.get("services", []),
+        "pods": payload.get("pods", []),
+        "edges": payload.get("edges", []),
+        "summary": payload.get("summary", {}),
+    }
+
+
+@router.get("/clusters/{cluster_id}/history")
+async def cluster_history(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    How much observation history exists.
+
+    Surfaced because the CEI entropy term is only meaningful once enough
+    samples have accumulated. The UI uses this to say "warming up, N samples"
+    instead of presenting a number computed from almost nothing.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    count = (
+        await session.execute(
+            select(func.count(Snapshot.id)).where(Snapshot.cluster_id == cluster.id)
+        )
+    ).scalar_one()
+    first = (
+        await session.execute(
+            select(func.min(Snapshot.captured_at)).where(
+                Snapshot.cluster_id == cluster.id
+            )
+        )
+    ).scalar_one()
+    return {
+        "snapshot_count": count,
+        "first_seen_at": first.isoformat() if first else None,
+        "entropy_ready": count >= 30,
+        "entropy_samples_required": 30,
+    }

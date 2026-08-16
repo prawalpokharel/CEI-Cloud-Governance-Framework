@@ -246,9 +246,19 @@ class Snapshot(Base):
 
     __tablename__ = "snapshots"
     __table_args__ = (
-        # Idempotency: a retried POST carrying the same agent sequence number
-        # must not create a second row.
-        UniqueConstraint("cluster_id", "seq", name="uq_snapshots_cluster_seq"),
+        # Idempotency key is the capture instant, NOT seq.
+        #
+        # seq is a within-run counter that resets when the agent pod
+        # restarts, so keying on it meant a restarted agent produced seq=1
+        # again and every subsequent snapshot was rejected as a duplicate --
+        # the agent would go permanently silent after its first restart.
+        #
+        # captured_at is stamped once per collection and resent byte-identical
+        # on a transport retry, which is exactly the semantic wanted: dedupe
+        # retries of one observation, accept genuinely new observations.
+        UniqueConstraint(
+            "cluster_id", "captured_at", name="uq_snapshots_cluster_captured"
+        ),
         Index("ix_snapshots_cluster_received", "cluster_id", "received_at"),
     )
 

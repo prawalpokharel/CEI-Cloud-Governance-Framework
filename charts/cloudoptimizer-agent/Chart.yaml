@@ -1,0 +1,16 @@
+apiVersion: v2
+name: cloudoptimizer-agent
+description: Read-only Kubernetes topology agent for CloudOptimizer (CEI framework)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - monitoring
+  - cost-optimization
+  - topology
+  - governance
+home: https://cloudoptimizer.app
+sources:
+  - https://github.com/prawalpokharel/CEI-Cloud-Governance-Framework
+maintainers:
+  - name: Prawal Pokharel

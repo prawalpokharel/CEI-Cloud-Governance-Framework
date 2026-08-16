@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cloudoptimizer-agent.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cloudoptimizer-agent.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cloudoptimizer-agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cloudoptimizer-agent.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        # Roll the pod when the API key changes. Without this, rotating the
+        # key updates the Secret but leaves the running agent holding the old
+        # value until something unrelated restarts it.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "cloudoptimizer-agent.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: CLOUDOPTIMIZER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cloudoptimizer-agent.secretName" . }}
+                  key: {{ include "cloudoptimizer-agent.secretKey" . }}
+            - name: CLOUDOPTIMIZER_ENDPOINT
+              value: {{ .Values.endpoint | quote }}
+            - name: CLOUDOPTIMIZER_INTERVAL_SECONDS
+              value: {{ .Values.intervalSeconds | quote }}
+            - name: CLOUDOPTIMIZER_COLLECT_METRICS
+              value: {{ .Values.collectMetrics | quote }}
+            - name: CLOUDOPTIMIZER_LOG_LEVEL
+              value: {{ .Values.logLevel | quote }}
+            {{- if .Values.namespaces }}
+            - name: CLOUDOPTIMIZER_NAMESPACES
+              value: {{ join "," .Values.namespaces | quote }}
+            {{- end }}
+            {{- if .Values.excludeNamespaces }}
+            - name: CLOUDOPTIMIZER_EXCLUDE_NAMESPACES
+              value: {{ join "," .Values.excludeNamespaces | quote }}
+            {{- end }}
+            {{- if .Values.insecureSkipTLSVerify }}
+            - name: CLOUDOPTIMIZER_VERIFY_TLS
+              value: "false"
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            # readOnlyRootFilesystem is on, so give Python somewhere to write.
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

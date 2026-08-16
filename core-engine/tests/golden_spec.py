@@ -195,8 +195,15 @@ def _case_hpa_vs_cei(scenario_id: str) -> Callable:
 
 
 def iter_cases() -> Iterator[Tuple[str, Callable]]:
-    """Yield (case_name, runner) for the full NIW surface."""
-    yield "health", _case_get("/health")
+    """
+    Yield (case_name, runner) for the full NIW surface.
+
+    /health is deliberately NOT pinned. It reports whether the product API is
+    mounted, which depends on DATABASE_URL being present, so its response
+    legitimately differs between environments. Pinning it would make the
+    harness fail for a reason that has nothing to do with the demonstration
+    numbers -- and it is a liveness probe, never part of the evidence.
+    """
     yield "scenarios_list", _case_get("/scenarios/list")
     yield "pricing_providers", _case_get("/pricing/providers")
 

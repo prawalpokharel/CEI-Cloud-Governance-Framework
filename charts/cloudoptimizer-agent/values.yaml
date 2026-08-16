@@ -1,0 +1,117 @@
+# CloudOptimizer agent configuration.
+#
+# Minimum viable install:
+#   helm install cloudoptimizer ./charts/cloudoptimizer-agent \
+#     --namespace cloudoptimizer --create-namespace \
+#     --set apiKey=co_live_xxxxx
+
+# ---------------------------------------------------------------------------
+# Credentials
+# ---------------------------------------------------------------------------
+
+# Agent API key from the dashboard. Rendered into a Secret.
+#
+# Passing a secret via --set writes it into Helm's release history, which is
+# itself stored in a Secret in the cluster. For anything beyond a trial,
+# prefer existingSecret below and manage the value with your own tooling.
+apiKey: ""
+
+# Reference a Secret you created yourself instead. Takes precedence over
+# apiKey when set.
+existingSecret: ""
+existingSecretKey: "api-key"
+
+# ---------------------------------------------------------------------------
+# Endpoint
+# ---------------------------------------------------------------------------
+
+endpoint: "https://api.cloudoptimizer.app"
+
+# Only for pointing at a local development server over plain HTTP. Leaving
+# this false in any real deployment is what stops snapshots being readable in
+# transit.
+insecureSkipTLSVerify: false
+
+# ---------------------------------------------------------------------------
+# Collection
+# ---------------------------------------------------------------------------
+
+# Seconds between full snapshots. The server can override this per response,
+# so a fleet can be backed off without redeploying.
+intervalSeconds: 60
+
+# Restrict collection to specific namespaces. Empty means all namespaces.
+# Useful for a first trial on a non-production namespace.
+namespaces: []
+
+# Never collect from these, even when namespaces is empty.
+excludeNamespaces: []
+
+# Read actual CPU/memory from metrics.k8s.io. When metrics-server is absent
+# the agent degrades to requested/limit values and reports usage as null.
+collectMetrics: true
+
+# ---------------------------------------------------------------------------
+# Image
+# ---------------------------------------------------------------------------
+
+image:
+  repository: ghcr.io/prawalpokharel/cloudoptimizer-agent
+  tag: ""          # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# ---------------------------------------------------------------------------
+# Scheduling
+# ---------------------------------------------------------------------------
+
+# Modest and bounded. A monitoring agent that competes with the workloads it
+# observes is worse than no agent -- and being OOMKilled on a large cluster
+# is the most likely way this fails, so memory has headroom over CPU.
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Single replica on purpose. Two agents would double-report the same cluster;
+# the snapshots would deduplicate by capture time but the traffic would not.
+replicaCount: 1
+
+podAnnotations: {}
+podLabels: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# ---------------------------------------------------------------------------
+# Hardening
+# ---------------------------------------------------------------------------
+
+# The agent opens no ports and writes no files, so it can run with almost
+# everything dropped. Exposed as values only so a cluster with an unusual
+# policy engine can adjust rather than fork the chart.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+logLevel: INFO

@@ -1,0 +1,27 @@
+CloudOptimizer agent installed into namespace {{ .Release.Namespace }}.
+
+Watch it connect:
+
+  kubectl -n {{ .Release.Namespace }} logs -f deploy/{{ include "cloudoptimizer-agent.fullname" . }}
+
+The first snapshot is sent immediately; after that every {{ .Values.intervalSeconds }}s.
+Your cluster should appear at {{ .Values.endpoint }} within a minute.
+
+{{- if not .Values.collectMetrics }}
+
+NOTE: metric collection is disabled, so CPU and memory usage will be
+unavailable and cost analysis will be limited to requested capacity.
+{{- end }}
+
+What this agent reads: nodes, namespaces, pods, services, endpoints,
+deployments, statefulsets, daemonsets, replicasets, ingresses, and
+networkpolicies -- get/list/watch only.
+
+What it does NOT read: Secrets and ConfigMaps. Neither is granted by the
+ClusterRole, so the permission boundary enforces it rather than the code.
+
+Container environment variable VALUES never leave your cluster. They are
+parsed in-process to derive service-to-service dependencies, and only the
+resulting edges are transmitted. Verify for yourself:
+
+  kubectl -n {{ .Release.Namespace }} set env deploy/{{ include "cloudoptimizer-agent.fullname" . }} CLOUDOPTIMIZER_LOG_LEVEL=DEBUG

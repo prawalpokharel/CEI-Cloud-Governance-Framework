@@ -18,6 +18,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import analysis, pricing, scenarios
 
+# Product routers depend on the database. They are imported lazily below so
+# that a deployment without DATABASE_URL -- which is every deployment until
+# the Postgres service is attached -- still serves the scenario, pricing, and
+# benchmark endpoints backing the USPTO/NIW evidence pages.
+
 app = FastAPI(
     title="CloudOptimizer Core Engine",
     description="Governance-Aware Dynamic Resource Allocation using Adaptive CEI",
@@ -55,10 +60,34 @@ app.include_router(scenarios.router)
 app.include_router(pricing.router)
 
 
+def _mount_product_routers() -> bool:
+    """
+    Attach the agent-ingest and dashboard routers when a database is present.
+
+    Registering them unconditionally would make every request to this service
+    depend on Postgres being reachable, including the unauthenticated
+    scenario endpoints that back the NIW/USPTO evidence pages. Those have no
+    database dependency and should not acquire one.
+    """
+    if not os.environ.get("DATABASE_URL", "").strip():
+        return False
+    from .routers import app_api, ingest
+
+    app.include_router(ingest.router)
+    app.include_router(app_api.router)
+    return True
+
+
+PRODUCT_API_ENABLED = _mount_product_routers()
+
+
 @app.get("/health", tags=["meta"])
 async def health_check():
     return {
         "status": "healthy",
         "engine": "CloudOptimizer CEI Core",
         "version": "1.0.0",
+        # Lets an operator confirm at a glance whether the agent-facing API is
+        # live, rather than inferring it from a 404 on /v1/ingest.
+        "product_api": "enabled" if PRODUCT_API_ENABLED else "disabled (no DATABASE_URL)",
     }
