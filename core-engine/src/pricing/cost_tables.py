@@ -90,6 +90,52 @@ def monthly_cost(provider: str, instance_type: str, replicas: int = 1) -> float:
     return round(p["hourly_usd"] * HOURS_PER_MONTH * max(0, replicas), 2)
 
 
+def smallest_fitting_instance(
+    provider: str,
+    vcpu: float = None,
+    memory_gib: float = None,
+    exclude_tiers: tuple = ("gpu",),
+) -> str:
+    """
+    Cheapest instance type that satisfies the given vCPU and memory demand.
+
+    Used when a topology declares resource requirements (cpu_limit, mem_gb)
+    but no concrete instance type -- which is the case for all five reference
+    scenarios. Without this, cost is unknown, the actuator multiplies savings
+    by zero, and every recommendation reports $0 regardless of merit.
+
+    GPU instances are excluded by default: they satisfy almost any CPU/memory
+    requirement and would otherwise be selected for ordinary workloads purely
+    because the table contains them.
+
+    Falls back to the provider's cheapest non-GPU instance when nothing fits,
+    rather than returning nothing and silently reintroducing a zero cost.
+    """
+    table = INSTANCE_PRICES.get(provider, {})
+    if not table:
+        return ""
+
+    eligible = [
+        (name, spec)
+        for name, spec in table.items()
+        if spec["tier"] not in exclude_tiers
+    ]
+    if not eligible:
+        eligible = list(table.items())
+
+    need_cpu = vcpu or 0
+    need_mem = memory_gib or 0
+    fitting = [
+        (name, spec)
+        for name, spec in eligible
+        if spec["vcpu"] >= need_cpu and spec["memory_gib"] >= need_mem
+    ]
+
+    pool = fitting or eligible
+    pool.sort(key=lambda item: (item[1]["hourly_usd"], item[0]))
+    return pool[0][0]
+
+
 def cheaper_alternatives(provider: str, instance_type: str, target_vcpu: int = None) -> List[Dict]:
     """
     Return all instance types in the same provider that have at least

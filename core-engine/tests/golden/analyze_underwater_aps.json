@@ -15,16 +15,16 @@
     },
     "nodes": [
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.483 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.4831,
         "centrality": 0.634,
         "classification": "moderate",
         "entropy": 0.4342,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "surface-buoy-01",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -37,6 +37,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.6708,
+            "cumulative_centrality_fraction": 0.4426,
             "k_hop_count": 6,
             "k_hop_nodes": [
               "relay-node-01",
@@ -52,16 +53,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.467 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.467,
         "centrality": 0.634,
         "classification": "moderate",
         "entropy": 0.3885,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "surface-buoy-02",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -74,6 +75,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.6708,
+            "cumulative_centrality_fraction": 0.4426,
             "k_hop_count": 6,
             "k_hop_nodes": [
               "relay-node-02",
@@ -89,16 +91,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.488 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.4883,
         "centrality": 0.8043,
         "classification": "moderate",
         "entropy": 0.2545,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "surface-buoy-03",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -111,6 +113,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.4419,
+            "cumulative_centrality_fraction": 0.4209,
             "k_hop_count": 7,
             "k_hop_nodes": [
               "seafloor-anchor-03",
@@ -127,18 +130,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.582 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.5818,
         "centrality": 0.9433,
         "classification": "elevated",
         "entropy": 0.3628,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "seafloor-anchor-01",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.067,
@@ -149,6 +152,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.9232,
+            "cumulative_centrality_fraction": 0.277,
             "k_hop_count": 4,
             "k_hop_nodes": [
               "relay-node-01",
@@ -162,18 +166,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.662 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.6617,
         "centrality": 0.9433,
         "classification": "elevated",
         "entropy": 0.591,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "seafloor-anchor-02",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.067,
@@ -184,6 +188,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.9232,
+            "cumulative_centrality_fraction": 0.277,
             "k_hop_count": 4,
             "k_hop_nodes": [
               "relay-node-02",
@@ -197,18 +202,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.508 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.5076,
         "centrality": 0.6857,
         "classification": "elevated",
         "entropy": 0.4453,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "seafloor-anchor-03",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.0259,
@@ -219,6 +224,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.681,
+            "cumulative_centrality_fraction": 0.2541,
             "k_hop_count": 4,
             "k_hop_nodes": [
               "seafloor-anchor-04",
@@ -232,16 +238,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.415 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.4153,
         "centrality": 0.6857,
         "classification": "moderate",
         "entropy": 0.1814,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "seafloor-anchor-04",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -254,6 +260,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.681,
+            "cumulative_centrality_fraction": 0.2541,
             "k_hop_count": 4,
             "k_hop_nodes": [
               "seafloor-anchor-03",
@@ -267,18 +274,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.657 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.6571,
         "centrality": 0.7097,
         "classification": "elevated",
         "entropy": 0.8448,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "relay-node-01",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.0263,
@@ -289,6 +296,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.5773,
+            "cumulative_centrality_fraction": 0.2442,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "seafloor-anchor-01",
@@ -301,16 +309,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.490 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.4899,
         "centrality": 0.7097,
         "classification": "moderate",
         "entropy": 0.3672,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "relay-node-02",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -323,6 +331,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.5773,
+            "cumulative_centrality_fraction": 0.2442,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "seafloor-anchor-02",
@@ -335,18 +344,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.623 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.623,
         "centrality": 1.0,
         "classification": "elevated",
         "entropy": 0.4156,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "uuv-alpha",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.0,
@@ -357,6 +366,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.287,
+            "cumulative_centrality_fraction": 0.2167,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "relay-node-01",
@@ -369,18 +379,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.610 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.6103,
         "centrality": 1.0,
         "classification": "elevated",
         "entropy": 0.3795,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "uuv-beta",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.0,
@@ -391,6 +401,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.287,
+            "cumulative_centrality_fraction": 0.2167,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "relay-node-02",
@@ -403,16 +414,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.473 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.4731,
         "centrality": 0.6115,
         "classification": "moderate",
         "entropy": 0.4315,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "uuv-gamma",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -425,6 +436,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 1.49,
+            "cumulative_centrality_fraction": 0.1412,
             "k_hop_count": 2,
             "k_hop_nodes": [
               "seafloor-anchor-03",
@@ -436,16 +448,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.389 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.3889,
         "centrality": 0.6115,
         "classification": "moderate",
         "entropy": 0.1909,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "uuv-delta",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -458,6 +470,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 1.49,
+            "cumulative_centrality_fraction": 0.1412,
             "k_hop_count": 2,
             "k_hop_nodes": [
               "seafloor-anchor-04",
@@ -469,16 +482,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.460 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.4596,
         "centrality": 0.5795,
         "classification": "moderate",
         "entropy": 0.4292,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "shore-station",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -491,6 +504,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 5.3303,
+            "cumulative_centrality_fraction": 0.5051,
             "k_hop_count": 7,
             "k_hop_nodes": [
               "seafloor-anchor-01",
@@ -592,7 +606,7 @@
       "threshold": 0.3,
       "total_nodes": 14
     },
-    "total_potential_savings": 0.0,
+    "total_potential_savings": 31.920000000000005,
     "weights": {
       "alpha": 0.4,
       "beta": 0.35,

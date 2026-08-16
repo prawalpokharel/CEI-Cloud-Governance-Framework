@@ -15,18 +15,18 @@
     },
     "nodes": [
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.606 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.6057,
         "centrality": 0.7885,
         "classification": "elevated",
         "entropy": 0.6256,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "scheduler",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.2779,
@@ -37,6 +37,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.1889,
+            "cumulative_centrality_fraction": 0.6015,
             "k_hop_count": 11,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -57,18 +58,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Consolidate or decommission. CEI score 0.231 indicates low criticality and stable workload. Estimated monthly savings: $4.10",
+        "action_type": "consolidate",
+        "blocked_reason": null,
         "cei_score": 0.2311,
         "centrality": 0.0825,
         "classification": "low",
         "entropy": 0.3885,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 4.1,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "data-ingest-01",
-        "recommendation": "no_action",
+        "recommendation": "consolidate",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.0779,
@@ -79,6 +80,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 1.3331,
+            "cumulative_centrality_fraction": 0.2514,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "data-ingest-02",
@@ -91,18 +93,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Consolidate or decommission. CEI score 0.241 indicates low criticality and stable workload. Estimated monthly savings: $4.10",
+        "action_type": "consolidate",
+        "blocked_reason": null,
         "cei_score": 0.241,
         "centrality": 0.0825,
         "classification": "low",
         "entropy": 0.4252,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 4.1,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "data-ingest-02",
-        "recommendation": "no_action",
+        "recommendation": "consolidate",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.0779,
@@ -113,6 +115,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 1.3331,
+            "cumulative_centrality_fraction": 0.2514,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "data-ingest-01",
@@ -125,16 +128,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.388 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.3879,
         "centrality": 0.4621,
         "classification": "moderate",
         "entropy": 0.3506,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "feature-store",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -147,6 +150,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.5153,
+            "cumulative_centrality_fraction": 0.4744,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "data-ingest-01",
@@ -166,16 +170,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.217 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 80% of system centrality (threshold 70%)",
         "cei_score": 0.2166,
         "centrality": 0.2329,
         "classification": "low",
         "entropy": 0.0897,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "gpu-worker-01",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -188,6 +192,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.2667,
+            "cumulative_centrality_fraction": 0.8048,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -207,16 +212,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.231 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 80% of system centrality (threshold 70%)",
         "cei_score": 0.2307,
         "centrality": 0.2329,
         "classification": "low",
         "entropy": 0.1419,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "gpu-worker-02",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -229,6 +234,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.2667,
+            "cumulative_centrality_fraction": 0.8048,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -248,16 +254,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.353 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 80% of system centrality (threshold 70%)",
         "cei_score": 0.3528,
         "centrality": 0.2329,
         "classification": "moderate",
         "entropy": 0.5942,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "gpu-worker-03",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -270,6 +276,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.2667,
+            "cumulative_centrality_fraction": 0.8048,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -289,16 +296,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.264 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 80% of system centrality (threshold 70%)",
         "cei_score": 0.2641,
         "centrality": 0.2329,
         "classification": "moderate",
         "entropy": 0.2655,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "gpu-worker-04",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -311,6 +318,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.2667,
+            "cumulative_centrality_fraction": 0.8048,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -330,16 +338,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.246 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 80% of system centrality (threshold 70%)",
         "cei_score": 0.246,
         "centrality": 0.2329,
         "classification": "low",
         "entropy": 0.1986,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "gpu-worker-05",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -352,6 +360,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.2667,
+            "cumulative_centrality_fraction": 0.8048,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -371,16 +380,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.232 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 80% of system centrality (threshold 70%)",
         "cei_score": 0.2323,
         "centrality": 0.2329,
         "classification": "low",
         "entropy": 0.1477,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "gpu-worker-06",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -393,6 +402,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.2667,
+            "cumulative_centrality_fraction": 0.8048,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -412,16 +422,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.346 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.3456,
         "centrality": 0.3186,
         "classification": "moderate",
         "entropy": 0.4278,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "gpu-worker-07",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -434,6 +444,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.0058,
+            "cumulative_centrality_fraction": 0.3783,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -446,16 +457,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.334 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.3342,
         "centrality": 0.3186,
         "classification": "moderate",
         "entropy": 0.3855,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "gpu-worker-08",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -468,6 +479,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.0058,
+            "cumulative_centrality_fraction": 0.3783,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -480,18 +492,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.690 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $84.10",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.6903,
         "centrality": 1.0,
         "classification": "elevated",
         "entropy": 0.5941,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 84.1,
+        "is_safe": true,
+        "monthly_cost": 560.64,
         "node_id": "checkpoint-store",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.072,
@@ -502,6 +514,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.5103,
+            "cumulative_centrality_fraction": 0.6621,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "eval-service",
@@ -521,18 +534,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize resources. CEI score 0.535 is elevated but stable \u2014 workload variability does not justify current instance class. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.535,
         "centrality": 0.6872,
         "classification": "elevated",
         "entropy": 0.5287,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "eval-service",
-        "recommendation": "no_action",
+        "recommendation": "monitor",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.053,
@@ -543,6 +556,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.0346,
+            "cumulative_centrality_fraction": 0.5724,
             "k_hop_count": 9,
             "k_hop_nodes": [
               "checkpoint-store",
@@ -561,16 +575,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.280 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $42.05",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.2801,
         "centrality": 0.1644,
         "classification": "moderate",
         "entropy": 0.4367,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 42.05,
+        "is_safe": true,
+        "monthly_cost": 280.32,
         "node_id": "metrics-collector",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -583,6 +597,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 2.648,
+            "cumulative_centrality_fraction": 0.4995,
             "k_hop_count": 8,
             "k_hop_nodes": [
               "feature-store",
@@ -693,7 +708,7 @@
       "threshold": 0.3,
       "total_nodes": 15
     },
-    "total_potential_savings": 0.0,
+    "total_potential_savings": 159.43,
     "weights": {
       "alpha": 0.44,
       "beta": 0.27,

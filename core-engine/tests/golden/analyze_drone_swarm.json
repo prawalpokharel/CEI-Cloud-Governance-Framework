@@ -16,16 +16,16 @@
     },
     "nodes": [
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.253 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.2527,
         "centrality": 0.1381,
         "classification": "moderate",
         "entropy": 0.3778,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "gcs-primary",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -38,6 +38,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 1.7193,
+            "cumulative_centrality_fraction": 0.3541,
             "k_hop_count": 4,
             "k_hop_nodes": [
               "drone-lead",
@@ -51,18 +52,18 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Consolidate or decommission. CEI score 0.186 indicates low criticality and stable workload. Estimated monthly savings: $4.10",
+        "action_type": "consolidate",
+        "blocked_reason": null,
         "cei_score": 0.1861,
         "centrality": 0.086,
         "classification": "low",
         "entropy": 0.216,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 4.1,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "gcs-backup",
-        "recommendation": "no_action",
+        "recommendation": "consolidate",
         "risk_factor": 0.31,
         "validation": {
           "cascade_risk": 0.0827,
@@ -73,6 +74,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 1.5473,
+            "cumulative_centrality_fraction": 0.3187,
             "k_hop_count": 3,
             "k_hop_nodes": [
               "drone-lead",
@@ -85,16 +87,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.319 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 82% of system centrality (threshold 70%)",
         "cei_score": 0.3185,
         "centrality": 0.4092,
         "classification": "moderate",
         "entropy": 0.1799,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "relay-01",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -107,6 +109,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.967,
+            "cumulative_centrality_fraction": 0.817,
             "k_hop_count": 12,
             "k_hop_nodes": [
               "drone-01",
@@ -128,16 +131,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.336 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 84% of system centrality (threshold 70%)",
         "cei_score": 0.3359,
         "centrality": 0.2241,
         "classification": "moderate",
         "entropy": 0.5459,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "relay-02",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -150,6 +153,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.0661,
+            "cumulative_centrality_fraction": 0.8374,
             "k_hop_count": 11,
             "k_hop_nodes": [
               "drone-01",
@@ -170,16 +174,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.636 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 79% of system centrality (threshold 70%)",
         "cei_score": 0.636,
         "centrality": 1.0,
         "classification": "elevated",
         "entropy": 0.393,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "drone-lead",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -192,6 +196,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.8554,
+            "cumulative_centrality_fraction": 0.794,
             "k_hop_count": 13,
             "k_hop_nodes": [
               "drone-01",
@@ -214,16 +219,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.426 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 90% of system centrality (threshold 70%)",
         "cei_score": 0.426,
         "centrality": 0.2418,
         "classification": "moderate",
         "entropy": 0.8507,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "drone-01",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -236,6 +241,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.3895,
+            "cumulative_centrality_fraction": 0.904,
             "k_hop_count": 11,
             "k_hop_nodes": [
               "drone-02",
@@ -256,16 +262,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.361 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 90% of system centrality (threshold 70%)",
         "cei_score": 0.3606,
         "centrality": 0.2418,
         "classification": "moderate",
         "entropy": 0.6086,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "drone-02",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -278,6 +284,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.3895,
+            "cumulative_centrality_fraction": 0.904,
             "k_hop_count": 11,
             "k_hop_nodes": [
               "drone-01",
@@ -298,16 +305,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.374 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 90% of system centrality (threshold 70%)",
         "cei_score": 0.3737,
         "centrality": 0.2418,
         "classification": "moderate",
         "entropy": 0.6569,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "drone-03",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -320,6 +327,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.3895,
+            "cumulative_centrality_fraction": 0.904,
             "k_hop_count": 11,
             "k_hop_nodes": [
               "drone-01",
@@ -340,16 +348,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.356 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 90% of system centrality (threshold 70%)",
         "cei_score": 0.3565,
         "centrality": 0.2418,
         "classification": "moderate",
         "entropy": 0.5933,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "drone-04",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -362,6 +370,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.3895,
+            "cumulative_centrality_fraction": 0.904,
             "k_hop_count": 11,
             "k_hop_nodes": [
               "drone-01",
@@ -382,16 +391,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.264 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 90% of system centrality (threshold 70%)",
         "cei_score": 0.2642,
         "centrality": 0.2418,
         "classification": "moderate",
         "entropy": 0.2516,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "drone-05",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -404,6 +413,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 4.3895,
+            "cumulative_centrality_fraction": 0.904,
             "k_hop_count": 11,
             "k_hop_nodes": [
               "drone-01",
@@ -424,16 +434,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.216 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 82% of system centrality (threshold 70%)",
         "cei_score": 0.2162,
         "centrality": 0.1897,
         "classification": "low",
         "entropy": 0.1587,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "drone-06",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -446,6 +456,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.9624,
+            "cumulative_centrality_fraction": 0.8161,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "drone-01",
@@ -465,16 +476,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.228 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 82% of system centrality (threshold 70%)",
         "cei_score": 0.2277,
         "centrality": 0.1897,
         "classification": "low",
         "entropy": 0.201,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "drone-07",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -487,6 +498,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.9624,
+            "cumulative_centrality_fraction": 0.8161,
             "k_hop_count": 10,
             "k_hop_nodes": [
               "drone-01",
@@ -506,16 +518,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.593 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": "k-hop blast radius covers 76% of system centrality (threshold 70%)",
         "cei_score": 0.5933,
         "centrality": 0.9304,
         "classification": "elevated",
         "entropy": 0.3482,
-        "estimated_savings": 0.0,
+        "estimated_savings": 2.28,
         "is_safe": false,
-        "monthly_cost": 0.0,
+        "monthly_cost": 15.18,
         "node_id": "edge-fusion-node",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -528,6 +540,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.7009,
+            "cumulative_centrality_fraction": 0.7622,
             "k_hop_count": 11,
             "k_hop_nodes": [
               "drone-01",
@@ -548,16 +561,16 @@
         }
       },
       {
-        "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
-        "action_type": "no_action",
-        "blocked_reason": "k-hop impact exceeds safety threshold",
+        "action_details": "Rightsize candidate. CEI score 0.418 with stable workload suggests the instance class can be reduced one tier. Estimated monthly savings: $2.28",
+        "action_type": "rightsize",
+        "blocked_reason": null,
         "cei_score": 0.4178,
         "centrality": 0.4792,
         "classification": "moderate",
         "entropy": 0.4337,
-        "estimated_savings": 0.0,
-        "is_safe": false,
-        "monthly_cost": 0.0,
+        "estimated_savings": 2.28,
+        "is_safe": true,
+        "monthly_cost": 15.18,
         "node_id": "intelligence-feed",
         "recommendation": "no_action",
         "risk_factor": 0.31,
@@ -570,6 +583,7 @@
           },
           "k_hop_impact": {
             "cumulative_centrality_change": 3.1394,
+            "cumulative_centrality_fraction": 0.6466,
             "k_hop_count": 7,
             "k_hop_nodes": [
               "drone-01",
@@ -674,7 +688,7 @@
       "threshold": 0.3,
       "total_nodes": 14
     },
-    "total_potential_savings": 0.0,
+    "total_potential_savings": 33.74,
     "weights": {
       "alpha": 0.44,
       "beta": 0.27,

@@ -35,6 +35,13 @@ class PreModificationValidator:
         """
         validated = {}
 
+        # Total centrality across the graph, used to express a node's k-hop
+        # blast radius as a fraction of the whole system rather than as a raw
+        # sum. See _simulate_k_hop_impact for why.
+        total_centrality = sum(
+            d.get("centrality", 0.0) for d in cei_results.values()
+        )
+
         for node_id, cei_data in cei_results.items():
             classification = cei_data.get("classification", "moderate")
 
@@ -50,7 +57,7 @@ class PreModificationValidator:
 
             # Run k-hop impact simulation
             impact = self._simulate_k_hop_impact(
-                graph, node_id, cei_results, k_hop
+                graph, node_id, cei_results, k_hop, total_centrality
             )
 
             # Check governance constraints
@@ -62,9 +69,16 @@ class PreModificationValidator:
             node_fault = fault_risks.get(node_id, {})
             cascade_risk = node_fault.get("cascade_risk", 0.0)
 
-            # Determine if modification is safe
+            # Determine if modification is safe.
+            #
+            # Compared against the FRACTION of system centrality inside the
+            # blast radius, not the raw sum. The sum is unbounded and grows
+            # with neighbourhood size (3 neighbours -> 1.33, 10 -> 4.27, while
+            # the mean holds at ~0.43), so comparing it to a [0, 1] threshold
+            # meant every node with a connected neighbour was blocked and no
+            # recommendation was ever issued.
             is_safe = (
-                impact["cumulative_centrality_change"] < safety_threshold and
+                impact["cumulative_centrality_fraction"] < safety_threshold and
                 governance_check["compliant"] and
                 cascade_risk < safety_threshold
             )
@@ -97,16 +111,30 @@ class PreModificationValidator:
         graph: nx.DiGraph,
         node_id: str,
         cei_results: Dict,
-        k: int
+        k: int,
+        total_centrality: float = 0.0,
     ) -> Dict[str, Any]:
         """
-        Simulate impact on k-hop neighborhood.
-        Compute cumulative weighted centrality change.
+        Simulate impact on the k-hop neighborhood.
+
+        Reports the cumulative weighted centrality inside the blast radius
+        both as a raw sum (retained: it is informative, and appears in the
+        API response) and as a fraction of the whole graph's centrality.
+
+        The fraction is what the safety check uses. It answers a question with
+        a stable scale -- "what proportion of total system criticality does
+        touching this node put at risk?" -- so one threshold is meaningful
+        across topologies of different sizes and densities. Measured across
+        the five reference scenarios it spans 0.14 to 0.90, and blocks in a
+        way that tracks real coupling: a dense tactical mesh medians 0.82
+        while a sparse, deliberately redundant network stays below 0.6.
         """
         if node_id not in graph.nodes():
             return {
                 "k_hop_nodes": [],
+                "k_hop_count": 0,
                 "cumulative_centrality_change": 0.0,
+                "cumulative_centrality_fraction": 0.0,
                 "max_single_impact": 0.0,
             }
 
@@ -123,14 +151,21 @@ class PreModificationValidator:
         neighbors.update(current)
         neighbors.discard(node_id)
 
-        # Compute cumulative centrality in neighborhood
-        total_centrality = 0.0
+        # Compute cumulative centrality in neighborhood. Named distinctly from
+        # the total_centrality parameter, which is the whole-graph total.
+        neighborhood_centrality = 0.0
         max_impact = 0.0
         for neighbor in neighbors:
             neighbor_cei = cei_results.get(neighbor, {})
             centrality = neighbor_cei.get("centrality", 0.0)
-            total_centrality += centrality
+            neighborhood_centrality += centrality
             max_impact = max(max_impact, centrality)
+
+        fraction = (
+            neighborhood_centrality / total_centrality
+            if total_centrality > 0
+            else 0.0
+        )
 
         return {
             # Sorted, not raw set order: Python salts string hashing per
@@ -140,7 +175,8 @@ class PreModificationValidator:
             # defeats response diffing and caching for clients.
             "k_hop_nodes": sorted(neighbors),
             "k_hop_count": len(neighbors),
-            "cumulative_centrality_change": round(total_centrality, 4),
+            "cumulative_centrality_change": round(neighborhood_centrality, 4),
+            "cumulative_centrality_fraction": round(fraction, 4),
             "max_single_impact": round(max_impact, 4),
         }
 
@@ -174,8 +210,12 @@ class PreModificationValidator:
         if is_safe:
             return None
         reasons = []
-        if impact["cumulative_centrality_change"] >= threshold:
-            reasons.append("k-hop impact exceeds safety threshold")
+        if impact["cumulative_centrality_fraction"] >= threshold:
+            reasons.append(
+                f"k-hop blast radius covers "
+                f"{impact['cumulative_centrality_fraction']:.0%} of system "
+                f"centrality (threshold {threshold:.0%})"
+            )
         if not governance["compliant"]:
             reasons.append("; ".join(governance["violations"]))
         if cascade_risk >= threshold:

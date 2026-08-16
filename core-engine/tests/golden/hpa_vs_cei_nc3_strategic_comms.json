@@ -5,17 +5,17 @@
     "notes": "Centrality + governance aware; pre-mod validator enforces tier mins",
     "policy": "cei",
     "recovery_time_minutes": 15.9,
-    "scaling_events": 0,
-    "total_monthly_cost_usd": 2202.85
+    "scaling_events": 1,
+    "total_monthly_cost_usd": 2132.77
   },
   "delta": {
-    "annual_savings_vs_hpa_usd": 0.0,
+    "annual_savings_vs_hpa_usd": 840.96,
     "cascade_failures_diff": 0,
     "governance_violations_diff": 0,
-    "monthly_cost_diff_usd": 0.0,
-    "monthly_savings_vs_hpa_usd": 0.0,
+    "monthly_cost_diff_usd": -70.08,
+    "monthly_savings_vs_hpa_usd": 70.08,
     "recovery_time_diff_minutes": 15.9,
-    "scaling_events_diff": 0
+    "scaling_events_diff": 1
   },
   "hpa": {
     "cascade_failures": 0,

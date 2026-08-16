@@ -1,15 +1,28 @@
-fastapi
-uvicorn
-numpy
-networkx
-pydantic
-python-dotenv
-httpx
-scipy>=1.11.0
+# Pinned deliberately.
+#
+# The CEI pipeline produces floating-point output that tests/golden/ asserts
+# against. numpy, scipy, and networkx all contribute to those numbers, so an
+# unpinned redeploy could silently shift the demonstration figures backing
+# USPTO App. No. 19/641,446 with no code change and no failing test.
+#
+# These versions are the ones the current golden files were captured with and
+# the full stack was verified against. To upgrade: bump here, run
+# `python -m tests.regen_golden`, and review any change it reports.
+
+fastapi==0.141.1
+uvicorn==0.52.3
+pydantic==2.13.4
+python-dotenv==1.2.2
+httpx==0.28.1
+
+# Numeric / graph stack — directly determines CEI output.
+numpy==2.5.2
+networkx==3.6.1
+scipy==1.18.0
 
 # Persistence (Phase 1). asyncpg drives the application; psycopg2 drives
 # Alembic migrations, which are synchronous.
-sqlalchemy[asyncio]>=2.0
-alembic>=1.13
-asyncpg>=0.29
-psycopg2-binary>=2.9
+SQLAlchemy[asyncio]==2.0.52
+alembic==1.19.1
+asyncpg==0.31.0
+psycopg2-binary==2.9.12

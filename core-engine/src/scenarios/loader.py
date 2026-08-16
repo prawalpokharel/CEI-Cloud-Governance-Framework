@@ -15,6 +15,8 @@ import json
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
+from ..pricing.cost_tables import monthly_cost, smallest_fitting_instance
+
 
 # Resolve path to the scenarios directory.
 # Look in multiple candidate locations so the loader works both in the
@@ -224,14 +226,37 @@ class ScenarioLoader:
                     "disk_io": 0,
                 }
 
+            # Scenario topologies declare capacity as cpu_limit / mem_gb
+            # rather than a concrete instance type, so cost is derived from
+            # the smallest instance that satisfies the declared requirement.
+            # Without this the actuator sees monthly_cost == 0 and every
+            # recommendation reports $0 in savings no matter how sound it is.
+            #
+            # provider / instance_type / monthly_cost are emitted at the node
+            # TOP level because DataCollector reads them from there before
+            # nesting them under metadata for the rest of the pipeline.
+            provider = n.get("provider", "aws")
+            instance_type = n.get("instance_type") or smallest_fitting_instance(
+                provider,
+                vcpu=n.get("cpu_limit"),
+                memory_gib=n.get("mem_gb"),
+            )
+            replicas = n.get("replicas", 1)
+            node_cost = n.get("monthly_cost")
+            if node_cost is None:
+                node_cost = monthly_cost(provider, instance_type, replicas)
+
             nodes.append({
                 "node_id": nid,
+                "provider": provider,
+                "instance_type": instance_type,
+                "monthly_cost": node_cost,
                 "metrics": current_metrics,
                 "metadata": {
                     "tier": n.get("tier", "supporting"),
                     "type": n.get("type", "service"),
                     "region": n.get("region", "unknown"),
-                    "replicas": n.get("replicas", 1),
+                    "replicas": replicas,
                     **{k: v for k, v in n.items()
                        if k not in ("id", "tier", "type", "region", "replicas")},
                 },
