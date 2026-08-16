@@ -39,10 +39,35 @@ from src.db.models import (
 )
 
 TEST_DB = os.environ.get("TEST_DATABASE_URL", "").strip()
+APP_DB = os.environ.get("DATABASE_URL", "").strip()
 
 pytestmark = pytest.mark.skipif(
     not TEST_DB, reason="TEST_DATABASE_URL not set; skipping database tests"
 )
+
+
+def _assert_not_the_application_database() -> None:
+    """
+    Refuse to run against the database the application is using.
+
+    The session fixture deletes every Tenant, which cascades to clusters,
+    users, and API keys. Documenting "use a separate database" is not enough
+    -- it was documented here from the start and still pointed at the dev
+    database within the hour, silently wiping registered clusters and leaving
+    a running agent authenticating against keys that no longer existed.
+
+    A guard is cheap; recreating a fleet's registrations is not.
+    """
+    if APP_DB and TEST_DB == APP_DB:
+        raise RuntimeError(
+            "TEST_DATABASE_URL is the same as DATABASE_URL. These tests "
+            "delete all tenants, which cascades to clusters, users, and API "
+            "keys. Point TEST_DATABASE_URL at a throwaway database."
+        )
+
+
+if TEST_DB:
+    _assert_not_the_application_database()
 
 
 @pytest_asyncio.fixture

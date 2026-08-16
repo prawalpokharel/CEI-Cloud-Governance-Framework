@@ -113,6 +113,21 @@ the scenario endpoints keep working without it.
 
 ---
 
+### 16. Test suite wiped the dev database **[resolved, worth knowing]**
+
+`test_db_schema.py` deletes every Tenant, which cascades to clusters, users,
+and API keys. The file documented "use a separate database" from the start —
+and within the hour both variables were pointed at the dev database, silently
+destroying registered clusters and leaving a running agent authenticating with
+keys that no longer existed. The agent reported `401 Invalid API key`, which
+looked like an agent bug and was not.
+
+The suite now refuses to start when `TEST_DATABASE_URL` equals
+`DATABASE_URL`, and CI creates a throwaway `cloudoptimizer_test` database.
+Noted because the lesson generalises: a comment is not a safeguard.
+
+---
+
 ## Debt
 
 ### 12. Duplicate `scenarios/` tree **[debt]**

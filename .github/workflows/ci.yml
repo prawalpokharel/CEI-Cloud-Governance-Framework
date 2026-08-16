@@ -31,7 +31,9 @@ jobs:
 
     env:
       DATABASE_URL: postgres://cloudopt:devpass@localhost:5432/cloudoptimizer
-      TEST_DATABASE_URL: postgres://cloudopt:devpass@localhost:5432/cloudoptimizer
+      # Separate database: the schema tests delete all tenants, and the
+      # suite refuses to run against the application database.
+      TEST_DATABASE_URL: postgres://cloudopt:devpass@localhost:5432/cloudoptimizer_test
 
     defaults:
       run:
@@ -49,8 +51,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
+      - name: Create the throwaway test database
+        run: PGPASSWORD=devpass psql -h localhost -U cloudopt -d cloudoptimizer -c 'CREATE DATABASE cloudoptimizer_test'
+
       - name: Apply migrations
         run: alembic upgrade head
+
+      - name: Apply migrations to the test database
+        run: DATABASE_URL=$TEST_DATABASE_URL alembic upgrade head
 
       - name: Verify migrations are reversible
         # A migration that cannot be rolled back is a migration you cannot
