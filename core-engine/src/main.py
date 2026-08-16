@@ -1,26 +1,22 @@
 """
 CloudOptimizer Core Engine — FastAPI Application
-Implements USPTO Patent App. No. 19/641,446 (priority 63/999,378): System and Method for Dynamic Resource
-Allocation in Distributed Computing Environments Using Adaptive Centrality-Entropy
-Index with Oscillation Suppression and Fault Propagation Control.
-"""
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Dict, Optional
-import json
-import traceback
 
-from .engine import build_pipeline
-from .rollback.manager import RollbackManager
-from .scenarios.loader import ScenarioLoader, ScenarioLoadError
-from .pricing import (
-    INSTANCE_PRICES,
-    list_supported_providers,
-    monthly_cost,
-    compute_savings,
-    run_hpa_vs_cei,
-)
+Implements USPTO Patent App. No. 19/641,446 (priority 63/999,378): System and
+Method for Dynamic Resource Allocation in Distributed Computing Environments
+Using Adaptive Centrality-Entropy Index with Oscillation Suppression and Fault
+Propagation Control.
+
+This module is assembly only. Endpoints live in src/routers/, the pipeline
+lives in src/services/analysis.py, and the patent modules (101-112) live in
+their original packages with their reference numbering intact.
+"""
+
+import os
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from .routers import analysis, pricing, scenarios
 
 app = FastAPI(
     title="CloudOptimizer Core Engine",
@@ -28,448 +24,41 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+def _allowed_origins() -> list[str]:
+    """
+    Resolve CORS origins from CORS_ALLOWED_ORIGINS (comma-separated).
+
+    Defaults to the previous hardcoded localhost pair when unset, so an
+    existing deployment behaves exactly as before until it is configured.
+    The demo pages call this service directly for /pricing/savings and
+    /benchmark/hpa-vs-cei, so a deployed frontend needs its own origin
+    listed here or those two panels silently stay empty -- the frontend
+    swallows the error and renders nothing.
+    """
+    raw = os.environ.get("CORS_ALLOWED_ORIGINS", "").strip()
+    if not raw:
+        return ["http://localhost:3000", "http://localhost:3001"]
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Patent component modules 101-111 are built PER REQUEST via build_pipeline().
-# Several of them mutate self during a run (adaptive weights, oscillation
-# state), so sharing instances across requests let one caller's analysis
-# perturb the next caller's results. See src/engine.py.
-
-# Module 112 is genuinely long-lived: /rollback/revert/{id} must find the
-# snapshot a previous request created, so this one instance is shared.
-#
-# NOTE: this store is process-local and dies on restart, and does not work
-# across multiple Railway replicas. It moves to Postgres as part of the
-# Phase 1 persistence work.
-rollback_manager = RollbackManager()          # Module 112
-
-# Read-only; holds no mutable state between calls.
-scenario_loader = ScenarioLoader()
+app.include_router(analysis.router)
+app.include_router(scenarios.router)
+app.include_router(pricing.router)
 
 
-# --- Request/Response Models ---
-
-class TelemetryInput(BaseModel):
-    nodes: List[Dict]
-    edges: Optional[List[Dict]] = []
-    governance_policies: Optional[Dict] = {}
-
-class AnalysisRequest(BaseModel):
-    telemetry: TelemetryInput
-    analysis_window_days: int = 90
-    oscillation_threshold: float = 0.3
-    safety_threshold: float = 0.7
-    k_hop: int = 2
-
-class NodeCEIResult(BaseModel):
-    node_id: str
-    cei_score: float
-    centrality: float
-    entropy: float
-    risk_factor: float
-    classification: str
-    recommendation: str
-    # Extended fields surfaced so the UI can render Quick Wins + pre-mod
-    # simulation detail without a second round-trip. All optional so the
-    # response stays backward-compatible.
-    action_type: Optional[str] = None
-    action_details: Optional[str] = ""
-    estimated_savings: Optional[float] = 0.0
-    monthly_cost: Optional[float] = 0.0
-    is_safe: Optional[bool] = False
-    blocked_reason: Optional[str] = None
-    validation: Optional[Dict] = {}
-
-class AnalysisResponse(BaseModel):
-    nodes: List[NodeCEIResult]
-    weights: Dict[str, float]
-    oscillation_status: Dict
-    total_potential_savings: float
-    graph_metrics: Dict
-
-
-# --- API Endpoints ---
-
-@app.get("/health")
+@app.get("/health", tags=["meta"])
 async def health_check():
-    return {"status": "healthy", "engine": "CloudOptimizer CEI Core", "version": "1.0.0"}
-
-
-@app.post("/analyze", response_model=AnalysisResponse)
-async def run_full_analysis(request: AnalysisRequest):
-    """
-    Execute the complete CEI analysis pipeline:
-    1. Collect and validate telemetry (Module 101)
-    2. Construct dependency graph (Module 103)
-    3. Apply governance policies (Module 104)
-    4. Compute stability scores (Module 105)
-    5. Calculate CEI with adaptive weights (Modules 106, 107)
-    6. Detect oscillations (Module 108)
-    7. Model fault propagation (Module 109)
-    8. Validate modifications via k-hop simulation (Module 110)
-    9. Generate recommendations (Module 111)
-    """
-    try:
-        # Fresh, unshared modules for this request only.
-        p = build_pipeline()
-
-        # Step 1: Data Collection (Patent Module 101)
-        telemetry_data = p.data_collector.collect(request.telemetry.nodes)
-
-        # Step 2: Graph Construction (Patent Module 103)
-        graph = p.graph_constructor.build(
-            telemetry_data,
-            request.telemetry.edges
-        )
-
-        # Step 3: Governance Policy Application (Patent Module 104)
-        p.governance_store.load_policies(request.telemetry.governance_policies)
-        risk_factors = p.governance_store.compute_risk_factors(telemetry_data)
-
-        # Step 4: Stability Monitoring (Patent Module 105)
-        stability_scores = p.stability_monitor.compute(
-            telemetry_data,
-            window_days=request.analysis_window_days
-        )
-
-        # Step 5: Adaptive Weight Recalibration (Patent Module 107)
-        weights = p.weight_recalibrator.recalibrate(
-            stability_scores=stability_scores,
-            oscillation_detected=False,
-            topology_changed=False
-        )
-
-        # Step 6: CEI Calculation (Patent Module 106)
-        cei_results = p.cei_calculator.compute(
-            graph=graph,
-            telemetry=telemetry_data,
-            risk_factors=risk_factors,
-            weights=weights
-        )
-
-        # Step 7: Oscillation Detection (Patent Module 108)
-        oscillation_status = p.oscillation_detector.detect(
-            telemetry_data,
-            threshold=request.oscillation_threshold
-        )
-
-        # Update weights if oscillation detected
-        if oscillation_status["suppression_active"]:
-            weights = p.weight_recalibrator.recalibrate(
-                stability_scores=stability_scores,
-                oscillation_detected=True,
-                topology_changed=False
-            )
-            cei_results = p.cei_calculator.compute(
-                graph=graph,
-                telemetry=telemetry_data,
-                risk_factors=risk_factors,
-                weights=weights
-            )
-
-        # Step 8: Fault Propagation Modeling (Patent Module 109)
-        fault_risks = p.fault_simulator.simulate(graph, cei_results, risk_factors)
-
-        # Step 9: Pre-Modification Validation (Patent Module 110)
-        validated_results = p.pre_mod_validator.validate(
-            graph=graph,
-            cei_results=cei_results,
-            fault_risks=fault_risks,
-            governance_policies=p.governance_store.get_policies(),
-            safety_threshold=request.safety_threshold,
-            k_hop=request.k_hop
-        )
-
-        # Step 10: Generate Recommendations (Patent Module 111)
-        recommendations = p.actuator.generate_recommendations(validated_results)
-
-        # Compute graph metrics
-        graph_metrics = p.graph_constructor.get_metrics(graph)
-
-        # Build response
-        node_results = []
-        total_savings = 0.0
-        for node_id, data in recommendations.items():
-            node_results.append(NodeCEIResult(
-                node_id=node_id,
-                cei_score=data["cei_score"],
-                centrality=data["centrality"],
-                entropy=data["entropy"],
-                risk_factor=data["risk_factor"],
-                classification=data["classification"],
-                recommendation=data["recommendation"],
-                action_type=data.get("action_type"),
-                action_details=data.get("action_details", ""),
-                estimated_savings=data.get("estimated_savings", 0.0),
-                monthly_cost=data.get("monthly_cost", 0.0),
-                is_safe=data.get("is_safe", False),
-                blocked_reason=data.get("blocked_reason"),
-                validation=data.get("validation", {}),
-            ))
-            total_savings += data.get("estimated_savings", 0.0)
-
-        return AnalysisResponse(
-            nodes=node_results,
-            weights=weights,
-            oscillation_status=oscillation_status,
-            total_potential_savings=total_savings,
-            graph_metrics=graph_metrics
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/cei/compute")
-async def compute_cei(request: TelemetryInput):
-    """Standalone CEI computation endpoint."""
-    p = build_pipeline()
-    telemetry_data = p.data_collector.collect(request.nodes)
-    graph = p.graph_constructor.build(telemetry_data, request.edges)
-    p.governance_store.load_policies(request.governance_policies)
-    risk_factors = p.governance_store.compute_risk_factors(telemetry_data)
-    weights = p.weight_recalibrator.get_current_weights()
-    results = p.cei_calculator.compute(graph, telemetry_data, risk_factors, weights)
-    return {"cei_results": results, "weights": weights}
-
-
-@app.post("/oscillation/detect")
-async def detect_oscillation(request: TelemetryInput):
-    """Standalone oscillation detection endpoint."""
-    p = build_pipeline()
-    telemetry_data = p.data_collector.collect(request.nodes)
-    status = p.oscillation_detector.detect(telemetry_data)
-    return status
-
-
-@app.post("/governance/validate")
-async def validate_governance(request: TelemetryInput):
-    """Validate nodes against governance policies."""
-    p = build_pipeline()
-    p.governance_store.load_policies(request.governance_policies)
-    telemetry_data = p.data_collector.collect(request.nodes)
-    risk_factors = p.governance_store.compute_risk_factors(telemetry_data)
-    compliance = p.governance_store.check_compliance(telemetry_data)
-    return {"risk_factors": risk_factors, "compliance": compliance}
-
-
-@app.post("/rollback/snapshot")
-async def create_snapshot(config: Dict):
-    """Create a pre-modification snapshot (Patent Module 112)."""
-    snapshot_id = rollback_manager.create_snapshot(config)
-    return {"snapshot_id": snapshot_id, "status": "created"}
-
-
-@app.post("/rollback/revert/{snapshot_id}")
-async def revert_to_snapshot(snapshot_id: str):
-    """Revert to a previous snapshot upon anomaly detection."""
-    result = rollback_manager.revert(snapshot_id)
-    return result
-
-
-# --- Scenario Demonstration Endpoints ---
-
-@app.get("/scenarios/list")
-async def list_scenarios():
-    """List all available demonstration scenarios."""
-    try:
-        scenarios = scenario_loader.list_scenarios()
-        return {"scenarios": scenarios, "count": len(scenarios)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/scenarios/{scenario_id}")
-async def get_scenario(scenario_id: str):
-    """Retrieve a scenario's full dataset."""
-    try:
-        return scenario_loader.load(scenario_id)
-    except ScenarioLoadError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/scenarios/{scenario_id}/analyze")
-async def analyze_scenario(scenario_id: str):
-    """Run the full CEI pipeline on a scenario."""
-    try:
-        scenario = scenario_loader.load(scenario_id)
-        engine_input = scenario_loader.to_core_engine_format(scenario)
-        analysis_request = AnalysisRequest(
-            telemetry=TelemetryInput(
-                nodes=engine_input["nodes"],
-                edges=engine_input["edges"],
-                governance_policies=engine_input["governance_policies"],
-            )
-        )
-        analysis_result = await run_full_analysis(analysis_request)
-        return {
-            "scenario_id": scenario_id,
-            "metadata": scenario["metadata"],
-            "analysis": analysis_result,
-        }
-    except ScenarioLoadError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
-
-# ----------------------------------------------------------------------
-# Pricing & benchmark endpoints (PR 7 — feature/cost-savings-engine)
-# ----------------------------------------------------------------------
-
-
-@app.get("/pricing/providers")
-async def pricing_providers():
-    """List supported cloud providers in the embedded pricing tables."""
     return {
-        "providers": list_supported_providers(),
-        "instance_counts": {p: len(INSTANCE_PRICES[p]) for p in INSTANCE_PRICES},
+        "status": "healthy",
+        "engine": "CloudOptimizer CEI Core",
+        "version": "1.0.0",
     }
-
-
-@app.get("/pricing/instance/{provider}/{instance_type}")
-async def pricing_instance(provider: str, instance_type: str, replicas: int = 1):
-    """Return the monthly USD cost for a single instance type."""
-    spec = INSTANCE_PRICES.get(provider, {}).get(instance_type)
-    if not spec:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Unknown instance type {instance_type!r} for provider {provider!r}",
-        )
-    return {
-        "provider": provider,
-        "instance_type": instance_type,
-        "spec": spec,
-        "replicas": replicas,
-        "monthly_cost_usd": monthly_cost(provider, instance_type, replicas),
-    }
-
-
-@app.post("/pricing/savings")
-async def pricing_savings(payload: Dict):
-    """
-    Compute per-node rightsizing recommendations and total monthly savings
-    given a topology + analysis result.
-
-    Expected payload:
-      {
-        "nodes":            [{id, provider, instance_type, replicas, tier?}, ...],
-        "analysis_nodes":   [{node_id, cei_score, classification, recommendation}, ...],
-        "governance":       {tiers: {...}}      # optional
-        "tau_down": 0.25, "tau_up": 0.65        # optional thresholds
-      }
-    """
-    try:
-        return compute_savings(
-            nodes=payload.get("nodes", []),
-            analysis_nodes=payload.get("analysis_nodes", []),
-            governance=payload.get("governance"),
-            tau_down=payload.get("tau_down", 0.25),
-            tau_up=payload.get("tau_up", 0.65),
-        )
-    except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
-
-
-@app.post("/benchmark/hpa-vs-cei")
-async def benchmark_hpa_vs_cei(payload: Dict):
-    """
-    Side-by-side metrics comparing a naive HPA control loop against the
-    full CEI pipeline on the same scenario.
-
-    Expected payload:
-      {
-        "nodes":               [topology nodes with provider/instance_type/replicas/tier],
-        "edges":               [edge tuples or {source, target, weight} dicts],
-        "analysis_nodes":      [analysis.nodes],
-        "oscillation_status":  analysis.oscillation_status,
-        "governance":          {tiers: {...}}    # optional
-      }
-    """
-    try:
-        result = run_hpa_vs_cei(
-            nodes=payload.get("nodes", []),
-            edges=payload.get("edges", []),
-            analysis_nodes=payload.get("analysis_nodes", []),
-            oscillation_status=payload.get("oscillation_status", {}),
-            governance=payload.get("governance"),
-        )
-        return result.to_dict()
-    except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
-
-
-@app.post("/scenarios/{scenario_id}/benchmark")
-async def scenario_benchmark(scenario_id: str):
-    """
-    Convenience wrapper: load a built-in scenario, run analysis, then
-    benchmark HPA vs CEI on the result. Returns the full benchmark
-    payload plus the savings calculation.
-    """
-    try:
-        scenario = scenario_loader.load(scenario_id)
-        engine_input = scenario_loader.to_core_engine_format(scenario)
-        analysis = await run_full_analysis(
-            AnalysisRequest(
-                telemetry=TelemetryInput(
-                    nodes=engine_input["nodes"],
-                    edges=engine_input["edges"],
-                    governance_policies=engine_input["governance_policies"],
-                )
-            )
-        )
-        # Re-shape topology nodes for the cost calculator. The seeded
-        # scenarios use the loader's normalized format (id, tier, type),
-        # so we map provider/instance_type/replicas with safe defaults.
-        topo_nodes = []
-        for n in scenario["topology"]["nodes"]:
-            topo_nodes.append(
-                {
-                    "id": n["id"],
-                    "provider": n.get("provider", "aws"),
-                    "instance_type": n.get("instance_type"),
-                    "replicas": n.get("replicas", 1),
-                    "tier": n.get("tier", "supporting"),
-                }
-            )
-        analysis_nodes = [na.dict() if hasattr(na, "dict") else na for na in analysis.nodes]
-        savings = compute_savings(
-            nodes=topo_nodes,
-            analysis_nodes=analysis_nodes,
-            governance=scenario.get("governance"),
-        )
-        bench = run_hpa_vs_cei(
-            nodes=topo_nodes,
-            edges=scenario["topology"].get("edges", []),
-            analysis_nodes=analysis_nodes,
-            oscillation_status=analysis.oscillation_status,
-            governance=scenario.get("governance"),
-        )
-        return {
-            "scenario_id": scenario_id,
-            "metadata": scenario["metadata"],
-            "savings": savings,
-            "benchmark": bench.to_dict(),
-        }
-    except ScenarioLoadError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")

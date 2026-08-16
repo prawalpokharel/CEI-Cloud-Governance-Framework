@@ -24,7 +24,7 @@
       "monthly_delta_usd": -70.08,
       "node_id": "gcs-backup",
       "provider": "aws",
-      "rationale": "low CEI (0.16); already at min replicas, downshift instance",
+      "rationale": "low CEI (0.19); already at min replicas, downshift instance",
       "suggested_instance": "m5.large",
       "suggested_monthly_usd": 70.08,
       "suggested_replicas": 1
@@ -44,17 +44,17 @@
       "suggested_replicas": 1
     },
     {
-      "action": "downsize",
-      "annual_delta_usd": -840.96,
+      "action": "no_action",
+      "annual_delta_usd": 0.0,
       "current_instance": "m5.xlarge",
       "current_monthly_usd": 140.16,
       "current_replicas": 1,
-      "monthly_delta_usd": -70.08,
+      "monthly_delta_usd": 0.0,
       "node_id": "relay-02",
       "provider": "aws",
-      "rationale": "low CEI (0.20); already at min replicas, downshift instance",
-      "suggested_instance": "m5.large",
-      "suggested_monthly_usd": 70.08,
+      "rationale": "within tolerance",
+      "suggested_instance": null,
+      "suggested_monthly_usd": 140.16,
       "suggested_replicas": 1
     },
     {
@@ -128,17 +128,17 @@
       "suggested_replicas": 1
     },
     {
-      "action": "downsize",
-      "annual_delta_usd": -96.36,
+      "action": "no_action",
+      "annual_delta_usd": 0.0,
       "current_instance": "m5.large",
       "current_monthly_usd": 70.08,
       "current_replicas": 1,
-      "monthly_delta_usd": -8.03,
+      "monthly_delta_usd": 0.0,
       "node_id": "drone-05",
       "provider": "aws",
-      "rationale": "low CEI (0.24); already at min replicas, downshift instance",
-      "suggested_instance": "c5.large",
-      "suggested_monthly_usd": 62.05,
+      "rationale": "within tolerance",
+      "suggested_instance": null,
+      "suggested_monthly_usd": 70.08,
       "suggested_replicas": 1
     },
     {
@@ -202,8 +202,8 @@
     "tau_down": 0.25,
     "tau_up": 0.65
   },
-  "total_annual_savings_usd": 2142.84,
+  "total_annual_savings_usd": 1205.52,
   "total_current_monthly_usd": 1322.18,
-  "total_monthly_savings_usd": 178.57,
-  "total_suggested_monthly_usd": 1143.61
+  "total_monthly_savings_usd": 100.46,
+  "total_suggested_monthly_usd": 1221.72
 }

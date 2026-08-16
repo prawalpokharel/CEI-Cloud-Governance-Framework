@@ -14,63 +14,86 @@ intended and reviewed.
 ## These record current behavior, not correct behavior
 
 The harness is a regression detector. It answers "did this change?", never
-"is this right?". Two significant defects are frozen into the current
-captures and are documented here so nobody mistakes them for intent.
+"is this right?".
 
-### Defect 1 — scenario telemetry never reaches the pipeline
+### Defect 1 — scenario telemetry never reached the pipeline — FIXED
 
-`ScenarioLoader.to_core_engine_format` writes real telemetry to the node's
-**top level**:
+`ScenarioLoader.to_core_engine_format` wrote real telemetry to the node's
+**top level**, while `DataCollector._process_node` read it from **inside
+`metrics`**. The paths never matched, so every node's real history (180
+points) was discarded in favour of `_generate_synthetic_history()` — Gaussian
+noise around the current reading.
 
-```python
-nodes.append({..., "utilization_history": node_telemetry})
-```
+A second half to the same bug: scenario points are `{"t", "cpu", "mem"}` but
+every consumer reads `"memory"`. Correcting only the path would have left
+memory defaulting to a flat `0.5` — which reads as perfectly stable and
+zero-entropy.
 
-`DataCollector._process_node` reads it from **inside `metrics`**:
+Both are fixed. History is now accepted from either location and normalized
+to `{"cpu", "memory"}`, with percentage inputs rescaled to fractions.
 
-```python
-metrics = node.get("metrics", {})
-utilization_history = metrics.get("utilization_history", [])   # always empty
-```
+Effect on the captures: entropy spread roughly doubled (0.30 → 0.70 on
+cloud_microservices), because entropy now measures real workload variability
+instead of the width of a noise distribution.
 
-The paths never match. Every node's real history (180 points per node) is
-discarded and replaced by `_generate_synthetic_history()` — Gaussian noise
-around the current CPU/memory reading.
+### Defect 2 — the oscillation detector was amplitude-blind — FIXED
 
-Consequences, all present in these captures:
+`_compute_oscillation_frequency` counted every sign change in the first
+derivative and used amplitude only as an additive bonus
+(`frequency * (1 + std)`). A noisy series reverses on roughly half its
+samples regardless of amplitude, so essentially all real telemetry scored
+0.5–0.7 — a series with σ=0.001 scored *higher* than one with σ=0.05.
 
-- The scenario telemetry cited on the demo pages and in the patent
-  (DARPA/NATO/RAND-derived) has never been used by an analysis.
-- Shannon entropy (`beta`, ~35% of the CEI score) is computed from noise.
-- The stability monitor, which drives weight recalibration, reads noise.
-- The oscillation detector sees noise and flags **100% of nodes** in every
-  scenario, so suppression is permanently active.
-- With suppression active, every recommendation collapses to `no_action`
-  and `total_potential_savings` is `$0.00` for all five scenarios.
+Replaced with a deadband (zigzag) reduction: a reversal counts only once the
+series retraces from its running extreme by `min_amplitude` (0.10). O(t) is
+then `reversal_rate * amplitude_factor`, requiring both frequent *and* large
+reversals.
 
-Fixing the lookup moves nearly every number in these files. It is therefore
-held as a reviewed decision, not a silent correction.
+| series | before | after | flagged now (θ=0.3) |
+|---|---|---|---|
+| perfectly flat | 0.000 | 0.000 | no |
+| noise σ=0.001 | 0.705 | 0.000 | no |
+| noise σ=0.05 (ordinary jitter) | 0.631 | 0.232 | no |
+| noise σ=0.10 | — | 0.898 | yes |
+| diurnal sine, 0.6 peak-to-peak | — | 0.091 | no |
+| square-wave thrash 0.2↔0.8 | — | 1.000 | yes |
 
-### Defect 2 — the oscillation detector is amplitude-blind
+Effect on the captures: cloud_microservices went from 15/15 nodes flagged
+with suppression active to 3/15 with suppression off.
 
-`_compute_oscillation_frequency` counts sign changes in the first derivative
-and normalizes by sample count. Any non-monotonic series scores ~0.5–0.7
-regardless of amplitude:
+### Defect 3 — the k-hop safety check compares a sum against a ratio — OPEN
 
-| series                          | O(t)  | flagged at θ=0.3 |
-|---------------------------------|-------|------------------|
-| noise, σ=0.05                   | 0.631 | yes              |
-| noise, σ=0.001 (flat in practice) | 0.705 | yes            |
-| perfectly flat                  | 0.000 | no               |
-| smooth monotonic ramp           | 0.000 | no               |
+`PreModificationValidator` aborts a modification when
+`cumulative_centrality_change >= safety_threshold`. The left side is an
+unbounded **sum** of neighbour centralities; the right side defaults to
+`0.7`, a value on a [0, 1] scale.
 
-Only *perfectly* flat or *perfectly* monotonic input scores zero, and real
-telemetry is neither. This independently guarantees permanent suppression
-once Defect 1 is fixed, so both must be addressed together.
+The sum grows with neighbourhood size while the mean does not:
 
-This matters beyond the demos: live Kubernetes CPU telemetry will trip the
-same path on every workload, which would ship the Phase 1 product with its
-recommendation engine permanently disabled.
+| node | k_hop_count | cumulative | mean |
+|---|---|---|---|
+| data-ingest-01 | 3 | 1.333 | 0.44 |
+| gpu-worker-01 | 10 | 4.267 | 0.43 |
+
+So any node with a connected neighbour exceeds the threshold, `is_safe` is
+false almost everywhere, and every recommendation collapses to `no_action`
+with `blocked_reason: "k-hop impact exceeds safety threshold"`. This is why
+`total_potential_savings` is `$0.00` across all five scenarios even after
+Defects 1 and 2 are fixed.
+
+Two signals that this is a units mismatch rather than intent: the mean is
+stable across neighbourhood sizes, and the validator already computes
+`max_single_impact` but never uses it in the safety check.
+
+Left open deliberately. The patent specification uses the word "cumulative",
+so the correct resolution — normalize the measure, or recalibrate the
+threshold to the scale of a sum — is a decision about Module 110's
+described behaviour, not a typo to silently patch.
+
+A secondary contributor: scenario topologies carry `cpu_limit`/`mem_gb` but
+no `instance_type` or `monthly_cost`, so the actuator computes savings
+against a cost of zero. The demo pages avoid this by calling
+`/pricing/savings`, which synthesizes an instance type from the tier.
 
 ## What was corrected before capture
 

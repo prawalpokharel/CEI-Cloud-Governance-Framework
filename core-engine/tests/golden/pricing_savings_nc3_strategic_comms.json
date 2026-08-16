@@ -10,7 +10,7 @@
       "monthly_delta_usd": -70.08,
       "node_id": "natl-cmd-authority",
       "provider": "aws",
-      "rationale": "low CEI (0.24); already at min replicas, downshift instance",
+      "rationale": "low CEI (0.20); already at min replicas, downshift instance",
       "suggested_instance": "m5.large",
       "suggested_monthly_usd": 70.08,
       "suggested_replicas": 1

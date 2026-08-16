@@ -7,7 +7,23 @@ const router = express.Router();
 // In-memory user store (production would use database)
 const users = new Map();
 
+/**
+ * Without a configured secret, jwt.sign throws and the caller sees an opaque
+ * 500. Fail closed with the same 503 the middleware returns so the cause is
+ * obvious from the response.
+ */
+function requireSecret(res) {
+  if (!JWT_SECRET) {
+    res.status(503).json({
+      error: 'Authentication is not configured on this deployment',
+    });
+    return false;
+  }
+  return true;
+}
+
 router.post('/register', async (req, res) => {
+  if (!requireSecret(res)) return;
   try {
     const { email, password, name, organization } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -24,6 +40,7 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
+  if (!requireSecret(res)) return;
   try {
     const { email, password } = req.body;
     const user = users.get(email);

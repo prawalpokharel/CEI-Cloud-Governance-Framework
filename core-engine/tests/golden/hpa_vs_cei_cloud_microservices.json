@@ -2,9 +2,9 @@
   "cei": {
     "cascade_failures": 0,
     "governance_violations": 0,
-    "notes": "Suppression active \u2014 modifications blocked this window",
+    "notes": "Centrality + governance aware; pre-mod validator enforces tier mins",
     "policy": "cei",
-    "recovery_time_minutes": 33.0,
+    "recovery_time_minutes": 16.5,
     "scaling_events": 0,
     "total_monthly_cost_usd": 3391.88
   },
@@ -14,7 +14,7 @@
     "governance_violations_diff": 0,
     "monthly_cost_diff_usd": 0.0,
     "monthly_savings_vs_hpa_usd": 0.0,
-    "recovery_time_diff_minutes": 33.0,
+    "recovery_time_diff_minutes": 16.5,
     "scaling_events_diff": 0
   },
   "hpa": {
@@ -29,8 +29,8 @@
   "scenario_summary": {
     "critical_count": 0,
     "edge_count": 17,
-    "elevated_count": 2,
+    "elevated_count": 4,
     "node_count": 15,
-    "suppression_active": true
+    "suppression_active": false
   }
 }

@@ -81,18 +81,23 @@ class DataCollector:
 
         # Extract utilization history for longitudinal analysis.
         #
-        # KNOWN DEFECT (see tests/golden/README.md): callers such as
-        # ScenarioLoader.to_core_engine_format supply real history at the
-        # node's TOP level (node["utilization_history"]), not nested under
-        # "metrics". This lookup therefore misses it and falls through to the
-        # synthetic generator below, discarding the real telemetry. Correcting
-        # the lookup moves every NIW/USPTO-facing demonstration number, so it
-        # is being handled as a reviewed change rather than silently here.
-        utilization_history = metrics.get("utilization_history", [])
+        # History is accepted from either the node's top level or nested under
+        # "metrics". Both shapes occur in practice: ScenarioLoader and the
+        # backend's cloud discovery put it at the top level, while callers
+        # posting directly to /analyze may nest it. Previously only the nested
+        # location was read, so every top-level caller silently fell through
+        # to the synthetic generator and had its real telemetry discarded.
+        raw_history = (
+            node.get("utilization_history")
+            or metrics.get("utilization_history")
+            or []
+        )
+        utilization_history = self._normalize_history(raw_history)
+
         if not utilization_history:
-            # Generate synthetic history from current metrics for analysis.
-            # Seeded per node id so a given node yields the same history on
-            # every run and regardless of the order nodes are processed in.
+            # Only when no history was supplied at all. Seeded per node id so
+            # a given node yields the same history on every run and regardless
+            # of the order nodes are processed in.
             utilization_history = self._generate_synthetic_history(
                 cpu, memory, node_id
             )
@@ -131,6 +136,72 @@ class DataCollector:
         if max_val <= min_val:
             return 0.0
         return max(0.0, min(1.0, (value - min_val) / (max_val - min_val)))
+
+    # Downstream consumers (CEI entropy, stability monitor, oscillation
+    # detector) all read "cpu" and "memory" from each history point. Callers
+    # supply several spellings: scenario telemetry uses {"t", "cpu", "mem"},
+    # the synthetic generator emits {"day", "cpu", "memory"}, and cloud
+    # discovery uses {"t", "cpu", "mem"}. Without normalization, "mem" is
+    # never seen and every memory reading silently defaults to 0.5 -- a flat
+    # constant, which reads as perfectly stable and zero-entropy.
+    _CPU_KEYS = ("cpu", "cpu_utilization", "cpu_pct")
+    _MEM_KEYS = ("memory", "mem", "memory_utilization", "mem_pct")
+
+    def _normalize_history(self, raw_history: List[Dict]) -> List[Dict]:
+        """
+        Coerce supplied history into the canonical {"cpu", "memory"} shape.
+
+        Values are assumed to be fractions in [0, 1]; a caller supplying
+        percentages (0-100) is detected and rescaled, since mixing the two
+        would put one node's entropy on a completely different scale from
+        its neighbours'.
+        """
+        if not isinstance(raw_history, list) or not raw_history:
+            return []
+
+        points = []
+        for entry in raw_history:
+            if not isinstance(entry, dict):
+                continue
+            cpu = self._first_present(entry, self._CPU_KEYS)
+            mem = self._first_present(entry, self._MEM_KEYS)
+            if cpu is None and mem is None:
+                continue
+            point = {
+                "cpu": cpu if cpu is not None else 0.0,
+                "memory": mem if mem is not None else 0.0,
+            }
+            # Preserve whichever time index the caller used, for the UI.
+            for time_key in ("t", "day", "timestamp", "ts"):
+                if time_key in entry:
+                    point[time_key] = entry[time_key]
+                    break
+            points.append(point)
+
+        if not points:
+            return []
+
+        # Rescale if the caller supplied percentages rather than fractions.
+        peak = max(max(p["cpu"], p["memory"]) for p in points)
+        if peak > 1.0:
+            scale = 100.0 if peak <= 100.0 else peak
+            for p in points:
+                p["cpu"] = p["cpu"] / scale
+                p["memory"] = p["memory"] / scale
+
+        for p in points:
+            p["cpu"] = max(0.0, min(1.0, float(p["cpu"])))
+            p["memory"] = max(0.0, min(1.0, float(p["memory"])))
+
+        return points
+
+    @staticmethod
+    def _first_present(entry: Dict, keys) -> float | None:
+        for key in keys:
+            value = entry.get(key)
+            if isinstance(value, (int, float)):
+                return float(value)
+        return None
 
     def _generate_synthetic_history(
         self, cpu: float, memory: float, node_id: str = ""

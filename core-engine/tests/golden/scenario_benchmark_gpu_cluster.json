@@ -5,7 +5,7 @@
       "governance_violations": 0,
       "notes": "Suppression active \u2014 modifications blocked this window",
       "policy": "cei",
-      "recovery_time_minutes": 33.0,
+      "recovery_time_minutes": 24.9,
       "scaling_events": 0,
       "total_monthly_cost_usd": 1322.18
     },
@@ -15,7 +15,7 @@
       "governance_violations_diff": 0,
       "monthly_cost_diff_usd": 0.0,
       "monthly_savings_vs_hpa_usd": 0.0,
-      "recovery_time_diff_minutes": 33.0,
+      "recovery_time_diff_minutes": 24.9,
       "scaling_events_diff": 0
     },
     "hpa": {
@@ -30,7 +30,7 @@
     "scenario_summary": {
       "critical_count": 0,
       "edge_count": 19,
-      "elevated_count": 2,
+      "elevated_count": 3,
       "node_count": 15,
       "suppression_active": true
     }
@@ -84,7 +84,7 @@
         "monthly_delta_usd": -8.03,
         "node_id": "data-ingest-02",
         "provider": "aws",
-        "rationale": "low CEI (0.23); already at min replicas, downshift instance",
+        "rationale": "low CEI (0.24); already at min replicas, downshift instance",
         "suggested_instance": "c5.large",
         "suggested_monthly_usd": 62.05,
         "suggested_replicas": 1
@@ -104,17 +104,17 @@
         "suggested_replicas": 1
       },
       {
-        "action": "no_action",
-        "annual_delta_usd": 0.0,
+        "action": "downsize",
+        "annual_delta_usd": -96.36,
         "current_instance": "m5.large",
         "current_monthly_usd": 70.08,
         "current_replicas": 1,
-        "monthly_delta_usd": 0.0,
+        "monthly_delta_usd": -8.03,
         "node_id": "gpu-worker-01",
         "provider": "aws",
-        "rationale": "within tolerance",
-        "suggested_instance": null,
-        "suggested_monthly_usd": 70.08,
+        "rationale": "low CEI (0.22); already at min replicas, downshift instance",
+        "suggested_instance": "c5.large",
+        "suggested_monthly_usd": 62.05,
         "suggested_replicas": 1
       },
       {
@@ -126,23 +126,23 @@
         "monthly_delta_usd": -8.03,
         "node_id": "gpu-worker-02",
         "provider": "aws",
-        "rationale": "low CEI (0.25); already at min replicas, downshift instance",
+        "rationale": "low CEI (0.23); already at min replicas, downshift instance",
         "suggested_instance": "c5.large",
         "suggested_monthly_usd": 62.05,
         "suggested_replicas": 1
       },
       {
-        "action": "downsize",
-        "annual_delta_usd": -96.36,
+        "action": "no_action",
+        "annual_delta_usd": 0.0,
         "current_instance": "m5.large",
         "current_monthly_usd": 70.08,
         "current_replicas": 1,
-        "monthly_delta_usd": -8.03,
+        "monthly_delta_usd": 0.0,
         "node_id": "gpu-worker-03",
         "provider": "aws",
-        "rationale": "low CEI (0.23); already at min replicas, downshift instance",
-        "suggested_instance": "c5.large",
-        "suggested_monthly_usd": 62.05,
+        "rationale": "within tolerance",
+        "suggested_instance": null,
+        "suggested_monthly_usd": 70.08,
         "suggested_replicas": 1
       },
       {
@@ -160,31 +160,31 @@
         "suggested_replicas": 1
       },
       {
-        "action": "no_action",
-        "annual_delta_usd": 0.0,
+        "action": "downsize",
+        "annual_delta_usd": -96.36,
         "current_instance": "m5.large",
         "current_monthly_usd": 70.08,
         "current_replicas": 1,
-        "monthly_delta_usd": 0.0,
+        "monthly_delta_usd": -8.03,
         "node_id": "gpu-worker-05",
         "provider": "aws",
-        "rationale": "within tolerance",
-        "suggested_instance": null,
-        "suggested_monthly_usd": 70.08,
+        "rationale": "low CEI (0.25); already at min replicas, downshift instance",
+        "suggested_instance": "c5.large",
+        "suggested_monthly_usd": 62.05,
         "suggested_replicas": 1
       },
       {
-        "action": "no_action",
-        "annual_delta_usd": 0.0,
+        "action": "downsize",
+        "annual_delta_usd": -182.28,
         "current_instance": "t3.medium",
         "current_monthly_usd": 30.37,
         "current_replicas": 1,
-        "monthly_delta_usd": 0.0,
+        "monthly_delta_usd": -15.19,
         "node_id": "gpu-worker-06",
         "provider": "aws",
-        "rationale": "within tolerance",
-        "suggested_instance": null,
-        "suggested_monthly_usd": 30.37,
+        "rationale": "low CEI (0.23); already at min replicas, downshift instance",
+        "suggested_instance": "t3.small",
+        "suggested_monthly_usd": 15.18,
         "suggested_replicas": 1
       },
       {
@@ -262,10 +262,10 @@
       "tau_down": 0.25,
       "tau_up": 0.65
     },
-    "total_annual_savings_usd": 385.44,
+    "total_annual_savings_usd": 664.08,
     "total_current_monthly_usd": 1322.18,
-    "total_monthly_savings_usd": 32.12,
-    "total_suggested_monthly_usd": 1290.06
+    "total_monthly_savings_usd": 55.34,
+    "total_suggested_monthly_usd": 1266.84
   },
   "scenario_id": "gpu_cluster"
 }

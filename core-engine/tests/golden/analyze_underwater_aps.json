@@ -18,10 +18,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4603,
+        "cei_score": 0.4831,
         "centrality": 0.634,
         "classification": "moderate",
-        "entropy": 0.3387,
+        "entropy": 0.4342,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -55,10 +55,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4689,
+        "cei_score": 0.467,
         "centrality": 0.634,
         "classification": "moderate",
-        "entropy": 0.3707,
+        "entropy": 0.3885,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -92,10 +92,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.5339,
+        "cei_score": 0.4883,
         "centrality": 0.8043,
-        "classification": "elevated",
-        "entropy": 0.3337,
+        "classification": "moderate",
+        "entropy": 0.2545,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -130,10 +130,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.6115,
+        "cei_score": 0.5818,
         "centrality": 0.9433,
         "classification": "elevated",
-        "entropy": 0.3945,
+        "entropy": 0.3628,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -165,10 +165,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.6101,
+        "cei_score": 0.6617,
         "centrality": 0.9433,
         "classification": "elevated",
-        "entropy": 0.3896,
+        "entropy": 0.591,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -200,10 +200,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4765,
+        "cei_score": 0.5076,
         "centrality": 0.6857,
-        "classification": "moderate",
-        "entropy": 0.3145,
+        "classification": "elevated",
+        "entropy": 0.4453,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -235,10 +235,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4607,
+        "cei_score": 0.4153,
         "centrality": 0.6857,
         "classification": "moderate",
-        "entropy": 0.2558,
+        "entropy": 0.1814,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -270,10 +270,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.5014,
+        "cei_score": 0.6571,
         "centrality": 0.7097,
         "classification": "elevated",
-        "entropy": 0.3676,
+        "entropy": 0.8448,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -304,10 +304,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.497,
+        "cei_score": 0.4899,
         "centrality": 0.7097,
         "classification": "moderate",
-        "entropy": 0.351,
+        "entropy": 0.3672,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -338,10 +338,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.6354,
+        "cei_score": 0.623,
         "centrality": 1.0,
         "classification": "elevated",
-        "entropy": 0.3906,
+        "entropy": 0.4156,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -372,10 +372,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.6373,
+        "cei_score": 0.6103,
         "centrality": 1.0,
         "classification": "elevated",
-        "entropy": 0.3979,
+        "entropy": 0.3795,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -406,10 +406,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.463,
+        "cei_score": 0.4731,
         "centrality": 0.6115,
         "classification": "moderate",
-        "entropy": 0.3853,
+        "entropy": 0.4315,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -439,10 +439,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.3778,
+        "cei_score": 0.3889,
         "centrality": 0.6115,
         "classification": "moderate",
-        "entropy": 0.0697,
+        "entropy": 0.1909,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -472,10 +472,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4533,
+        "cei_score": 0.4596,
         "centrality": 0.5795,
         "classification": "moderate",
-        "entropy": 0.4014,
+        "entropy": 0.4292,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -508,108 +508,95 @@
       }
     ],
     "oscillation_status": {
-      "consecutive_oscillation_episodes": 1,
-      "hysteresis_window_minutes": 22,
+      "consecutive_oscillation_episodes": 0,
+      "hysteresis_window_minutes": 15,
       "node_details": {
         "relay-node-01": {
-          "direction_changes": 55,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6521
+          "direction_changes": 23,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.2584
         },
         "relay-node-02": {
-          "direction_changes": 59,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7035
+          "direction_changes": 12,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0672
         },
         "seafloor-anchor-01": {
-          "direction_changes": 59,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7014
+          "direction_changes": 11,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0598
         },
         "seafloor-anchor-02": {
-          "direction_changes": 56,
+          "direction_changes": 70,
           "is_oscillating": true,
-          "oscillation_frequency": 0.6696
+          "oscillation_frequency": 0.7865
         },
         "seafloor-anchor-03": {
-          "direction_changes": 65,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7724
+          "direction_changes": 13,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0749
         },
         "seafloor-anchor-04": {
-          "direction_changes": 63,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7491
+          "direction_changes": 1,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0047
         },
         "shore-station": {
-          "direction_changes": 58,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6966
+          "direction_changes": 11,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0592
         },
         "surface-buoy-01": {
-          "direction_changes": 57,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6777
+          "direction_changes": 15,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0794
         },
         "surface-buoy-02": {
-          "direction_changes": 56,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6668
+          "direction_changes": 14,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0772
         },
         "surface-buoy-03": {
-          "direction_changes": 50,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.5985
+          "direction_changes": 0,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0
         },
         "uuv-alpha": {
-          "direction_changes": 60,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7153
+          "direction_changes": 6,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0345
         },
         "uuv-beta": {
-          "direction_changes": 65,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7768
+          "direction_changes": 14,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0755
         },
         "uuv-delta": {
-          "direction_changes": 59,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6935
+          "direction_changes": 0,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0
         },
         "uuv-gamma": {
-          "direction_changes": 59,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7065
+          "direction_changes": 13,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0728
         }
       },
-      "oscillating_node_count": 14,
+      "oscillating_node_count": 1,
       "oscillating_nodes": [
-        "surface-buoy-01",
-        "surface-buoy-02",
-        "surface-buoy-03",
-        "seafloor-anchor-01",
-        "seafloor-anchor-02",
-        "seafloor-anchor-03",
-        "seafloor-anchor-04",
-        "relay-node-01",
-        "relay-node-02",
-        "uuv-alpha",
-        "uuv-beta",
-        "uuv-gamma",
-        "uuv-delta",
-        "shore-station"
+        "seafloor-anchor-02"
       ],
-      "oscillation_ratio": 1.0,
-      "suppression_active": true,
-      "system_oscillation_score": 0.6986,
+      "oscillation_ratio": 0.0714,
+      "suppression_active": false,
+      "system_oscillation_score": 0.0562,
       "threshold": 0.3,
       "total_nodes": 14
     },
     "total_potential_savings": 0.0,
     "weights": {
-      "alpha": 0.44,
-      "beta": 0.27,
-      "gamma": 0.29
+      "alpha": 0.4,
+      "beta": 0.35,
+      "gamma": 0.25
     }
   },
   "metadata": {

@@ -18,10 +18,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.2655,
+        "cei_score": 0.2725,
         "centrality": 0.1629,
         "classification": "moderate",
-        "entropy": 0.3851,
+        "entropy": 0.3709,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -54,10 +54,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.5291,
+        "cei_score": 0.5925,
         "centrality": 0.7923,
         "classification": "elevated",
-        "entropy": 0.3355,
+        "entropy": 0.5659,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -95,10 +95,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.3644,
+        "cei_score": 0.3946,
         "centrality": 0.415,
         "classification": "moderate",
-        "entropy": 0.3404,
+        "entropy": 0.4318,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -135,10 +135,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4971,
+        "cei_score": 0.6503,
         "centrality": 0.6808,
-        "classification": "moderate",
-        "entropy": 0.3989,
+        "classification": "elevated",
+        "entropy": 0.8586,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -177,10 +177,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.3687,
+        "cei_score": 0.4322,
         "centrality": 0.395,
         "classification": "moderate",
-        "entropy": 0.389,
+        "entropy": 0.562,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -215,10 +215,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.3624,
+        "cei_score": 0.3845,
         "centrality": 0.395,
         "classification": "moderate",
-        "entropy": 0.3657,
+        "entropy": 0.4258,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -253,10 +253,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.352,
+        "cei_score": 0.5289,
         "centrality": 0.3835,
-        "classification": "moderate",
-        "entropy": 0.3458,
+        "classification": "elevated",
+        "entropy": 0.8513,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -290,10 +290,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.3496,
+        "cei_score": 0.4336,
         "centrality": 0.3835,
         "classification": "moderate",
-        "entropy": 0.3369,
+        "entropy": 0.5792,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -327,10 +327,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.2984,
+        "cei_score": 0.2859,
         "centrality": 0.3147,
         "classification": "moderate",
-        "entropy": 0.2596,
+        "entropy": 0.2358,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -361,10 +361,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.6319,
+        "cei_score": 0.6249,
         "centrality": 1.0,
         "classification": "elevated",
-        "entropy": 0.3778,
+        "entropy": 0.4212,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -398,10 +398,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4766,
+        "cei_score": 0.4608,
         "centrality": 0.6382,
         "classification": "moderate",
-        "entropy": 0.3922,
+        "entropy": 0.3658,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -433,10 +433,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4156,
+        "cei_score": 0.3808,
         "centrality": 0.5802,
         "classification": "moderate",
-        "entropy": 0.2608,
+        "entropy": 0.2034,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -467,10 +467,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.4385,
+        "cei_score": 0.4574,
         "centrality": 0.5698,
         "classification": "moderate",
-        "entropy": 0.3625,
+        "entropy": 0.4343,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -505,10 +505,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.3134,
+        "cei_score": 0.3107,
         "centrality": 0.4476,
         "classification": "moderate",
-        "entropy": 0.0985,
+        "entropy": 0.1549,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -540,10 +540,10 @@
         "action_details": "No modification permitted. k-hop impact exceeds safety threshold. Manual review recommended.",
         "action_type": "no_action",
         "blocked_reason": "k-hop impact exceeds safety threshold",
-        "cei_score": 0.3014,
+        "cei_score": 0.2819,
         "centrality": 0.374,
         "classification": "moderate",
-        "entropy": 0.174,
+        "entropy": 0.1566,
         "estimated_savings": 0.0,
         "is_safe": false,
         "monthly_cost": 0.0,
@@ -571,114 +571,102 @@
       }
     ],
     "oscillation_status": {
-      "consecutive_oscillation_episodes": 1,
-      "hysteresis_window_minutes": 22,
+      "consecutive_oscillation_episodes": 0,
+      "hysteresis_window_minutes": 15,
       "node_details": {
         "analytics-svc": {
-          "direction_changes": 60,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7078
+          "direction_changes": 2,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0098
         },
         "api-gateway": {
-          "direction_changes": 59,
+          "direction_changes": 47,
           "is_oscillating": true,
-          "oscillation_frequency": 0.7048
+          "oscillation_frequency": 0.5281
         },
         "auth-svc": {
-          "direction_changes": 53,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6319
+          "direction_changes": 12,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0636
         },
         "cache-cluster": {
-          "direction_changes": 61,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7223
+          "direction_changes": 0,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0
         },
         "catalog-svc": {
-          "direction_changes": 60,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7115
+          "direction_changes": 25,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.2809
         },
         "db-primary": {
-          "direction_changes": 56,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6692
+          "direction_changes": 7,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0402
         },
         "db-replica-01": {
-          "direction_changes": 63,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7508
+          "direction_changes": 10,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0587
         },
         "inventory-svc": {
-          "direction_changes": 56,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6685
+          "direction_changes": 10,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0547
         },
         "lb-01": {
-          "direction_changes": 59,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7079
+          "direction_changes": 13,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0783
         },
         "notif-svc": {
-          "direction_changes": 58,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.6874
+          "direction_changes": 2,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0098
         },
         "order-svc": {
-          "direction_changes": 50,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.5957
+          "direction_changes": 24,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.2697
         },
         "payment-svc": {
-          "direction_changes": 55,
+          "direction_changes": 49,
           "is_oscillating": true,
-          "oscillation_frequency": 0.6572
+          "oscillation_frequency": 0.5506
         },
         "queue-broker": {
-          "direction_changes": 62,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7365
+          "direction_changes": 9,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0559
         },
         "reporting-svc": {
-          "direction_changes": 59,
-          "is_oscillating": true,
-          "oscillation_frequency": 0.7029
+          "direction_changes": 0,
+          "is_oscillating": false,
+          "oscillation_frequency": 0.0
         },
         "search-svc": {
-          "direction_changes": 56,
+          "direction_changes": 51,
           "is_oscillating": true,
-          "oscillation_frequency": 0.6696
+          "oscillation_frequency": 0.573
         }
       },
-      "oscillating_node_count": 15,
+      "oscillating_node_count": 3,
       "oscillating_nodes": [
-        "lb-01",
         "api-gateway",
-        "auth-svc",
-        "order-svc",
         "payment-svc",
-        "inventory-svc",
-        "catalog-svc",
-        "search-svc",
-        "notif-svc",
-        "db-primary",
-        "db-replica-01",
-        "cache-cluster",
-        "queue-broker",
-        "analytics-svc",
-        "reporting-svc"
+        "search-svc"
       ],
-      "oscillation_ratio": 1.0,
-      "suppression_active": true,
-      "system_oscillation_score": 0.6883,
+      "oscillation_ratio": 0.2,
+      "suppression_active": false,
+      "system_oscillation_score": 0.1101,
       "threshold": 0.3,
       "total_nodes": 15
     },
     "total_potential_savings": 0.0,
     "weights": {
-      "alpha": 0.44,
-      "beta": 0.27,
-      "gamma": 0.29
+      "alpha": 0.4,
+      "beta": 0.35,
+      "gamma": 0.25
     }
   },
   "metadata": {
