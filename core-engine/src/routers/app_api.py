@@ -40,6 +40,7 @@ from ..services import recovery as recovery_service
 from ..services import remediation as remediation_service
 from ..services import prescribe as prescribe_service
 from ..services import carbon as carbon_service
+from ..services import diagnose as diagnose_service
 
 from ..services.git_provider import GitHubApp, GitProviderError
 from ..services.cost import analyze_cluster_cost
@@ -1066,6 +1067,75 @@ async def cluster_metastability(
             "enough history are omitted rather than guessed at."
         ),
     }
+
+
+@router.get("/clusters/{cluster_id}/diagnose")
+async def cluster_diagnose(
+    cluster_id: str,
+    format: str = "json",
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Root-cause localization for whatever is unhealthy right now.
+
+    The 3am endpoint: separates root causes from collateral on the observed
+    dependency graph, orders by failure onset, correlates recent changes,
+    infers shared external causes, and names who to page. ?format=markdown
+    returns a paste-ready incident brief for the incident channel.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+
+    # Latest and previous snapshots: the diff is the change-correlation input.
+    rows = (
+        await session.execute(
+            select(Snapshot)
+            .where(Snapshot.cluster_id == cluster.id)
+            .order_by(desc(Snapshot.received_at))
+            .limit(2)
+        )
+    ).scalars().all()
+    if not rows:
+        raise HTTPException(
+            status_code=409,
+            detail="No snapshot received yet. Is the agent installed and running?",
+        )
+    snapshot = rows[0].payload or {}
+    previous = rows[1].payload if len(rows) > 1 else None
+
+    # Readiness history for onset ordering. Bounded window: onset ordering
+    # needs the current unhealthy stretch, not the archive.
+    sample_rows = (
+        await session.execute(
+            select(WorkloadSample)
+            .where(WorkloadSample.cluster_id == cluster.id)
+            .order_by(desc(WorkloadSample.observed_at))
+            .limit(2000)
+        )
+    ).scalars().all()
+    history: dict[str, list[dict]] = {}
+    for row in reversed(sample_rows):  # oldest first
+        history.setdefault(row.workload_key, []).append({
+            "replicas_ready": row.replicas_ready,
+            "replicas_desired": row.replicas_desired,
+        })
+
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+    result = diagnose_service.diagnose(
+        snapshot, previous, history, cei_by_workload
+    )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = rows[0].captured_at.isoformat()
+
+    if format == "markdown":
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse(
+            diagnose_service.incident_brief(result, cluster_name=cluster.name),
+            media_type="text/markdown",
+        )
+    return result
 
 
 @router.get("/clusters/{cluster_id}/blast-radius")

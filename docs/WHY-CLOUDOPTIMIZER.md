@@ -42,7 +42,7 @@ capability below is that one graph answering a different expensive question.
 
 ---
 
-## One platform, seven answers
+## One platform, eight answers
 
 ### 1 · "What does our system actually look like?"
 A live map of every service, what it depends on, and — critically — the
@@ -101,7 +101,22 @@ metrics notice"), and detects the sneakiest failure mode in distributed
 systems: everything reports healthy while the system burns itself out on
 retry load.
 
-### 7 · "What should we fix first, and is it worth the money?"
+### 7 · "It's 3am and everything is red — what is ACTUALLY broken?"
+The on-call feature. When one failure cascades, thirty alerts fire and the
+engineer burns the worst part of an hour separating cause from collateral —
+manual investigation is 60–80% of time-to-recovery, industry-wide. One call
+to `/diagnose` returns the answer: **root causes ranked with confidence and
+evidence, collateral grouped underneath ("leave these alone — they recover
+when the root does"), what changed on the root in the last window, who to
+page, and a paste-ready incident brief for the channel.** When two failing
+services secretly share one external dependency, it says the thing that
+takes a human longest to realize: *the suspect is outside your cluster —
+check its status page before restarting anything.* Validated against
+injected faults: in live tests the engine identified exactly the root(s) we
+broke — including two simultaneous independent failures — and blamed zero
+collateral workloads.
+
+### 8 · "What should we fix first, and is it worth the money?"
 The capstone. CloudOptimizer simulates concrete interventions against your
 actual architecture — add a replica, split an overloaded shared service,
 add an independent failover for your identity provider, remove idle

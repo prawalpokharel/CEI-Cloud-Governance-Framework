@@ -100,3 +100,26 @@ together with no flapping and no metastable residue — matching the injected
 readiness delay exactly. The instrument correctly distinguishes "slow but
 clean recovery" from the metastable signature (`unrecovered` after the
 trigger clears), which is the distinction the whole measurement exists for.
+
+## Diagnosis validation (live, 2026-08-17)
+
+The incident-diagnosis engine was validated the same way as blast radius:
+against injected ground truth, where the root cause is *known* because we
+caused it.
+
+**Single root.** `pod-failure` injected on `db`; snapshot taken
+mid-cascade (web's probe had not yet failed — the realistic partial state).
+The engine reported exactly one root (`db`, high confidence), attributed
+`api`, `reporting`, `worker` as collateral requiring no separate
+investigation, advised against restarting collateral, and counted the
+uninvolved workloads. No collateral workload was blamed.
+
+**Two simultaneous independent roots.** `pod-failure` on `db` AND `auth` at
+once, full cascade (6/6 unhealthy). The engine reported exactly the two
+injected roots and nothing else; shared collateral (`api`, `web` — which
+depend on both) was attributed to both roots rather than promoted to a
+phantom third incident.
+
+The property under test is the one that costs on-call engineers 60–80% of
+MTTR: separating the first broken dependency path from the loudest alerts.
+Both runs: correct roots, zero false accusations.
