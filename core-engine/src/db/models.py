@@ -30,6 +30,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     Enum as SAEnum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -298,8 +299,71 @@ class Snapshot(Base):
     payload_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     node_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Normalised HHI over structural centrality of the workload graph,
+    # computed at ingest. Persisted per snapshot so the concentration trend is
+    # one indexed query instead of N payload loads.
+    structural_concentration: Mapped[float | None] = mapped_column(Float)
     pod_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     workload_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class DriftEvent(Base):
+    """
+    A structural event detected between consecutive snapshots.
+
+    Written by the ingest path, not by an analysis endpoint: drift is only
+    meaningful against the immediately preceding snapshot, and the moment of
+    ingest is the only time both are naturally at hand. Rows are append-only
+    facts ("this workload became load-bearing in this window"); they are never
+    updated when the topology changes again -- the next change is a new row.
+    """
+
+    __tablename__ = "drift_events"
+    __table_args__ = (
+        Index("ix_drift_events_cluster_detected", "cluster_id", "detected_at"),
+        # The debounce lookup: latest event of this kind for this workload.
+        Index(
+            "ix_drift_events_debounce",
+            "cluster_id", "kind", "workload_key", "detected_at",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cluster_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("clusters.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    kind: Mapped[str] = mapped_column(String(60), nullable=False)
+    severity: Mapped[str] = mapped_column(String(12), nullable=False)
+    # Null for cluster-level events (concentration shifts).
+    workload_key: Mapped[str | None] = mapped_column(String(255))
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    detail: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+
+    # The comparison window.
+    before_captured_at: Mapped[object | None] = mapped_column(TZDateTime)
+    after_captured_at: Mapped[object | None] = mapped_column(TZDateTime)
+
+    # Whether a notification went out, and if not, why -- "debounced" and
+    # "below_threshold" are the expected values. Recorded so "why did nobody
+    # get paged" is answerable from the row itself.
+    notified: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    notify_skip_reason: Mapped[str | None] = mapped_column(String(40))
+
+    detected_at: Mapped[object] = mapped_column(
+        TZDateTime, nullable=False, server_default=func.now()
+    )
 
 
 class WorkloadSample(Base):

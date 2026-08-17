@@ -41,6 +41,7 @@ def build_snapshot(
     metrics_reason: str | None,
     disruption_budgets: list[dict] | None = None,
     autoscalers: list[dict] | None = None,
+    egress: dict | None = None,
 ) -> dict[str, Any]:
     edges = infer_edges(workloads, services, ingresses)
 
@@ -71,6 +72,10 @@ def build_snapshot(
         "network_policies": network_policies,
         "disruption_budgets": disruption_budgets or [],
         "autoscalers": autoscalers or [],
+        # Optional: present only when Cilium/Hubble is available. Additive to
+        # schema v2 -- the server treats absence as "not observed", which is
+        # different from "no egress" and reported as such.
+        "egress": egress,
         "edges": edges,
         "summary": {
             "nodes": len(nodes),

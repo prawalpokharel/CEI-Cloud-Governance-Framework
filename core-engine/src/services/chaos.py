@@ -519,3 +519,148 @@ def plan(
             "they are real failures."
         ),
     }
+
+
+# --------------------------------------------------------------------------
+# Calibration: chaos results feeding back into edge confidence
+# --------------------------------------------------------------------------
+
+def calibrate_edges(
+    snapshot: dict, results: list[ExperimentResult]
+) -> dict[str, Any]:
+    """
+    Measured transmission rate per edge kind, from accumulated experiments.
+
+    Edge confidence started as a prior: 1.0 for a declared Service selector,
+    0.9 for an env-var inference. Every chaos experiment is evidence about
+    whether failure actually propagated along edges of each kind, and this
+    turns the prior into a measured rate -- which the availability model then
+    uses as its transmission probability. The loop closes: predictions are
+    validated by chaos, and chaos improves the predictions.
+
+    Only DIRECT edges into each experiment's target are scored. A transitive
+    dependent's outcome depends on the whole path, and attributing it to any
+    one edge would double-count the intermediate hops.
+
+    Laplace smoothing (add-one) keeps a single lucky experiment from
+    producing a rate of exactly 0.0 or 1.0, either of which would overstate
+    what a handful of trials can know.
+    """
+    graph = build_dependency_graph(snapshot)
+    observed: dict[str, list[int]] = {}
+
+    for result in results:
+        target = result.workload_key
+        if target not in graph:
+            continue
+        for dependent in graph.predecessors(target):
+            if not graph.nodes[dependent].get("is_workload"):
+                continue
+            kind = graph.edges[dependent, target].get("source_kind", "dependency")
+            transmitted = 1 if dependent in result.measured else 0
+            observed.setdefault(kind, []).append(transmitted)
+
+    rates = {}
+    for kind, outcomes in sorted(observed.items()):
+        transmitted = sum(outcomes)
+        total = len(outcomes)
+        rates[kind] = {
+            "observed_edges": total,
+            "transmitted": transmitted,
+            "raw_rate": round(transmitted / total, 4) if total else None,
+            # The number to feed back as edge confidence.
+            "calibrated_rate": round((transmitted + 1) / (total + 2), 4),
+        }
+
+    return {
+        "edge_kinds": rates,
+        "experiments_used": len(results),
+        "note": (
+            "calibrated_rate is Laplace-smoothed and is the value to use as "
+            "edge transmission probability in the availability model. It "
+            "tightens toward the raw rate as experiments accumulate -- every "
+            "chaos run makes the next prediction better."
+        ),
+    }
+
+
+# --------------------------------------------------------------------------
+# Recovery curves: what happens AFTER the experiment ends
+# --------------------------------------------------------------------------
+
+def measure_recovery(
+    baseline: dict,
+    timeline: list[tuple[float, dict]],
+    target_key: str,
+) -> dict[str, Any]:
+    """
+    The recovery curve after an experiment: who came back, and when.
+
+    ``timeline`` is [(seconds_after_experiment_end, snapshot), ...] in order.
+    Recovery time per workload is the first sample at which it is ready again
+    and stays ready for the remainder -- a workload that flaps back down is
+    not recovered, and counting its first blip as recovery is exactly the
+    metastable pattern this measurement exists to catch.
+
+    Reports three things per affected workload: time to recovery (bounded by
+    the sampling interval), whether it recovered at all within the window,
+    and whether it flapped. A workload the trigger released that did NOT
+    recover is the metastable signature, and it is the single most important
+    output of this function.
+    """
+    before = _ready_state(baseline)
+
+    # Workloads that were healthy at baseline; their recovery is the story.
+    watched = sorted(k for k, ready in before.items() if ready)
+
+    per_workload: dict[str, dict[str, Any]] = {
+        key: {"recovered_at_seconds": None, "flapped": False, "samples_down": 0}
+        for key in watched
+    }
+
+    for key in watched:
+        recovered_at = None
+        for offset, snapshot in timeline:
+            ready = _ready_state(snapshot).get(key, False)
+            if ready and recovered_at is None:
+                recovered_at = offset
+            elif not ready:
+                per_workload[key]["samples_down"] += 1
+                if recovered_at is not None:
+                    # Came back, went down again: the flap is the finding.
+                    per_workload[key]["flapped"] = True
+                    recovered_at = None
+        per_workload[key]["recovered_at_seconds"] = recovered_at
+
+    unrecovered = sorted(
+        key for key, data in per_workload.items()
+        if data["recovered_at_seconds"] is None and data["samples_down"] > 0
+    )
+    flapped = sorted(key for key, data in per_workload.items() if data["flapped"])
+    recovery_times = sorted(
+        (data["recovered_at_seconds"], key)
+        for key, data in per_workload.items()
+        if data["recovered_at_seconds"] is not None and data["samples_down"] > 0
+    )
+
+    return {
+        "target": target_key,
+        "window_seconds": timeline[-1][0] if timeline else 0,
+        "samples": len(timeline),
+        "recovered": [
+            {"workload_key": key, "seconds": seconds}
+            for seconds, key in recovery_times
+        ],
+        "slowest_recovery_seconds": recovery_times[-1][0] if recovery_times else None,
+        "flapped": flapped,
+        # The metastable signature: the trigger is gone and these are still
+        # down. Everything else in this result is context for this list.
+        "unrecovered": unrecovered,
+        "metastable_suspected": bool(unrecovered),
+        "note": (
+            "Recovery time is bounded below by the sampling interval. A "
+            "workload in `unrecovered` outlived the trigger that took it "
+            "down, which is the metastable failure signature and is worth an "
+            "investigation regardless of anything else in this report."
+        ),
+    }

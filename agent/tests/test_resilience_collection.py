@@ -262,7 +262,8 @@ def test_hpa_record_captures_target_and_ceiling():
     item = NS(
         metadata=NS(name="api-hpa", namespace="prod"),
         spec=NS(scale_target_ref=NS(kind="Deployment", name="api"),
-                min_replicas=2, max_replicas=10),
+                min_replicas=2, max_replicas=10,
+                metrics=[NS(type="Resource", resource=NS(name="cpu"))]),
         status=NS(current_replicas=10, desired_replicas=10),
     )
     record = ClusterCollector._hpa_record(item)
@@ -271,6 +272,18 @@ def test_hpa_record_captures_target_and_ceiling():
     assert record["target_name"] == "api"
     # Pinned at the ceiling: not autoscaling, absorbing load it cannot shed.
     assert record["current_replicas"] == record["max_replicas"]
+    assert record["metrics"] == [{"type": "Resource", "resource": "cpu"}]
+
+
+def test_hpa_record_survives_a_spec_without_metrics():
+    """Older API objects may lack the field entirely; empty means default CPU."""
+    item = NS(
+        metadata=NS(name="h", namespace="prod"),
+        spec=NS(scale_target_ref=NS(kind="Deployment", name="api"),
+                min_replicas=1, max_replicas=2),
+        status=NS(current_replicas=1, desired_replicas=1),
+    )
+    assert ClusterCollector._hpa_record(item)["metrics"] == []
 
 
 # --- snapshot integration --------------------------------------------------

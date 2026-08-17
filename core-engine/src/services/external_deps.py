@@ -446,6 +446,67 @@ def _independent(graph: nx.DiGraph, a: str, b: str) -> bool:
     return not nx.has_path(internal, a, b)
 
 
+def dependency_concentration_index(
+    snapshot: dict,
+    external: dict[str, ExternalNode] | None = None,
+) -> dict[str, Any]:
+    """
+    One number for how concentrated a cluster's fate is: the DCI.
+
+    The question it answers is the one October 2025 asked: a system can be
+    multi-AZ, multi-replica, and multi-region and still funnel through one
+    identity provider, one DNS zone, one database. Internal concentration
+    metrics cannot see that, because the shared dependency is not a workload.
+
+    Importance per node = (transitive dependents) x (category weight), over
+    the combined graph. A workload's weight is 1.0; an external endpoint's is
+    its category weight, so an identity provider with ten dependents carries
+    more of the index than a metrics sink with ten. The index itself is the
+    same normalised HHI used everywhere else, which keeps every concentration
+    number in this product in the same units.
+
+    Computed over the combined graph when egress data exists, and honestly
+    labelled internal-only when it does not -- the two are different claims,
+    and a score whose meaning silently depends on which agent features are
+    enabled would be worse than a narrower one.
+    """
+    from .graph_simulation import concentration as _concentration
+
+    external = external or {}
+    graph = build_combined_graph(snapshot, external)
+    workload_nodes = [
+        n for n, d in graph.nodes(data=True) if d.get("is_workload")
+    ]
+    workload_subgraph = graph.subgraph(workload_nodes)
+
+    importance: dict[str, float] = {}
+    for node in workload_nodes:
+        importance[node] = float(len(nx.ancestors(workload_subgraph, node)))
+    for node in external.values():
+        importance[node.key] = len(node.dependents) * node.weight
+
+    index = _concentration(importance)
+    top = sorted(importance.items(), key=lambda kv: -kv[1])[:5]
+
+    return {
+        "dci": round(index, 4),
+        "scope": "combined" if external else "internal_only",
+        "note": (
+            None if external else
+            "No egress data: only in-cluster dependencies are visible, so "
+            "shared external dependencies -- the ones that made October "
+            "2025's outages correlated -- are not in this number. Enable "
+            "Hubble flow collection for the combined index."
+        ),
+        "nodes_scored": len(importance),
+        "external_nodes": len(external),
+        "top_contributors": [
+            {"key": key, "weighted_importance": round(value, 3)}
+            for key, value in top if value > 0
+        ],
+    }
+
+
 def analyze(
     snapshot: dict,
     egress_summary: dict | None = None,
@@ -473,6 +534,7 @@ def analyze(
 
     external = build_external_nodes(snapshot, egress_summary, terraform_state)
     graph = build_combined_graph(snapshot, external)
+    dci = dependency_concentration_index(snapshot, external)
     findings: list[Finding] = []
 
     for node in external.values():
@@ -621,6 +683,7 @@ def analyze(
 
     return {
         "available": True,
+        "dci": dci,
         "summary": {
             "external_nodes": len(external),
             "by_category": by_category,

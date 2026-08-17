@@ -484,6 +484,20 @@ class ClusterCollector:
     def _hpa_record(item) -> dict:
         spec, status = item.spec, item.status
         target = spec.scale_target_ref
+
+        # What the autoscaler is watching, not just its bounds. An HPA scaling
+        # a workload on its own CPU while that workload's real failure mode is
+        # an upstream dependency is watching the wrong signal, and the only
+        # way to detect that server-side is to know the signal.
+        metrics = []
+        for metric in (getattr(spec, "metrics", None) or []):
+            metric_type = getattr(metric, "type", None)
+            entry = {"type": metric_type}
+            resource = getattr(metric, "resource", None)
+            if resource is not None:
+                entry["resource"] = getattr(resource, "name", None)
+            metrics.append(entry)
+
         return {
             "name": item.metadata.name,
             "namespace": item.metadata.namespace,
@@ -493,6 +507,9 @@ class ClusterCollector:
             "max_replicas": spec.max_replicas,
             "current_replicas": getattr(status, "current_replicas", None),
             "desired_replicas": getattr(status, "desired_replicas", None),
+            # Empty list means "no metrics field", which Kubernetes treats as
+            # CPU at 80% -- reported as-is and interpreted server-side.
+            "metrics": metrics,
         }
 
     def _optional_list(self, resource: str, fetch, to_record) -> list[dict]:

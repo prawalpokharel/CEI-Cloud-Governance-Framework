@@ -31,6 +31,12 @@ from ..db.models import (
     WorkloadSample,
 )
 from ..services import audit
+from ..services import drift_store
+from ..services import availability as availability_service
+from ..services import control_plane as control_plane_service
+from ..services import external_deps as external_deps_service
+from ..services import fleet as fleet_service
+from ..services import recovery as recovery_service
 from ..services.cost import analyze_cluster_cost
 from ..services.health import diagnose
 from ..services import blast_radius as blast_radius_service
@@ -597,6 +603,196 @@ async def link_repository(
     await session.commit()
     return {"cluster": {"id": str(cluster.id), "name": cluster.name},
             "repository": repository}
+
+
+@router.get("/clusters/{cluster_id}/drift")
+async def cluster_drift(
+    cluster_id: str,
+    limit: int = 50,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Structural events detected between consecutive snapshots.
+
+    Written by the ingest rail, so this endpoint only reads. The concentration
+    trend comes from the per-snapshot column rather than from payloads.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+
+    events = await drift_store.latest_events(
+        session, cluster.id, limit=max(1, min(limit, 200))
+    )
+
+    trend_rows = (
+        await session.execute(
+            select(Snapshot.captured_at, Snapshot.structural_concentration)
+            .where(
+                Snapshot.cluster_id == cluster.id,
+                Snapshot.structural_concentration.is_not(None),
+            )
+            .order_by(desc(Snapshot.captured_at))
+            .limit(200)
+        )
+    ).all()
+
+    return {
+        "cluster": {"id": str(cluster.id), "name": cluster.name},
+        "events": events,
+        "concentration_trend": [
+            {"captured_at": captured.isoformat(), "concentration": value}
+            for captured, value in reversed(trend_rows)
+        ],
+        "notification_policy": {
+            "notified_kinds": sorted(drift_store.NOTIFY_KINDS),
+            "severity": "critical only",
+            "debounce_hours": drift_store.DEBOUNCE_HOURS,
+        },
+    }
+
+
+@router.get("/clusters/{cluster_id}/external-dependencies")
+async def cluster_external_dependencies(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    The graph below the cluster: managed services and SaaS, with the DCI.
+
+    Uses the egress summary embedded in the snapshot when the agent runs
+    Hubble; degrades to internal-only with an explicit reason otherwise.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    result = external_deps_service.analyze(
+        snapshot, snapshot.get("egress"), None, cei_by_workload
+    )
+    if not result.get("available"):
+        # Egress-less clusters still get the internal-only concentration
+        # number rather than nothing.
+        result["dci"] = external_deps_service.dependency_concentration_index(snapshot)
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/recovery")
+async def cluster_recovery(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Recovery-amplification risk: where reconnect storms will concentrate."""
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    result = recovery_service.analyze(snapshot, cei_by_workload)
+    result["agent"] = _agent_capability(snapshot)
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/availability")
+async def cluster_availability(
+    cluster_id: str,
+    trials: int = 20000,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Effective availability under correlated failure, vs the naive product.
+
+    The gap between the two columns is the cost of the correlation -- what
+    the architecture actually buys vs what the component SLAs imply.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+
+    external = {}
+    egress = snapshot.get("egress")
+    if egress and egress.get("available"):
+        external = external_deps_service.build_external_nodes(snapshot, egress)
+
+    result = availability_service.simulate(
+        snapshot, external=external, trials=max(1000, min(trials, 100_000))
+    )
+    if result.get("available"):
+        result["correlation_cost"] = availability_service.correlation_cost(result)
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/control-plane")
+async def cluster_control_plane(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Static-stability audit: what recovery needs that steady state does not."""
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    result = control_plane_service.analyze(snapshot, cei_by_workload)
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/fleet/convergence")
+async def fleet_convergence(
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    External dependencies shared across the tenant's clusters.
+
+    The multi-cloud independence question: dependencies reached from clusters
+    on different providers are one failure domain wearing two logos.
+    """
+    clusters = (
+        await session.execute(
+            select(Cluster).where(Cluster.tenant_id == user.tenant_id)
+        )
+    ).scalars().all()
+
+    fleet = []
+    for cluster in clusters:
+        latest = (
+            await session.execute(
+                select(Snapshot)
+                .where(Snapshot.cluster_id == cluster.id)
+                .order_by(desc(Snapshot.received_at))
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if latest is None:
+            continue
+        fleet.append({
+            "name": cluster.name,
+            "provider": cluster.provider.value if cluster.provider else "unknown",
+            "snapshot": latest.payload or {},
+        })
+
+    result = fleet_service.analyze(fleet)
+    result["clusters_without_snapshots"] = len(clusters) - len(fleet)
+    return result
 
 
 @router.get("/clusters/{cluster_id}/blast-radius")

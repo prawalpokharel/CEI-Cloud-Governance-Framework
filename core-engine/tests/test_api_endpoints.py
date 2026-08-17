@@ -325,3 +325,81 @@ def test_cluster_without_a_snapshot_returns_409(client, auth):
     # A cluster with no snapshot must not be reported as a healthy one.
     assert response.status_code == 409
     assert "agent" in response.json()["detail"].lower()
+
+
+# --- the drift rail, end to end ---------------------------------------------
+
+
+def _drift_snapshot(seq, captured_at, edges):
+    def workload(name):
+        return {
+            "key": f"prod/Deployment/{name}", "name": name, "namespace": "prod",
+            "kind": "Deployment", "replicas_desired": 2, "replicas_ready": 2,
+            "pod_labels": {"app": name}, "labels": {"app": name},
+            "images": ["repo/app@sha256:abc"],
+            "config_refs": {"config_maps": [], "secrets": []},
+        }
+    names = ["auth", "api", "worker", "reporting", "billing"]
+    return {
+        "schema_version": 2, "agent_version": "0.2.0", "seq": seq,
+        "captured_at": captured_at,
+        "cluster": {"uid": "drift-rail-uid", "provider": "kind",
+                    "kubernetes_version": "v1.35.0", "node_count": 1,
+                    "metrics_available": False, "metrics_reason": None},
+        "nodes": [], "workloads": [workload(n) for n in names],
+        "services": [], "pods": [], "ingresses": [], "network_policies": [],
+        "disruption_budgets": [], "autoscalers": [],
+        "edges": [
+            {"source": f"prod/Deployment/{a}", "target": f"prod/Deployment/{b}",
+             "confidence": 0.9, "source_kind": "env_reference"}
+            for a, b in edges
+        ],
+        "summary": {"nodes": 0, "workloads": len(names), "services": 0,
+                    "pods": 0, "edges": {"total": len(edges), "by_source": {}}},
+    }
+
+
+def test_drift_rail_end_to_end(client, auth):
+    """
+    Two ingests; the second makes `auth` load-bearing. The rail must compare
+    them at ingest time, persist the events, and serve them from /drift with
+    the concentration trend -- without the caller ever invoking an analysis.
+    """
+    created = client.post("/v1/clusters", json={"name": "drift-rail"}, headers=auth).json()
+    cluster_id, api_key = created["cluster"]["id"], created["api_key"]
+    agent_auth = {"Authorization": f"Bearer {api_key}"}
+
+    first = client.post("/v1/ingest", headers=agent_auth, json=_drift_snapshot(
+        1, "2026-08-17T00:00:00+00:00", [("api", "auth")],
+    ))
+    assert first.status_code == 200, first.text
+    # No predecessor: nothing to compare against, and the response says so.
+    assert first.json().get("drift") is None
+
+    second = client.post("/v1/ingest", headers=agent_auth, json=_drift_snapshot(
+        2, "2026-08-17T00:01:00+00:00",
+        [("api", "auth"), ("worker", "auth"), ("reporting", "auth"), ("billing", "auth")],
+    ))
+    assert second.status_code == 200, second.text
+    drift_summary = second.json()["drift"]
+    assert drift_summary["events"] >= 1
+
+    response = client.get(f"/v1/clusters/{cluster_id}/drift", headers=auth)
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    kinds = {e["kind"] for e in body["events"]}
+    assert "became_load_bearing" in kinds
+    became = next(e for e in body["events"] if e["kind"] == "became_load_bearing")
+    assert became["workload_key"] == "prod/Deployment/auth"
+    # No Slack webhook in tests: the row records why nobody was paged.
+    assert became["notified"] is False
+    assert became["notify_skip_reason"] == "no_webhook_configured"
+
+    trend = body["concentration_trend"]
+    assert len(trend) == 2
+    assert trend[1]["concentration"] > trend[0]["concentration"]
+
+
+def test_drift_endpoint_requires_auth(client, cluster):
+    assert client.get(f"/v1/clusters/{cluster}/drift").status_code == 401

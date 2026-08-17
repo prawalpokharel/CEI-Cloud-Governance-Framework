@@ -19,13 +19,14 @@ import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.base import get_session
 from ..db.models import ActorType, ApiKey, Cluster, ClusterProvider, Snapshot, WorkloadSample
 from ..services import audit
+from ..services import drift_store
 from ..services.security import api_key_handle, api_key_matches
 
 log = logging.getLogger(__name__)
@@ -277,6 +278,19 @@ async def ingest_snapshot(
     # duplicate response.
     cluster_id_str = str(cluster.id)
 
+    # The predecessor is resolved before this snapshot is committed, so the
+    # lookup can never race with the row being inserted below.
+    previous = (
+        await session.execute(
+            select(Snapshot)
+            .where(Snapshot.cluster_id == cluster.id)
+            .order_by(desc(Snapshot.received_at))
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    previous_payload = previous.payload if previous is not None else None
+    previous_captured_at = previous.captured_at if previous is not None else None
+
     body_size = int(request.headers.get("content-length") or 0)
     snapshot = Snapshot(
         tenant_id=cluster.tenant_id,
@@ -289,6 +303,9 @@ async def ingest_snapshot(
         node_count=len(nodes),
         pod_count=len(pods),
         workload_count=len(workloads),
+        # Persisted per snapshot so the concentration trend is one indexed
+        # query. Internal workload graph only; see drift_store for why.
+        structural_concentration=drift_store.snapshot_concentration(payload),
     )
     session.add(snapshot)
 
@@ -353,10 +370,32 @@ async def ingest_snapshot(
             **_cadence_directive(),
         }
 
+    # The drift rail. Runs after the snapshot committed, so a failure in
+    # comparison, persistence, or notification can never reject an ingest --
+    # drift is derived data, and analysis bugs must not take down collection.
+    drift_summary = None
+    if previous_payload is not None:
+        drift_summary = await drift_store.record_drift(
+            session,
+            tenant_id=cluster.tenant_id,
+            cluster_id=cluster.id,
+            cluster_name=cluster.name,
+            previous_payload=previous_payload,
+            current_payload=payload,
+            before_captured_at=previous_captured_at,
+            after_captured_at=captured_at,
+        )
+        if drift_summary.get("events"):
+            log.info(
+                "Drift for cluster %s: %d event(s), %d notified",
+                cluster_id_str, drift_summary["events"], drift_summary["notified"],
+            )
+
     return {
         "status": "accepted",
         "cluster_id": cluster_id_str,
         "seq": seq,
+        "drift": drift_summary,
         # Cadence is server-controlled so a noisy fleet can be backed off
         # without anyone editing a Helm value and redeploying.
         "next_interval_seconds": 60,

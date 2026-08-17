@@ -20,6 +20,7 @@ from kubernetes import config as k8s_config
 from .buffer import SnapshotBuffer
 from .collector import ClusterCollector, attach_service_references
 from .config import AgentConfig
+from . import flows
 from .metrics import MetricsCollector, aggregate_to_workloads
 from .snapshot import assert_no_secrets, build_snapshot, serialize
 from .transport import IngestError, Transport
@@ -68,6 +69,12 @@ def run_cycle(
     disruption_budgets = collector.collect_disruption_budgets()
     autoscalers = collector.collect_autoscalers()
 
+    # Egress flows, only where Hubble exists. available() is a PATH lookup,
+    # so clusters without Cilium pay nothing for this check.
+    egress = None
+    if flows.available():
+        egress = flows.collect_egress_summary()
+
     # Resolve env references into service references, then drop the values.
     attach_service_references(workloads, services)
 
@@ -96,6 +103,7 @@ def run_cycle(
         network_policies=network_policies,
         disruption_budgets=disruption_budgets,
         autoscalers=autoscalers,
+        egress=egress,
         metrics_available=metrics_available,
         metrics_reason=metrics_reason,
     )
