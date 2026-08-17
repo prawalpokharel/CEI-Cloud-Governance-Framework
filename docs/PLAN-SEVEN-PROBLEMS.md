@@ -316,3 +316,109 @@ differentiator every incumbent lacks.
 - [Cloud outages 2025: DNS failures and control-plane crises](https://windowsforum.com/threads/cloud-outages-2025-dns-failures-and-control-plane-crises.387534/) ·
   [Multi-region failure domains: lessons from 2025's outages](https://dsa-research.org/blog/multi-region-failure-domains-2025-outages/) ·
   [Invisible dependencies: the Google Cloud outage](https://www.catchpoint.com/blog/invisible-dependencies-visible-impact-lessons-from-the-google-cloud-outage)
+
+---
+
+# Addendum: problems 8–12, and the synthesis
+
+The first seven problems are about *seeing* structure. These five are about
+*acting* on it — and they converge on one framework, built as
+`prescribe.py`: interventions ranked by risk reduced per dollar, with risk
+and cost in the same currency.
+
+## Problem 8 — Cost optimization creates fragility · **BUILT**
+
+The scenario: removing 30 idle replicas saves $70k/year; the optimizer
+reports "-18% cost, successful"; the architecture is now considerably more
+fragile — and nothing measured it.
+
+`prescribe.py` prices both columns. Every replica-removal candidate carries
+its savings AND the annualised cost of the expected downtime it buys
+(availability Monte Carlo × operator's cost-of-downtime rate), and gets a
+NET. A removal whose fragility costs more than it saves gets the verdict
+`savings_cost_more_than_they_save` — the optimization that was a loss
+wearing a savings report, named. This is risk-aware FinOps:
+min(αC + γR) with C and R in dollars, solved by candidate evaluation
+under common random numbers.
+
+Out of scope in v1, stated: L (latency — no latency data collected) and
+E (carbon — see problem 9).
+
+## Problem 9 — Carbon-aware scheduling ignores systemic risk · planned
+
+Moving compute to cheaper/greener regions concentrates workloads — a
+carbon optimizer with no fragility term recreates problem 8 with a
+different objective. The framework slot already exists: carbon is one more
+dollar-denominated term in the prescription NET (region carbon intensity ×
+energy price or internal carbon price). **Missing data, honestly:** region
+carbon intensity (publishable static table — addable), per-workload energy
+(not collected; approximable from CPU requests × node TDP class). Planned
+as a prescription term, not a separate product.
+
+## Problem 10 — GPU fragmentation · planned, data-gated
+
+"GPUs available" while memory/topology/interconnect constraints make the
+capacity unusable is a bin-packing-with-topology problem. The agent
+currently collects no GPU data at all; step one is `nvidia.com/gpu`
+allocatable/requested (visible in the API today), which enables
+fragmentation *measurement* (free GPUs nobody can use at current request
+shapes). True topology awareness (NVLink domains, MIG layout) needs
+node-local data beyond the Kubernetes API — DCGM integration, explicitly
+future. Not started; sequenced after the fleet features because it serves a
+narrower audience until AI workloads dominate a customer's clusters.
+
+## Problem 11 — Configuration entropy · planned
+
+Thousands of IAM rules, Terraform resources, and policies accumulate
+complexity nobody can reason about. We already parse Terraform state and
+collect Azure role assignments; the buildable metric is a complexity index
+over: resource-type diversity (Shannon entropy — the term is already in the
+patent's vocabulary), dependency depth, policy count per principal, and
+orphaned-resource share (declared but unreferenced by any observed
+workload). The interesting research cut: complexity *growth rate* as a
+leading indicator, on the drift rail like everything else. Planned for the
+rail after fleet adoption.
+
+## Problem 12 — No measure of cloud systemic risk · **BUILT (v1)**
+
+"CPU 38%, memory 61%, latency 72ms, error rate 0.3%, pods healthy" — and
+the architecture has quietly evolved into one Service X / Queue / IAM away
+from a disproportionate failure. Conventional monitoring answers "is
+something failing"; nothing answers "has the architecture evolved into a
+fragile state".
+
+`structural_health` (in every /prescriptions response) is the v1 answer,
+composed from validated parts rather than invented fresh: DCI over the
+combined graph, internal concentration, largest single blast radius, top
+recovery amplification — subscores always shown, because a single opaque
+number is astrology with extra steps. The drift rail is its time
+derivative: the same numbers, watched per snapshot, alerting on the change.
+Chaos correlation (0.98) is what licenses taking the structural numbers
+seriously: the graph they are computed from demonstrably matches how the
+system actually fails.
+
+## The synthesis: prescriptive resilience optimization · **BUILT (v1)**
+
+`GET /clusters/{id}/prescriptions` answers "which intervention reduces
+systemic risk the most per dollar":
+
+- **Candidates:** add_replica (partial-correlation model — the correlated
+  share of failures never divides away, so replicas have honestly
+  diminishing returns), remove_replicas (the FinOps move, both columns),
+  split_dependency (a second hub instance, dependents divided — the move
+  that attacks concentration itself), diversify_external (independent
+  failover squares a shared dependency's unavailability), and always
+  do_nothing.
+- **Evaluation:** each candidate re-runs the seeded Monte Carlo under
+  common random numbers, so deltas are architecture, not sampling luck.
+- **Honesty rules:** interventions whose price is unknowable from a
+  snapshot (a second identity provider's contract) report
+  `pricing_required` with the risk reduction computed, never an invented
+  cost. On a healthy topology the framework recommends doing nothing —
+  verified live, which is the property separating a prescription engine
+  from a work generator.
+
+**v2 direction:** joint optimization over intervention *sets* (currently
+one-at-a-time), latency and carbon terms as data arrives, and calibrating
+the replica-correlation share from chaos experiments the way edge
+transmission already is.

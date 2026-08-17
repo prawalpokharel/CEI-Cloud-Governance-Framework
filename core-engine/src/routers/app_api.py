@@ -38,6 +38,7 @@ from ..services import external_deps as external_deps_service
 from ..services import fleet as fleet_service
 from ..services import recovery as recovery_service
 from ..services import remediation as remediation_service
+from ..services import prescribe as prescribe_service
 from ..services.git_provider import GitHubApp, GitProviderError
 from ..services.cost import analyze_cluster_cost
 from ..services.health import diagnose
@@ -906,6 +907,40 @@ async def open_remediation(
         },
     )
     await session.commit()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/prescriptions")
+async def cluster_prescriptions(
+    cluster_id: str,
+    downtime_cost_per_hour: float = prescribe_service.DEFAULT_DOWNTIME_COST_PER_HOUR,
+    trials: int = prescribe_service.DEFAULT_TRIALS,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Prescriptive resilience optimization: interventions ranked by risk
+    reduced per dollar, with risk and cost in the same currency.
+
+    Pass your real cost of downtime as downtime_cost_per_hour; the ranking
+    is robust to the default, the absolute dollar figures are not.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    result = prescribe_service.prescribe(
+        snapshot,
+        snapshot.get("egress"),
+        cei_by_workload,
+        downtime_cost_per_hour=max(1.0, downtime_cost_per_hour),
+        trials=max(1000, min(trials, 30_000)),
+    )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
     return result
 
 
