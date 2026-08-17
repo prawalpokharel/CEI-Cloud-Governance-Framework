@@ -324,3 +324,80 @@ def independence_score(
         "unique_to_a": len(set(a) - shared_keys),
         "unique_to_b": len(set(b) - shared_keys),
     }
+
+
+# --------------------------------------------------------------------------
+# Phase C: provider substrate knowledge base
+# --------------------------------------------------------------------------
+
+# Which cloud a SaaS provider itself runs on. The point: an organisation on
+# AWS that "diversified" identity to Auth0 is still on AWS twice -- Auth0
+# runs there. Every entry is public knowledge, coarse (providers migrate,
+# and run multi-region), and marked assumed: this is a lead for an
+# architecture review, not an observation.
+PROVIDER_SUBSTRATE: dict[str, str] = {
+    "Auth0": "aws",
+    "Okta": "aws",
+    "Clerk": "aws",
+    "MongoDB Atlas": "multi",     # customer-chosen; often the same cloud
+    "Redis Cloud": "multi",
+    "Stripe": "aws",
+    "Braintree": "aws",
+    "Twilio": "aws",
+    "SendGrid": "aws",
+    "Mailgun": "aws",
+    "Datadog": "multi",
+    "Sentry": "gcp",
+    "New Relic": "aws",
+    "Grafana Cloud": "multi",
+    "Honeycomb": "aws",
+    "Docker Hub": "aws",
+}
+
+_PROVIDER_ALIASES = {"eks": "aws", "aks": "azure", "gke": "gcp"}
+
+
+def substrate_overlaps(clusters: list[dict]) -> list[dict[str, Any]]:
+    """
+    Where an external dependency's own substrate is a cluster's cloud.
+
+    Catches the second-order concentration the endpoint analysis cannot: the
+    dependency's hostname says Auth0, and Auth0's substrate says AWS, so the
+    AWS cluster's "external" identity provider shares a failure domain with
+    the cluster itself -- a regional AWS event can take both.
+
+    Provenance on every finding is "assumed_public_knowledge". Nothing here
+    is observed traffic, and reporting it at the same confidence as an
+    observed edge would poison the trust the observed edges earned.
+    """
+    findings = []
+    for cluster in clusters:
+        cloud = _PROVIDER_ALIASES.get(
+            (cluster.get("provider") or "").lower(),
+            (cluster.get("provider") or "").lower(),
+        )
+        if cloud not in ("aws", "azure", "gcp"):
+            continue
+        for dep in collect_cluster_dependencies(
+            cluster.get("name") or "?", cloud, cluster.get("snapshot") or {}
+        ):
+            substrate = PROVIDER_SUBSTRATE.get(dep.get("provider") or "")
+            if substrate == cloud:
+                findings.append({
+                    "kind": "substrate_overlap",
+                    "severity": "warning" if dep["category"] in ("identity", "database", "dns") else "info",
+                    "cluster": cluster.get("name"),
+                    "endpoint": dep["endpoint"],
+                    "provider": dep["provider"],
+                    "shared_substrate": substrate,
+                    "provenance": "assumed_public_knowledge",
+                    "detail": (
+                        f"{dep['provider']} itself runs on {substrate.upper()}, "
+                        f"which is also this cluster's cloud. The dependency "
+                        "that looks external shares the cluster's own regional "
+                        "failure domain -- diversification that is not. Coarse "
+                        "public knowledge, not observed traffic: treat as a "
+                        "lead for an architecture review."
+                    ),
+                })
+    return findings

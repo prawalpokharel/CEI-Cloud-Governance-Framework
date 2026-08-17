@@ -1,0 +1,49 @@
+# DevSpace: the inner dev loop on top of the terraform-deployed stack.
+#
+#   ./deploy.sh          # once: minikube + images + terraform apply
+#   devspace dev         # then: live-sync code into the running pods
+#
+# Terraform owns the deployment (what runs); DevSpace owns the loop (how you
+# iterate on it). `devspace dev` syncs source into the containers and
+# port-forwards, so an edit to core-engine source is live on the next uvicorn
+# reload without an image rebuild.
+version: v2beta1
+name: cloudoptimizer
+
+vars:
+  NAMESPACE: cloudoptimizer
+
+pipelines:
+  # `devspace dev` — start both dev targets against the deployed stack.
+  dev:
+    run: |-
+      start_dev core-engine frontend
+
+dev:
+  core-engine:
+    labelSelector:
+      app: core-engine
+    namespace: ${NAMESPACE}
+    sync:
+      - path: ./core-engine/src:/app/src
+        # uvicorn --reload is not in the production CMD; restart the
+        # container on sync so changes apply. Cheap: the image is local.
+        onUpload:
+          restartContainer: true
+    ports:
+      - port: "8000:8000"
+  frontend:
+    labelSelector:
+      app: frontend
+    namespace: ${NAMESPACE}
+    ports:
+      - port: "3000:3000"
+
+commands:
+  # `devspace run logs-api`
+  logs-api:
+    command: kubectl -n ${NAMESPACE} logs -f deploy/core-engine
+  logs-frontend:
+    command: kubectl -n ${NAMESPACE} logs -f deploy/frontend
+  psql:
+    command: kubectl -n ${NAMESPACE} exec -it deploy/postgres -- psql -U cloudopt -d cloudoptimizer

@@ -254,5 +254,71 @@ def analyze(
             ),
         },
         "scale_up_headroom": headroom,
+        "gpu": gpu_fragmentation(snapshot),
         "findings": [f.to_dict() for f in findings],
+    }
+
+
+def gpu_fragmentation(snapshot: dict) -> dict[str, Any]:
+    """
+    GPUs that exist but cannot be used: the fragmentation the scheduler
+    reports as available capacity.
+
+    A cluster can hold 6 free GPUs across 3 nodes and still be unable to
+    schedule one 4-GPU pod: gang-scheduled requests need their GPUs on ONE
+    node, so free capacity below the largest request shape is stranded. The
+    number a capacity dashboard shows (total free) and the number that
+    matters (largest schedulable request) diverge exactly when the cluster
+    is busiest.
+
+    Counts only. MIG slices, NVLink domains, and interconnect topology are
+    not in the Kubernetes API; DCGM integration is the stated future for
+    those, and this analysis refuses to guess at them.
+    """
+    nodes = [
+        n for n in (snapshot.get("nodes") or [])
+        if (n.get("allocatable_gpus") or 0) > 0
+    ]
+    if not nodes:
+        return {"available": False,
+                "reason": "No GPU nodes advertised (nvidia.com/gpu absent)."}
+
+    # Requested per node is not collected (pod placement x gpu request join
+    # is), so free is approximated cluster-wide and per the largest node.
+    total = sum(n.get("allocatable_gpus") or 0 for n in nodes)
+    requested = sum(
+        (w.get("gpus_requested_per_pod") or 0) * (w.get("replicas_desired") or 1)
+        for w in (snapshot.get("workloads") or [])
+    )
+    free_total = max(0, total - requested)
+    largest_node = max(n.get("allocatable_gpus") or 0 for n in nodes)
+
+    shapes = sorted({
+        w.get("gpus_requested_per_pod") or 0
+        for w in (snapshot.get("workloads") or [])
+        if (w.get("gpus_requested_per_pod") or 0) > 0
+    }, reverse=True)
+    largest_shape = shapes[0] if shapes else 1
+
+    # Worst-case stranding: free GPUs spread evenly leave every node below
+    # the largest request shape.
+    per_node_free = free_total / len(nodes) if nodes else 0
+    stranded_risk = free_total > 0 and per_node_free < largest_shape
+
+    return {
+        "available": True,
+        "gpu_nodes": len(nodes),
+        "total_gpus": total,
+        "requested_gpus": requested,
+        "free_gpus_total": free_total,
+        "largest_node_gpus": largest_node,
+        "largest_request_shape": largest_shape,
+        "stranding_risk": stranded_risk,
+        "note": (
+            f"'{free_total} GPUs free' is only schedulable capacity if a "
+            f"single node can hold the request. Largest request shape here "
+            f"is {largest_shape}; free capacity spread across "
+            f"{len(nodes)} node(s) can strand below it. Counts only -- MIG "
+            "and NVLink topology need DCGM, which is explicitly future."
+        ),
     }

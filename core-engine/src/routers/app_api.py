@@ -39,6 +39,8 @@ from ..services import fleet as fleet_service
 from ..services import recovery as recovery_service
 from ..services import remediation as remediation_service
 from ..services import prescribe as prescribe_service
+from ..services import carbon as carbon_service
+
 from ..services.git_provider import GitHubApp, GitProviderError
 from ..services.cost import analyze_cluster_cost
 from ..services.health import diagnose
@@ -800,6 +802,10 @@ async def fleet_convergence(
         })
 
     result = fleet_service.analyze(fleet)
+    # Second-order concentration: the dependency's own substrate. Assumed
+    # public knowledge, marked as such, appended after the observed findings.
+    if result.get("available"):
+        result["findings"].extend(fleet_service.substrate_overlaps(fleet))
     result["clusters_without_snapshots"] = len(clusters) - len(fleet)
     return result
 
@@ -942,6 +948,124 @@ async def cluster_prescriptions(
     result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     result["captured_at"] = latest.captured_at.isoformat()
     return result
+
+
+@router.get("/clusters/{cluster_id}/prescriptions/set")
+async def cluster_prescription_set(
+    cluster_id: str,
+    downtime_cost_per_hour: float = prescribe_service.DEFAULT_DOWNTIME_COST_PER_HOUR,
+    budget_usd: float | None = None,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    The best SET of interventions under an optional budget: greedy marginal
+    benefit, each pick evaluated against the architecture as already
+    modified by prior picks. An empty selection is a valid answer.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+    result = prescribe_service.prescribe_set(
+        snapshot, snapshot.get("egress"), cei_by_workload,
+        downtime_cost_per_hour=max(1.0, downtime_cost_per_hour),
+        budget_usd=budget_usd,
+    )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/carbon")
+async def cluster_carbon(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Annual energy and carbon estimate. Fit for relative use; says so."""
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    result = carbon_service.estimate(latest.payload or {})
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/playbook")
+async def cluster_playbook(
+    cluster_id: str,
+    upstream: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Pre-scale playbook for an upstream degradation: who to scale, in what
+    order, before their own metrics notice. Advisory by design.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+    result = recovery_service.pre_scale_playbook(snapshot, upstream, cei_by_workload)
+    if not result["found"]:
+        raise HTTPException(
+            status_code=404,
+            detail=f"{upstream!r} is not in the latest snapshot's graph.",
+        )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    return result
+
+
+@router.get("/clusters/{cluster_id}/metastability")
+async def cluster_metastability(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    The signature health checks cannot see: workloads whose load never
+    returned to baseline after their last dip. Every pod reports Ready in
+    that state; the elevated load is retry work.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    await _latest_snapshot(session, cluster.id)  # 409 if no data at all
+
+    rows = (
+        await session.execute(
+            select(WorkloadSample)
+            .where(WorkloadSample.cluster_id == cluster.id)
+            .order_by(WorkloadSample.observed_at)
+        )
+    ).scalars().all()
+
+    history: dict[str, list[dict]] = {}
+    for row in rows:
+        history.setdefault(row.workload_key, []).append(
+            {"cpu_cores_used": row.cpu_cores_used}
+        )
+
+    results = []
+    for key, series in sorted(history.items()):
+        verdict = recovery_service.detect_metastability(series)
+        if verdict.get("detectable"):
+            results.append({"workload_key": key, **verdict})
+
+    suspected = [r for r in results if r.get("metastable_suspected")]
+    return {
+        "cluster": {"id": str(cluster.id), "name": cluster.name},
+        "workloads_analyzed": len(results),
+        "metastable_suspected": suspected,
+        "clean": len(results) - len(suspected),
+        "note": (
+            "Detection needs accumulated usage samples; workloads without "
+            "enough history are omitted rather than guessed at."
+        ),
+    }
 
 
 @router.get("/clusters/{cluster_id}/blast-radius")

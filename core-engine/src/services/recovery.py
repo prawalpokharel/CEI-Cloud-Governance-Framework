@@ -251,3 +251,151 @@ def analyze(
         "amplification_ranking": ranking[:15],
         "findings": [f.to_dict() for f in findings],
     }
+
+
+# --------------------------------------------------------------------------
+# Phase C: metastability detection and the pre-scale playbook
+# --------------------------------------------------------------------------
+
+# Post-recovery load this far above the pre-incident baseline, sustained,
+# is the metastable signature. 1.5x rather than anything subtler: the
+# pattern being caught is a system running visibly hot after the trigger
+# cleared, not ordinary variance.
+METASTABLE_LOAD_RATIO = 1.5
+
+# Minimum samples on each side of the dip for the comparison to mean
+# anything.
+MIN_WINDOW_SAMPLES = 3
+
+
+def detect_metastability(history: list[dict]) -> dict[str, Any]:
+    """
+    The signature health checks cannot see: recovered, but load did not.
+
+    ``history`` is a workload's sample series, oldest first, each with
+    ``cpu_cores_used`` (may be None). The shape searched for:
+
+        baseline -> dip (the incident) -> readiness restored, but sustained
+        CPU well above the pre-incident baseline.
+
+    Every pod reports Ready in that state -- readiness probes measure "can
+    serve", not "serving at 2x baseline burning retry work" -- which is
+    exactly why metastable failures persist: the dashboards say recovered.
+
+    Windows are compared by median, not mean: a single retry spike in the
+    baseline window would otherwise raise the bar the after-window is
+    measured against and hide the pattern.
+    """
+    values = [
+        float(s["cpu_cores_used"]) for s in history
+        if s.get("cpu_cores_used") is not None
+    ]
+    if len(values) < MIN_WINDOW_SAMPLES * 3:
+        return {
+            "detectable": False,
+            "reason": (
+                f"Needs at least {MIN_WINDOW_SAMPLES * 3} usage samples "
+                f"({len(values)} present)."
+            ),
+        }
+
+    def median(xs):
+        xs = sorted(xs)
+        mid = len(xs) // 2
+        return xs[mid] if len(xs) % 2 else (xs[mid - 1] + xs[mid]) / 2
+
+    # Find the deepest dip; the incident is wherever load fell hardest.
+    dip_index = min(range(len(values)), key=lambda i: values[i])
+    before = values[:dip_index]
+    after = values[dip_index + 1:]
+    if len(before) < MIN_WINDOW_SAMPLES or len(after) < MIN_WINDOW_SAMPLES:
+        return {"detectable": False,
+                "reason": "The dip sits at the edge of the window."}
+
+    baseline = median(before[-MIN_WINDOW_SAMPLES * 2:])
+    recovered = median(after[-MIN_WINDOW_SAMPLES:])
+    if baseline <= 0:
+        return {"detectable": False, "reason": "No measurable baseline load."}
+
+    ratio = recovered / baseline
+    return {
+        "detectable": True,
+        "metastable_suspected": ratio >= METASTABLE_LOAD_RATIO,
+        "baseline_cpu": round(baseline, 4),
+        "post_recovery_cpu": round(recovered, 4),
+        "load_ratio": round(ratio, 3),
+        "dip_sample_index": dip_index,
+        "note": (
+            "Post-recovery load is sustained at "
+            f"{ratio:.1f}x the pre-incident baseline. Readiness probes "
+            "report healthy in this state; the elevated load is retry and "
+            "reconnection work, and it is what keeps metastable failures "
+            "alive after their trigger is gone."
+            if ratio >= METASTABLE_LOAD_RATIO else
+            "Load returned to baseline after the dip; recovery was clean."
+        ),
+    }
+
+
+def pre_scale_playbook(
+    snapshot: dict,
+    upstream_key: str,
+    cei_by_workload: dict[str, dict] | None = None,
+) -> dict[str, Any]:
+    """
+    When ``upstream_key`` degrades, who to scale, in what order.
+
+    The elasticity-lag answer in playbook form: the dependents' backlog
+    arrives before their CPU moves, so the time to scale them is when the
+    upstream degrades, not when their own metrics notice. Ordered by blast
+    radius -- the dependent that the most other things depend on is the one
+    whose queue must not be allowed to deepen.
+
+    Advisory output, deliberately: this is the runbook an operator (or an
+    automation THEY choose to wire up) executes. Feeding it into a fast
+    control loop uninspected is the oscillation risk the stability monitor
+    exists to prevent.
+    """
+    cei_by_workload = cei_by_workload or {}
+    graph = build_dependency_graph(snapshot)
+    workloads = {w["key"]: w for w in (snapshot.get("workloads") or []) if w.get("key")}
+
+    if upstream_key not in graph:
+        return {"upstream": upstream_key, "found": False, "steps": []}
+
+    dependents = [
+        key for key in graph.predecessors(upstream_key)
+        if graph.nodes[key].get("is_workload") and key in workloads
+    ]
+
+    steps = []
+    for key in dependents:
+        radius = compute_blast_radius(snapshot, key, cei_by_workload, graph=graph)
+        workload = workloads[key]
+        replicas = workload.get("replicas_desired") or 1
+        steps.append({
+            "workload_key": key,
+            "current_replicas": replicas,
+            # +50% rounded up: absorbs a queue that built during the outage
+            # without doubling spend on a hunch.
+            "suggested_replicas": replicas + max(1, replicas // 2),
+            "own_dependents": radius.total_affected,
+            "user_facing": bool(radius.entry_points),
+            "reason": (
+                "Backlog from the degraded upstream lands here before this "
+                "workload's own metrics move; scaling now absorbs the spike "
+                "that CPU-based autoscaling will react to one step late."
+            ),
+        })
+
+    steps.sort(key=lambda s: (-int(s["user_facing"]), -s["own_dependents"]))
+    return {
+        "upstream": upstream_key,
+        "found": True,
+        "steps": steps,
+        "note": (
+            "Advisory playbook. Execute on upstream degradation, unwind "
+            "when its recovery completes -- see the recovery curve "
+            "measurement for when that actually is."
+        ),
+    }

@@ -283,6 +283,10 @@ class ClusterCollector:
                 "unschedulable": bool(node.spec.unschedulable),
                 "ready": conditions.get("Ready") == "True",
                 "allocatable_cpu_cores": parse_cpu(allocatable.get("cpu")),
+                # GPUs, where the device plugin advertises them. Integer
+                # count only -- MIG slices and NVLink topology are not in the
+                # Kubernetes API, and the fragmentation analysis says so.
+                "allocatable_gpus": int(allocatable.get("nvidia.com/gpu") or 0),
                 "allocatable_memory_bytes": parse_memory(allocatable.get("memory")),
                 "capacity_cpu_cores": parse_cpu(capacity.get("cpu")),
                 "capacity_memory_bytes": parse_memory(capacity.get("memory")),
@@ -335,6 +339,7 @@ class ClusterCollector:
 
             cpu_req = mem_req = 0.0
             cpu_lim = mem_lim = 0.0
+            gpu_req = 0
             env_names: list[str] = []
             env_values: list[str] = []
             images = []
@@ -348,6 +353,7 @@ class ClusterCollector:
                 mem_req += parse_memory(requests.get("memory")) or 0
                 cpu_lim += parse_cpu(limits.get("cpu")) or 0.0
                 mem_lim += parse_memory(limits.get("memory")) or 0
+                gpu_req += int(requests.get("nvidia.com/gpu") or limits.get("nvidia.com/gpu") or 0)
                 for env in (container.env or []):
                     env_names.append(env.name)
                     # Values are held only in this process, for reference
@@ -402,6 +408,7 @@ class ClusterCollector:
                 "cpu_cores_limit": (cpu_lim * fleet) if cpu_lim else None,
                 "memory_bytes_limit": (mem_lim * fleet) if mem_lim else None,
                 # Per pod, which is what a rightsizing change actually edits.
+                "gpus_requested_per_pod": gpu_req or 0,
                 "cpu_cores_requested_per_pod": cpu_req or None,
                 "memory_bytes_requested_per_pod": mem_req or None,
                 "env_summary": safe_env_summary(env_names),

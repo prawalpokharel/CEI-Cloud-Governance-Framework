@@ -1,0 +1,6 @@
+# Terraform state records everything applied, including secret values.
+# It must never be committed.
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl

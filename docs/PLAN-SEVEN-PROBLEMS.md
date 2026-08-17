@@ -288,11 +288,19 @@ curves. Cascade calibration from accumulated chaos runs. Control-plane
 recovery-path audit. Needs: nothing external; the chaos harness is the
 validation engine for all of it.
 
-**Phase C — the frontier (after validation data accumulates).**
-Metastability prediction. Topology-aware scaling recommendations with
-counterfactuals. True-independence scoring with provider knowledge base.
-Scheduler hints. Each is publishable work — and each becomes credible only
-because Phase B produced measured ground truth first.
+**Phase C — the frontier · BUILT.**
+Metastability detection from accumulated usage samples (the
+recovered-but-load-did-not signature, /metastability). Pre-scale playbooks
+per upstream (topology-aware scaling in advisory form, /playbook).
+Provider-substrate knowledge base joined into fleet independence
+(diversification-that-is-not, marked assumed_public_knowledge). Joint
+intervention-set selection under budget (greedy marginal benefit,
+/prescriptions/set). Carbon as an estimate with the fragility warning
+attached (/carbon), GPU fragmentation measurement (in /control-plane), and
+the configuration-complexity index (in structural_health). Remaining
+frontier: DCGM GPU topology, counterfactual scaling replays against
+recorded incidents, and calibrating the replica-correlation share from
+chaos runs.
 
 **Standing constraints.** The application ACTS — through pull requests via
 the GitHub App, subject to the customer's own review and merge controls —

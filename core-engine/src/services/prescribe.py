@@ -180,7 +180,10 @@ def structural_health(snapshot: dict, external: dict) -> dict[str, Any]:
     amplification = recovery.analyze(snapshot).get("amplification_ranking") or []
     top_amp = amplification[0] if amplification else None
 
+    from .complexity import index as complexity_index
+
     return {
+        "configuration_complexity": complexity_index(snapshot),
         "dci": dci["dci"],
         "dci_scope": dci["scope"],
         "internal_concentration": round(concentration(scores), 4) if scores else 0.0,
@@ -507,4 +510,134 @@ def prescribe(
             "common_random_numbers": True,
         },
         "prescriptions": prescriptions,
+    }
+
+
+# --------------------------------------------------------------------------
+# Phase C: joint selection — the best SET of interventions
+# --------------------------------------------------------------------------
+
+def prescribe_set(
+    snapshot: dict,
+    egress_summary: dict | None = None,
+    cei_by_workload: dict[str, dict] | None = None,
+    *,
+    downtime_cost_per_hour: float = DEFAULT_DOWNTIME_COST_PER_HOUR,
+    budget_usd: float | None = None,
+    trials: int = DEFAULT_TRIALS,
+    max_rounds: int = 5,
+) -> dict[str, Any]:
+    """
+    Greedy marginal-benefit selection of an intervention SET.
+
+    One-at-a-time ranking (prescribe) misprices combinations: adding a
+    replica to a hub and splitting that same hub each look good alone and
+    overlap almost entirely -- their joint benefit is far less than the sum.
+    Greedy selection re-evaluates every remaining candidate against the
+    architecture AS ALREADY MODIFIED by the picks so far, so overlap prices
+    itself out on the next round.
+
+    Greedy rather than exhaustive deliberately. The search space is 2^n; the
+    risk function is submodular-ish in practice (interventions overlap, they
+    rarely amplify), and greedy on submodular objectives carries the classic
+    (1 - 1/e) guarantee. An optimizer that runs in bounded time and explains
+    each pick beats an optimal one nobody waits for.
+
+    Stops when the best remaining net gain is <= 0 or the budget is spent.
+    ``budget_usd`` bounds ADDED annual spend; savings (negative-cost moves)
+    do not consume budget -- they extend it.
+    """
+    cei_by_workload = cei_by_workload or {}
+    external = (
+        build_external_nodes(snapshot, egress_summary)
+        if egress_summary and egress_summary.get("available")
+        else {}
+    )
+
+    current_snapshot = snapshot
+    current_priors = _replica_priors(snapshot)
+
+    baseline_sim = availability.simulate(
+        current_snapshot, external=external,
+        availability_overrides=current_priors, trials=trials,
+    )
+    if not baseline_sim.get("available"):
+        return {"available": False, "reason": baseline_sim.get("reason"),
+                "selected": []}
+    baseline_risk = risk_dollars(
+        baseline_sim, downtime_cost_per_hour=downtime_cost_per_hour
+    )
+
+    candidates = [
+        c for c in generate_candidates(snapshot, external, cei_by_workload)
+        if c["kind"] != "do_nothing"
+        # Set selection needs comparable currency on every member; the
+        # pricing_required class is reported by prescribe() and excluded here.
+        and c.get("annual_cost_delta_usd") is not None
+    ]
+
+    selected = []
+    spent = 0.0
+    risk_now = baseline_risk["annual_usd"]
+
+    for _ in range(max_rounds):
+        best = None
+        for candidate in candidates:
+            trial_snapshot, trial_priors = _apply(
+                candidate, current_snapshot, current_priors
+            )
+            sim = availability.simulate(
+                trial_snapshot, external=external,
+                availability_overrides=trial_priors, trials=trials,
+            )
+            risk = risk_dollars(
+                sim, downtime_cost_per_hour=downtime_cost_per_hour
+            )["annual_usd"]
+            net = (risk_now - risk) - candidate["annual_cost_delta_usd"]
+            if best is None or net > best[0]:
+                best = (net, candidate, trial_snapshot, trial_priors, risk)
+
+        if best is None or best[0] <= 0:
+            break
+        net, candidate, current_snapshot, current_priors, risk_after = best
+        cost_delta = candidate["annual_cost_delta_usd"]
+        if budget_usd is not None and cost_delta > 0 and spent + cost_delta > budget_usd:
+            candidates = [c for c in candidates if c["id"] != candidate["id"]]
+            if not candidates:
+                break
+            continue
+
+        spent += max(0.0, cost_delta)
+        selected.append({
+            **candidate,
+            # Marginal, against the architecture as already modified: the
+            # second pick's benefit is what it adds ON TOP of the first.
+            "marginal_risk_reduction_usd": round(risk_now - risk_after, 2),
+            "marginal_net_benefit_usd": round(net, 2),
+            "risk_after_usd": round(risk_after, 2),
+        })
+        risk_now = risk_after
+        candidates = [c for c in candidates if c["id"] != candidate["id"]]
+        if not candidates:
+            break
+
+    return {
+        "available": True,
+        "baseline_risk_usd": baseline_risk["annual_usd"],
+        "final_risk_usd": round(risk_now, 2),
+        "total_risk_reduction_usd": round(
+            baseline_risk["annual_usd"] - risk_now, 2
+        ),
+        "total_added_annual_cost_usd": round(spent, 2),
+        "budget_usd": budget_usd,
+        "selected": selected,
+        "selection": {
+            "method": "greedy marginal benefit under common random numbers",
+            "note": (
+                "Each pick is evaluated against the architecture as already "
+                "modified by prior picks, so overlapping interventions price "
+                "themselves out. Stops when nothing remaining has positive "
+                "net benefit -- an empty selection is a valid answer."
+            ),
+        },
     }

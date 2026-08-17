@@ -1,6 +1,8 @@
 # CloudOptimizer — Governance-Aware Dynamic Resource Allocation SaaS Platform
 
 > ### 👉 New here? Start with **[docs/GETTING-STARTED.md](docs/GETTING-STARTED.md)**
+
+> **What is this and why does it matter?** The two-minute version for humans and decision-makers: [docs/WHY-CLOUDOPTIMIZER.md](docs/WHY-CLOUDOPTIMIZER.md)
 >
 > What CloudOptimizer is, why ranking by blast radius changes the answer, how
 > to try it on a throwaway local cluster in 10 minutes, and how to install it

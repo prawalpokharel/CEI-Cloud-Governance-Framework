@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# Deploy CloudOptimizer locally: minikube + terraform + devspace.
+#
+#   ./deploy.sh          deploy everything
+#   ./deploy.sh destroy  tear it down (minikube itself is left running)
+#   ./deploy.sh status   what is running and where
+#
+# The pipeline: start minikube -> build both images directly into minikube's
+# container runtime (no registry involved; imagePullPolicy Never in the
+# manifests guarantees the local build is what runs) -> terraform apply the
+# stack -> wait for readiness -> print URLs. Iterate afterwards with
+# `devspace dev`.
+#
+# Everything deployed is dev-grade (fixed credentials, no TLS) and the
+# terraform config says so; production remains the platform's job.
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TF_DIR="$HERE/deploy/local"
+PROFILE="${MINIKUBE_PROFILE:-minikube}"
+
+say()  { printf '\n\033[1m== %s\033[0m\n' "$*"; }
+fail() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || fail "$1 is not installed. $2"
+}
+
+preflight() {
+  say "Preflight"
+  need minikube "brew install minikube"
+  need terraform "brew install terraform"
+  need docker "install Docker Desktop or a docker CLI"
+  need kubectl "brew install kubernetes-cli (or use 'minikube kubectl')"
+  # DevSpace is the inner loop, not the deploy; missing is a warning.
+  command -v devspace >/dev/null 2>&1 \
+    || echo "note: devspace not installed (brew install devspace) — deploy works without it; the live-sync dev loop needs it."
+}
+
+start_minikube() {
+  say "Minikube"
+  if minikube -p "$PROFILE" status >/dev/null 2>&1; then
+    echo "profile '$PROFILE' already running"
+  else
+    minikube start -p "$PROFILE" --cpus=2 --memory=4g
+  fi
+  kubectl config use-context "$PROFILE" >/dev/null
+}
+
+build_images() {
+  say "Building images into minikube's runtime"
+  # `minikube image build` builds INSIDE the cluster's runtime: nothing to
+  # push, nothing to pull, and imagePullPolicy Never in the manifests makes
+  # "the image you just built is the image that runs" a guarantee rather
+  # than a hope.
+  minikube -p "$PROFILE" image build -t cloudoptimizer/core-engine:local "$HERE/core-engine"
+  minikube -p "$PROFILE" image build \
+    --build-opt build-arg=NEXT_PUBLIC_CORE_ENGINE_URL=http://localhost:30800 \
+    -t cloudoptimizer/frontend:local "$HERE/frontend"
+}
+
+apply() {
+  say "Terraform"
+  terraform -chdir="$TF_DIR" init -input=false >/dev/null
+  terraform -chdir="$TF_DIR" apply -input=false -auto-approve \
+    -var "kube_context=$PROFILE"
+}
+
+wait_ready() {
+  say "Waiting for readiness"
+  kubectl -n cloudoptimizer rollout status deploy/postgres    --timeout=180s
+  kubectl -n cloudoptimizer rollout status deploy/core-engine --timeout=300s
+  kubectl -n cloudoptimizer rollout status deploy/frontend    --timeout=300s
+}
+
+urls() {
+  say "Where everything is"
+  local ip
+  ip="$(minikube -p "$PROFILE" ip)"
+  cat <<EOF
+  API        http://$ip:30800        (health: http://$ip:30800/health)
+  API docs   http://$ip:30800/docs
+  Dashboard  http://$ip:30300
+
+  On Docker-driver minikube (macOS default) NodePorts are not reachable
+  from the host directly — use the tunnel commands instead:
+    minikube -p $PROFILE service -n cloudoptimizer core-engine --url
+    minikube -p $PROFILE service -n cloudoptimizer frontend --url
+
+  Next steps:
+    1. Open the dashboard, sign up, create a cluster, copy its API key.
+    2. Feed it from any kubeconfig context (see docs/DEV.md).
+    3. Iterate with:  devspace dev
+EOF
+}
+
+status() {
+  kubectl -n cloudoptimizer get deploy,svc,pvc 2>/dev/null \
+    || echo "nothing deployed (namespace 'cloudoptimizer' absent on context '$PROFILE')"
+}
+
+destroy() {
+  say "Destroying the stack (minikube itself is left running)"
+  terraform -chdir="$TF_DIR" destroy -input=false -auto-approve \
+    -var "kube_context=$PROFILE" || true
+  echo "done. 'minikube -p $PROFILE delete' removes the cluster entirely."
+}
+
+case "${1:-deploy}" in
+  deploy)
+    preflight
+    start_minikube
+    build_images
+    apply
+    wait_ready
+    urls
+    ;;
+  destroy) destroy ;;
+  status)  status ;;
+  *) fail "unknown command '${1}'. Usage: ./deploy.sh [deploy|destroy|status]" ;;
+esac

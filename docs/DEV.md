@@ -42,6 +42,29 @@ drift rail runs on every ingest.
    drift notifications, `GEMINI_API_KEY` for fix-with-AI. Absent, each
    feature reports itself unconfigured instead of failing.
 
+## Alternative: Kubernetes-native local deploy (minikube + Terraform + DevSpace)
+
+For a local environment that mirrors a real cluster deployment rather than
+compose:
+
+```bash
+./deploy.sh
+```
+
+One command: starts minikube, builds both images directly into its container
+runtime (`imagePullPolicy: Never` guarantees the local build is what runs),
+applies [deploy/local/main.tf](../deploy/local/main.tf), waits for readiness,
+prints URLs. Then iterate with live code sync:
+
+```bash
+devspace dev
+```
+
+`./deploy.sh status` shows what is running; `./deploy.sh destroy` tears the
+stack down (minikube itself stays). Terraform owns *what* runs, DevSpace owns
+the *loop* — the same split a production GitOps setup has, which is the point
+of practicing it locally.
+
 ## What is dev-grade here, on purpose
 
 Fixed database credentials, a fixed `APP_SECRET_KEY`, no TLS. **None of
