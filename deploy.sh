@@ -98,8 +98,24 @@ EOF
 
 open_tunnels() {
   say "Port-forwarding — leave this running; Ctrl-C to stop"
-  echo "  Dashboard  http://localhost:3000"
-  echo "  API        http://localhost:8000"
+  # Announce readiness OUT LOUD. Without this, the terminal establishes the
+  # tunnels and then sits silent -- which is correct behaviour that reads
+  # exactly like a hang to anyone watching it. Observed live: a working
+  # deployment reported as "stuck" because nothing said "you can go now".
+  ( for _ in $(seq 1 60); do
+      if curl -sfm 2 -o /dev/null http://localhost:3000/ \
+         && curl -sfm 2 -o /dev/null http://localhost:8000/health; then
+        printf '\n\033[1;32m✅ READY\033[0m — open \033[1mhttp://localhost:3000\033[0m in your browser.\n'
+        printf '   (This terminal stays busy on purpose: it IS the connection.\n'
+        printf '    Nothing more will print here. Ctrl-C when you are done.)\n\n'
+        if [ "$(uname)" = "Darwin" ] && [ -z "${NO_BROWSER:-}" ]; then
+          /usr/bin/open http://localhost:3000 || true
+        fi
+        exit 0
+      fi
+      sleep 2
+    done
+    printf '\n\033[31mstill not reachable after 120s\033[0m — check: ./deploy.sh status\n' ) &
   # kubectl port-forward pins the specific POD it resolves at startup and
   # dies when that pod is replaced -- which is every rollout, every image
   # rebuild, every devspace restart. Observed live: a forward bound to a pod
