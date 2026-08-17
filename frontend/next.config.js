@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  async redirects() {
-    // The NIW surface moved from / to /niw; the capitalised form is what
-    // appears in written materials, so both spellings resolve.
-    return [{ source: '/NIW', destination: '/niw', permanent: false }];
-  }, reactStrictMode: true };
+// NOTE: the /NIW -> /niw redirect lives in src/middleware.js, not in
+// redirects() here. Next's redirects() matches case-INsensitively, so a
+// '/NIW' source also matches '/niw' itself and loops forever -- middleware
+// compares the pathname exactly, which is the behaviour we actually want.
+const nextConfig = { reactStrictMode: true };
 module.exports = nextConfig;

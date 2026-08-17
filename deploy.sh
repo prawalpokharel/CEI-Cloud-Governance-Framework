@@ -36,6 +36,27 @@ preflight() {
   # DevSpace is the inner loop, not the deploy; missing is a warning.
   command -v devspace >/dev/null 2>&1 \
     || echo "note: devspace not installed (brew install devspace) — deploy works without it; the live-sync dev loop needs it."
+  check_competing_clusters
+}
+
+# Other local Kubernetes clusters (kind, k3d) each run a full kubelet and
+# control plane, and a couple of idle ones can starve the minikube VM to the
+# point where every page load feels broken. That exact failure has happened
+# here once ("the website is really slow"): three idle kind clusters were
+# consuming ~6 cores while minikube got one. Warn loudly, don't touch them.
+check_competing_clusters() {
+  local others
+  others=$(docker ps --format '{{.Names}}' 2>/dev/null \
+    | grep -E -- '-control-plane$|^k3d-' | grep -v "^$PROFILE" || true)
+  if [ -n "$others" ]; then
+    echo ""
+    echo "WARNING: other local Kubernetes clusters are running and will compete"
+    echo "for CPU with minikube (this is the usual cause of a slow dashboard):"
+    echo "$others" | sed 's/^/    /'
+    echo "  pause them with:  docker stop $(echo $others | tr '\n' ' ')"
+    echo "  resume later with: docker start <name...>"
+    echo ""
+  fi
 }
 
 start_minikube() {
@@ -228,7 +249,7 @@ case "${1:-deploy}" in
     wait_ready
     urls
     ;;
-  open)    open_tunnels ;;
+  open)    check_competing_clusters; open_tunnels ;;
   agent)   install_agent "${2:-}" ;;
   demo-cluster) demo_cluster ;;
   destroy) destroy ;;
