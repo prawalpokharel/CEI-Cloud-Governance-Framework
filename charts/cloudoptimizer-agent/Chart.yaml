@@ -2,8 +2,8 @@ apiVersion: v2
 name: cloudoptimizer-agent
 description: Read-only Kubernetes topology agent for CloudOptimizer (CEI framework)
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.2.0
+appVersion: "0.2.0"
 keywords:
   - monitoring
   - cost-optimization
@@ -14,3 +14,11 @@ sources:
   - https://github.com/prawalpokharel/CEI-Cloud-Governance-Framework
 maintainers:
   - name: Prawal Pokharel
+
+# UPGRADING TO 0.2.0
+#
+# Adds PodDisruptionBudget and HorizontalPodAutoscaler collection,
+# which needs two new ClusterRole rules. Upgrade with `helm upgrade`
+# rather than by bumping the image tag alone: an agent running ahead
+# of its ClusterRole logs a 403 per cycle and omits the resilience
+# findings, which read as a clean cluster rather than as missing data.

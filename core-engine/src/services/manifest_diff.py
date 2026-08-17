@@ -55,6 +55,11 @@ RELEVANT_KINDS = WORKLOAD_KINDS | CONFIG_KINDS | ROUTING_KINDS | POLICY_KINDS
 
 MANIFEST_SUFFIXES = (".yaml", ".yml")
 
+# Kustomize's overlay file. Its `namespace:` field is applied to every
+# resource the overlay builds, which is how the majority of manifests that
+# omit metadata.namespace still land in the right place.
+KUSTOMIZATION_NAMES = ("kustomization.yaml", "kustomization.yml", "Kustomization")
+
 # Go template delimiters. Their presence means the file is a chart template
 # and is not YAML until Helm has rendered it.
 _TEMPLATED = re.compile(r"\{\{.*?\}\}", re.DOTALL)
@@ -112,6 +117,59 @@ class ObjectChange:
 
 def is_manifest_path(path: str) -> bool:
     return path.lower().endswith(MANIFEST_SUFFIXES)
+
+
+def is_kustomization_path(path: str) -> bool:
+    return path.rsplit("/", 1)[-1] in KUSTOMIZATION_NAMES
+
+
+def directory_of(path: str) -> str:
+    return path.rsplit("/", 1)[0] if "/" in path else ""
+
+
+def ancestor_directories(path: str) -> list[str]:
+    """
+    Directories from the file's own outward to the repository root.
+
+    Ordered nearest-first because kustomize resolves the same way: the
+    closest overlay wins over a base further up.
+    """
+    directory = directory_of(path)
+    out = [directory]
+    while "/" in directory:
+        directory = directory.rsplit("/", 1)[0]
+        out.append(directory)
+    if "" not in out:
+        out.append("")
+    return out
+
+
+def parse_kustomization_namespace(text: str) -> str | None:
+    """Extract the `namespace:` an overlay applies to everything it builds."""
+    if not text or looks_templated(text):
+        return None
+    try:
+        document = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return None
+    if not isinstance(document, dict):
+        return None
+    namespace = document.get("namespace")
+    return str(namespace) if namespace else None
+
+
+def kustomize_namespaces(files: list[dict]) -> dict[str, str]:
+    """Map directory -> namespace for every kustomization file supplied."""
+    found: dict[str, str] = {}
+    for entry in files:
+        path = entry.get("path") or ""
+        if not is_kustomization_path(path):
+            continue
+        text = entry.get("after") or entry.get("before") or ""
+        namespace = parse_kustomization_namespace(text)
+        if namespace:
+            found[directory_of(path)] = namespace
+    return found
 
 
 def looks_templated(text: str) -> bool:

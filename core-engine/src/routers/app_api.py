@@ -61,6 +61,10 @@ _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 # Schemas
 # --------------------------------------------------------------------------
 
+# Highest agent snapshot schema this server knows how to use in full.
+SNAPSHOT_SCHEMA_SUPPORTED = 2
+
+
 class SignupRequest(BaseModel):
     email: str
     password: str
@@ -357,6 +361,46 @@ async def create_cluster(
     }
 
 
+def _agent_capability(snapshot: dict) -> dict:
+    """
+    What the agent that produced this snapshot was able to report.
+
+    Analyses added after an agent ships see empty collections from older
+    agents. Returning zero findings for those is indistinguishable from a
+    clean cluster, so every response that depends on a newer schema says which
+    schema it got and what is consequently missing.
+    """
+    version = snapshot.get("schema_version") or 1
+    missing = []
+    if "disruption_budgets" not in snapshot:
+        missing.append("PodDisruptionBudgets")
+    if "autoscalers" not in snapshot:
+        missing.append("HorizontalPodAutoscalers")
+    if not any(
+        "probes" in workload for workload in (snapshot.get("workloads") or [])
+    ):
+        missing.append("probe coverage, spread policy, ownership, config references")
+
+    return {
+        "agent_version": snapshot.get("agent_version"),
+        "schema_version": version,
+        "schema_supported": SNAPSHOT_SCHEMA_SUPPORTED,
+        "up_to_date": version >= SNAPSHOT_SCHEMA_SUPPORTED,
+        "missing_signals": missing,
+        "note": (
+            None
+            if not missing
+            else (
+                f"This snapshot is schema v{version}; the server understands "
+                f"v{SNAPSHOT_SCHEMA_SUPPORTED}. Not reported by this agent: "
+                + "; ".join(missing)
+                + ". Findings that depend on them are absent rather than clean "
+                "— upgrade the agent and its ClusterRole."
+            )
+        ),
+    }
+
+
 async def _latest_snapshot(session: AsyncSession, cluster_id) -> Snapshot:
     """Most recent snapshot, or a 409 explaining that none has arrived."""
     latest = (
@@ -579,14 +623,7 @@ async def cluster_resilience(
     }
 
     result = resilience_service.analyze(snapshot, cei_by_workload)
-    # A v1 agent sends neither collection. Saying so beats reporting zero
-    # findings, which reads as a clean bill of health.
-    if "disruption_budgets" not in snapshot and "autoscalers" not in snapshot:
-        result["summary"]["note"] = (
-            "This snapshot predates PodDisruptionBudget and "
-            "HorizontalPodAutoscaler collection. Upgrade the agent to at "
-            "least schema version 2 for disruption and autoscaling findings."
-        )
+    result["agent"] = _agent_capability(snapshot)
     result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     result["captured_at"] = latest.captured_at.isoformat()
     return result
@@ -610,6 +647,7 @@ async def cluster_ownership(
     result = ownership_service.analyze(
         snapshot, cei_by_workload, include_system_namespaces=include_system
     )
+    result["agent"] = _agent_capability(snapshot)
     result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     result["captured_at"] = latest.captured_at.isoformat()
     return result
@@ -638,6 +676,7 @@ async def cluster_cost_safety(
     result = safe_to_delete_service.review_cost_recommendations(
         snapshot, analyze_cluster_cost(snapshot), cei_by_workload
     )
+    result["agent"] = _agent_capability(snapshot)
     result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     result["captured_at"] = latest.captured_at.isoformat()
     return result
@@ -672,6 +711,7 @@ async def cluster_pr_review(
     )
     if payload.render_markdown:
         result["markdown"] = pr_review_service.render_markdown(result)
+    result["agent"] = _agent_capability(snapshot)
     result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     result["captured_at"] = latest.captured_at.isoformat()
     return result

@@ -35,7 +35,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from .git_provider import GitHubApp, GitProviderError, PullRequest, branch_name
+from .git_provider import GitHubApp, PullRequest, branch_name
 from .llm import LLMClient, LLMUnavailable
 from .policy import Action, ChangeKind, classify_version_change
 

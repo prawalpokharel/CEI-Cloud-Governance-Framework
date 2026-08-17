@@ -266,7 +266,10 @@ def test_unknown_workload_is_reported_as_unmeasured(snapshot):
     impact = _impact(result, "brand-new")
 
     assert impact["resolved_in_cluster"] is False
-    assert any("not found in the current cluster" in n.lower() for n in impact["notes"])
+    assert any("not in the current snapshot" in n for n in impact["notes"])
+    # The note names the exact key that was looked up, so an operator can see
+    # whether the namespace resolution was the problem.
+    assert any("prod/Deployment/brand-new" in n for n in impact["notes"])
     assert result["summary"]["unresolved"] == 1
 
 
@@ -470,3 +473,163 @@ def test_resource_direction(before, after, reduced):
     kinds = change.change_kinds if change else []
 
     assert ("resources_reduced" in kinds) is reduced
+
+
+# --- namespace resolution ---------------------------------------------------
+#
+# Manifests routinely omit metadata.namespace. Assuming "default" resolves
+# nothing on a cluster that uses real namespaces, and the resulting "not found"
+# is indistinguishable from a genuinely new workload.
+
+
+def _bare(name, replicas=3):
+    """A Deployment with no metadata.namespace, as most repositories store it."""
+    return f"""
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {name}
+spec:
+  replicas: {replicas}
+  selector:
+    matchLabels:
+      app: {name}
+  template:
+    metadata:
+      labels:
+        app: {name}
+    spec:
+      containers:
+        - name: app
+          image: repo/{name}:1.0
+""".strip()
+
+
+def test_declared_namespace_wins(snapshot):
+    result = _review(snapshot, _deployment("api", replicas=3), _deployment("api", replicas=1))
+
+    assert _impact(result, "api")["namespace_source"] == "declared in the manifest"
+
+
+def test_kustomization_supplies_the_namespace(snapshot):
+    """The overlay decides, and it is usually not in the diff itself."""
+    result = pr_review.review(snapshot, [
+        {"path": "overlays/prod/kustomization.yaml", "before": None,
+         "after": "namespace: prod\nresources:\n  - api.yaml\n"},
+        {"path": "overlays/prod/api.yaml", "before": _bare("api", 3),
+         "after": _bare("api", 1)},
+    ], CEI)
+    impact = _impact(result, "api")
+
+    assert impact["namespace_used"] == "prod"
+    assert "kustomization.yaml" in impact["namespace_source"]
+    assert impact["resolved_in_cluster"] is True
+
+
+def test_nearest_kustomization_wins(snapshot):
+    result = pr_review.review(snapshot, [
+        {"path": "kustomization.yaml", "before": None, "after": "namespace: staging\n"},
+        {"path": "overlays/prod/kustomization.yaml", "before": None,
+         "after": "namespace: prod\n"},
+        {"path": "overlays/prod/api.yaml", "before": _bare("api", 3),
+         "after": _bare("api", 1)},
+    ], CEI)
+
+    assert _impact(result, "api")["namespace_used"] == "prod"
+
+
+def test_unique_name_in_cluster_resolves_the_namespace(snapshot):
+    """
+    No declaration and no overlay, but exactly one Deployment called `api`
+    exists. Inferring from live state beats assuming "default".
+    """
+    result = pr_review.review(
+        snapshot, [{"path": "k8s/api.yaml", "before": _bare("api", 3),
+                    "after": _bare("api", 1)}], CEI,
+    )
+    impact = _impact(result, "api")
+
+    assert impact["namespace_used"] == "prod"
+    assert "only object of this name" in impact["namespace_source"]
+    assert impact["resolved_in_cluster"] is True
+    assert impact["dependents"] > 1
+
+
+def test_ambiguous_name_is_reported_not_guessed(snapshot):
+    """
+    The same Deployment name in two namespaces. Picking one would produce a
+    confident, wrong blast radius.
+    """
+    snapshot["workloads"].append(dict(
+        _workload("api", ns="staging"), key="staging/Deployment/api",
+    ))
+    result = pr_review.review(
+        snapshot, [{"path": "k8s/api.yaml", "before": _bare("api", 3),
+                    "after": _bare("api", 1)}], CEI,
+    )
+    impact = _impact(result, "api")
+
+    assert impact["namespace_ambiguous"] is True
+    assert "ambiguous" in impact["namespace_source"]
+    assert "prod" in impact["namespace_source"] and "staging" in impact["namespace_source"]
+    assert result["summary"]["namespace_ambiguous"] == 1
+    assert any("wrong copy" in n for n in impact["notes"])
+
+
+def test_unmatched_name_falls_back_to_default(snapshot):
+    result = pr_review.review(
+        snapshot,
+        [{"path": "k8s/new.yaml", "before": _bare("brand-new", 3),
+          "after": _bare("brand-new", 1)}],
+        CEI, default_namespace="apps",
+    )
+    impact = _impact(result, "brand-new")
+
+    assert impact["namespace_used"] == "apps"
+    assert "assumed" in impact["namespace_source"]
+    assert impact["resolved_in_cluster"] is False
+
+
+def test_configmap_namespace_resolves_via_readers(snapshot):
+    bare_cm = "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config\ndata:\n  A: '1'\n"
+    result = pr_review.review(
+        snapshot,
+        [{"path": "k8s/config.yaml", "before": bare_cm,
+          "after": bare_cm.replace("'1'", "'2'")}],
+        CEI,
+    )
+    impact = _impact(result, "app-config")
+
+    assert impact["namespace_used"] == "prod"
+    assert impact["resolved_in_cluster"] is True
+
+
+def test_kustomization_is_not_analysed_as_a_manifest(snapshot):
+    """It has no `kind`, so it must not turn into a phantom object change."""
+    result = pr_review.review(snapshot, [
+        {"path": "overlays/prod/kustomization.yaml", "before": "namespace: prod\n",
+         "after": "namespace: prod\nresources:\n  - api.yaml\n"},
+    ], CEI)
+
+    assert result["impacts"] == []
+
+
+def test_templated_kustomization_does_not_crash(snapshot):
+    result = pr_review.review(snapshot, [
+        {"path": "kustomization.yaml", "before": None,
+         "after": "namespace: {{ .Values.ns }}\n"},
+        {"path": "k8s/api.yaml", "before": _bare("api", 3), "after": _bare("api", 1)},
+    ], CEI)
+
+    # Falls through to cluster matching rather than adopting a literal
+    # "{{ .Values.ns }}" namespace.
+    assert _impact(result, "api")["namespace_used"] == "prod"
+
+
+@pytest.mark.parametrize("path,expected", [
+    ("a/b/c.yaml", ["a/b", "a", ""]),
+    ("c.yaml", [""]),
+    ("a/c.yaml", ["a", ""]),
+])
+def test_ancestor_directories(path, expected):
+    assert manifest_diff.ancestor_directories(path) == expected

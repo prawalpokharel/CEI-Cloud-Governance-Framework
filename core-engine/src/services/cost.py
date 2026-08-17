@@ -263,7 +263,7 @@ def analyze_cluster_cost(snapshot: dict) -> dict[str, Any]:
         )
 
         verdict, wasted, recommendation, details = _assess(
-            workload, cpu_req, cpu_used, mem_req, mem_used,
+            cpu_req, cpu_used, mem_req, mem_used,
             cpu_util, mem_util, monthly,
         )
 
@@ -360,7 +360,7 @@ def analyze_cluster_cost(snapshot: dict) -> dict[str, Any]:
 
 
 def _assess(
-    workload, cpu_req, cpu_used, mem_req, mem_used, cpu_util, mem_util, monthly
+    cpu_req, cpu_used, mem_req, mem_used, cpu_util, mem_util, monthly
 ) -> tuple[str, float, str | None, dict]:
     """Classify a workload and quantify its reserved-but-unused spend."""
     if not cpu_req and not mem_req:

@@ -21,7 +21,6 @@ of sync with reality after a missed event.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException

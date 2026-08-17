@@ -259,7 +259,7 @@ def _classify(
     return "low"
 
 
-def _headline(radius: BlastRadius, graph: nx.DiGraph) -> str:
+def _headline(radius: BlastRadius) -> str:
     if not radius.exists:
         return f"{radius.workload_key} is not in the dependency graph."
     if not radius.affected:
@@ -372,7 +372,7 @@ def compute_blast_radius(
         total_affected=len(affected),
         target_cei=(cei_by_workload.get(workload_key) or {}).get("cei_score"),
     )
-    radius.headline = _headline(radius, graph)
+    radius.headline = _headline(radius)
     return radius
 
 

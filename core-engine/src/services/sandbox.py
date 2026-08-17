@@ -18,7 +18,7 @@ people loading it is not a demo.
 from __future__ import annotations
 
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 GIB = 1024 ** 3
@@ -82,8 +82,17 @@ def build_sandbox_snapshot() -> dict[str, Any]:
 
     total_cpu = sum(r[2] * r[3] for r in _TOPOLOGY)
     total_mem = sum(r[2] * r[4] for r in _TOPOLOGY)
+
     # ~70% committed, which is what a healthy production cluster looks like.
-    node_count = max(3, int(total_cpu / (16 * 0.70)) + 1)
+    #
+    # Sized on whichever dimension binds. m5.4xlarge is 16 vCPU and 64 GiB, so
+    # a memory-heavy topology needs more nodes than the CPU total implies --
+    # deriving the count from CPU alone (as this did) produced a cluster whose
+    # pods could not actually fit, and the sandbox then reported an
+    # over-commitment that no real cluster would tolerate.
+    by_cpu = total_cpu / (16 * 0.70)
+    by_memory = total_mem / (64 * (1024 ** 3) * 0.70)
+    node_count = max(3, int(max(by_cpu, by_memory)) + 1)
 
     nodes = [
         {

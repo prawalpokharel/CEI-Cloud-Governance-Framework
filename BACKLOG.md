@@ -185,4 +185,4 @@ after Phase 4, since both need the Git integration and it should be built once.
 | 7 — Write mode | Policy engine done and tested. Execution blocked on D6. |
 | 8 — SAST | Not started. Sequence after Phase 4. |
 
-**275 tests** — 206 core-engine, 61 agent, 8 frontend.
+**483 tests** — 392 core-engine, 83 agent, 8 frontend.

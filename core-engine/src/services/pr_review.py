@@ -70,6 +70,9 @@ class ChangeImpact:
     change: manifest_diff.ObjectChange
     workload_key: str | None = None
     resolved: bool = False
+    namespace_used: str | None = None
+    namespace_source: str | None = None
+    namespace_ambiguous: bool = False
     dependents: int = 0
     direct_dependents: list[str] = field(default_factory=list)
     user_facing: bool = False
@@ -85,6 +88,9 @@ class ChangeImpact:
             **self.change.to_dict(),
             "workload_key": self.workload_key,
             "resolved_in_cluster": self.resolved,
+            "namespace_used": self.namespace_used,
+            "namespace_source": self.namespace_source,
+            "namespace_ambiguous": self.namespace_ambiguous,
             "dependents": self.dependents,
             "direct_dependents": self.direct_dependents,
             "user_facing": self.user_facing,
@@ -127,6 +133,65 @@ def _service_backends(snapshot: dict, name: str, namespace: str | None) -> list[
     return []
 
 
+def resolve_namespace(
+    change: manifest_diff.ObjectChange,
+    snapshot: dict,
+    *,
+    kustomize: dict[str, str] | None = None,
+    default_namespace: str = "default",
+) -> tuple[str, str, bool]:
+    """
+    Work out which namespace a manifest actually lands in.
+
+    Manifests routinely omit `metadata.namespace` and receive it from a
+    kustomize overlay or the apply command. Assuming "default" resolves
+    nothing on a cluster that uses real namespaces, and a workload that fails
+    to resolve is reported as "not found" -- technically honest, useless to
+    read, and indistinguishable from a genuinely new workload.
+
+    Four strategies, most authoritative first. Returns
+    (namespace, how, ambiguous).
+    """
+    if change.namespace:
+        return change.namespace, "declared in the manifest", False
+
+    # Nearest kustomize overlay wins, which is how kustomize itself resolves.
+    for directory in manifest_diff.ancestor_directories(change.path):
+        namespace = (kustomize or {}).get(directory)
+        if namespace:
+            return namespace, f"kustomization.yaml in {directory or 'repository root'}", False
+
+    # Match against the cluster. If exactly one object of this kind and name
+    # exists, that is the one being edited -- inferred from live state rather
+    # than assumed, and far more often right than "default".
+    matches = sorted({
+        workload["namespace"]
+        for workload in (snapshot.get("workloads") or [])
+        if workload.get("name") == change.name and workload.get("kind") == change.kind
+    })
+    if change.kind in manifest_diff.CONFIG_KINDS:
+        matches = sorted({
+            workload["namespace"]
+            for workload in (snapshot.get("workloads") or [])
+            for name in ((workload.get("config_refs") or {}).get("config_maps") or [])
+                       + ((workload.get("config_refs") or {}).get("secrets") or [])
+            if name == change.name
+        })
+    if len(matches) == 1:
+        return matches[0], "matched to the only object of this name in the cluster", False
+    if len(matches) > 1:
+        # Guessing here would attribute the change to the wrong namespace and
+        # report a confident, wrong blast radius. Say so instead.
+        return (
+            default_namespace,
+            f"ambiguous: {change.kind} {change.name} exists in "
+            f"{', '.join(matches)}",
+            True,
+        )
+
+    return default_namespace, "assumed (no namespace declared and no match in cluster)", False
+
+
 def _at_least(risk: str, floor: str) -> str:
     """The more severe of the two."""
     return risk if RISK_ORDER.index(risk) <= RISK_ORDER.index(floor) else floor
@@ -143,6 +208,7 @@ def analyze_changes(
     cei_by_workload: dict[str, dict] | None = None,
     *,
     default_namespace: str = "default",
+    kustomize: dict[str, str] | None = None,
 ) -> list[ChangeImpact]:
     """Attach cluster impact to each parsed object change."""
     cei_by_workload = cei_by_workload or {}
@@ -151,7 +217,19 @@ def analyze_changes(
 
     for change in changes:
         impact = ChangeImpact(change=change)
-        namespace = change.namespace or default_namespace
+        namespace, source, ambiguous = resolve_namespace(
+            change, snapshot, kustomize=kustomize, default_namespace=default_namespace
+        )
+        impact.namespace_used = namespace
+        impact.namespace_source = source
+        impact.namespace_ambiguous = ambiguous
+        if ambiguous:
+            impact.notes.append(
+                f"Namespace could not be determined — {source}. The manifest "
+                "declares none and no kustomization.yaml in this pull request "
+                "supplies one, so impact below is measured against "
+                f"`{namespace}` and may be attributed to the wrong copy."
+            )
 
         # Workloads resolve directly. ConfigMaps, Secrets and Services resolve
         # to the workloads they touch, which is where their blast radius
@@ -159,9 +237,10 @@ def analyze_changes(
         # that mounts it, and nothing in the diff says so.
         targets: list[str] = []
         if change.kind in manifest_diff.WORKLOAD_KINDS:
-            key = change.workload_key(default_namespace)
+            key = f"{namespace}/{change.kind}/{change.name}"
+            impact.workload_key = key
             if key in graph:
-                impact.workload_key, targets = key, [key]
+                targets = [key]
         elif change.kind in manifest_diff.CONFIG_KINDS:
             targets = _config_readers(snapshot, change.name, namespace)
             if targets:
@@ -179,9 +258,10 @@ def analyze_changes(
             impact.risk = change.severity
             if change.kind in manifest_diff.WORKLOAD_KINDS:
                 impact.notes.append(
-                    "Not found in the current cluster snapshot. It may be new, "
-                    "in a namespace the agent does not cover, or templated. "
-                    "Impact could not be measured."
+                    f"`{namespace}/{change.kind}/{change.name}` is not in the "
+                    f"current snapshot (namespace {source}). It may be new, in "
+                    "a namespace the agent does not cover, or rendered from a "
+                    "template. Impact could not be measured."
                 )
             impacts.append(impact)
             continue
@@ -268,8 +348,15 @@ def review(
     both the API endpoint and the GitHub integration.
     """
     changes, skipped = manifest_diff.diff_files(files)
+    # Overlays supplied alongside the manifests decide the namespace for any
+    # manifest that omits one.
+    kustomize = manifest_diff.kustomize_namespaces(files)
     impacts = analyze_changes(
-        snapshot, changes, cei_by_workload, default_namespace=default_namespace
+        snapshot,
+        changes,
+        cei_by_workload,
+        default_namespace=default_namespace,
+        kustomize=kustomize,
     )
 
     # Latent weaknesses in the workloads this PR touches. A replica reduction
@@ -307,6 +394,7 @@ def review(
             "workloads_touched": total_affected,
             "user_facing": any(i.user_facing for i in impacts),
             "unresolved": sum(1 for i in impacts if not i.resolved),
+            "namespace_ambiguous": sum(1 for i in impacts if i.namespace_ambiguous),
             "files_skipped": len(skipped),
         },
         "impacts": [i.to_dict() for i in impacts],
@@ -322,7 +410,7 @@ _RISK_ICON = {
 }
 
 
-def render_markdown(result: dict, *, pr_title: str | None = None) -> str:
+def render_markdown(result: dict) -> str:
     """Render the review as the PR comment body."""
     summary = result["summary"]
     impacts = result["impacts"]
@@ -469,8 +557,33 @@ def review_pull_request(
     if pull is None:
         raise GitProviderError(f"Pull request {repo}#{number} not found.")
 
+    changed = app.pull_request_files(repo, number)
+
+    # Kustomize overlays are usually NOT in the diff -- someone edits a
+    # Deployment, not the kustomization.yaml above it -- so they have to be
+    # fetched separately or every manifest without an explicit namespace
+    # resolves by guesswork.
     files = []
-    for entry in app.pull_request_files(repo, number):
+    seen_overlays: set[str] = set()
+    for entry in changed:
+        if not manifest_diff.is_manifest_path(entry["path"]):
+            continue
+        for directory in manifest_diff.ancestor_directories(entry["path"]):
+            if directory in seen_overlays:
+                continue
+            seen_overlays.add(directory)
+            for name in manifest_diff.KUSTOMIZATION_NAMES:
+                overlay_path = f"{directory}/{name}" if directory else name
+                blob = app.get_file(repo, overlay_path, ref=pull["head_sha"])
+                if blob:
+                    files.append({
+                        "path": overlay_path,
+                        "before": None,
+                        "after": blob["content"],
+                    })
+                    break
+
+    for entry in changed:
         if not manifest_diff.is_manifest_path(entry["path"]):
             continue
         before = after = None
@@ -491,7 +604,7 @@ def review_pull_request(
         "head_sha": pull["head_sha"],
     }
 
-    body = render_markdown(result, pr_title=pull["title"])
+    body = render_markdown(result)
     published = {"comment": False, "check": False}
 
     if post_comment:

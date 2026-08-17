@@ -11,7 +11,6 @@ next one starts from a fresh read rather than from patched-up state.
 from __future__ import annotations
 
 import logging
-import os
 import signal
 import sys
 import time
@@ -21,7 +20,6 @@ from kubernetes import config as k8s_config
 from .buffer import SnapshotBuffer
 from .collector import ClusterCollector, attach_service_references
 from .config import AgentConfig
-from .inference import edge_summary
 from .metrics import MetricsCollector, aggregate_to_workloads
 from .snapshot import assert_no_secrets, build_snapshot, serialize
 from .transport import IngestError, Transport
