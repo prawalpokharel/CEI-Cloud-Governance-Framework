@@ -54,7 +54,10 @@ build_images() {
   # push, nothing to pull, and imagePullPolicy Never in the manifests makes
   # "the image you just built is the image that runs" a guarantee rather
   # than a hope.
-  minikube -p "$PROFILE" image build -t cloudoptimizer/core-engine:local "$HERE/core-engine"
+  # Repo-root context: the scenario datasets live at /scenarios and must
+  # ship in the image (see core-engine/Dockerfile).
+  minikube -p "$PROFILE" image build -f core-engine/Dockerfile \
+    -t cloudoptimizer/core-engine:local "$HERE"
   minikube -p "$PROFILE" image build \
     --build-opt build-arg=NEXT_PUBLIC_CORE_ENGINE_URL=http://localhost:8000 \
     --build-opt build-arg=NEXT_PUBLIC_API_URL=http://localhost:8000 \

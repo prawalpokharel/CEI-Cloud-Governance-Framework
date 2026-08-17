@@ -1,0 +1,14 @@
+# Build context hygiene for images built from the repo root
+# (core-engine/Dockerfile). Everything heavy or secret stays out.
+.git
+**/.venv
+**/node_modules
+**/__pycache__
+**/.next
+**/.pytest_cache
+**/.terraform
+*.tfstate*
+.env
+*.pem
+frontend
+agent/.venv

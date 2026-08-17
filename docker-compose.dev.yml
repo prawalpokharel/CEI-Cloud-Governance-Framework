@@ -34,7 +34,11 @@ services:
       retries: 20
 
   core-engine:
-    build: ./core-engine
+    build:
+      # Repo-root context: the scenario datasets live at /scenarios and must
+      # ship in the image (see core-engine/Dockerfile).
+      context: .
+      dockerfile: core-engine/Dockerfile
     environment:
       DATABASE_URL: postgres://cloudopt:devpass@postgres:5432/cloudoptimizer
       # Dev-only. The server refuses to issue sessions without one; a fixed
