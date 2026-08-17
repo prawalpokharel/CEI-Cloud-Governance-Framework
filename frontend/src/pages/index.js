@@ -63,6 +63,9 @@ export default function Home() {
                 ...(isMobile ? styles.headerRightMobile : {}),
               }}
             >
+              <Link href="/app" style={styles.dashboardButton}>
+                Sign up / Dashboard →
+              </Link>
               <Link href="/connect" style={styles.connectButton}>
                 Connect Cloud →
               </Link>
@@ -320,6 +323,17 @@ const styles = {
     gap: 8,
     flexWrap: 'wrap',
     justifyContent: 'flex-end',
+  },
+  dashboardButton: {
+    background: '#F39C12',
+    color: '#FFFFFF',
+    padding: '8px 14px',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 800,
+    textDecoration: 'none',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+    whiteSpace: 'nowrap',
   },
   connectButton: {
     background: 'rgba(255,255,255,0.98)',

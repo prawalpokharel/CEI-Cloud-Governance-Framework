@@ -2,6 +2,22 @@
 
 > ### 👉 New here? Start with **[docs/GETTING-STARTED.md](docs/GETTING-STARTED.md)**
 
+## Run it locally in two commands
+
+```bash
+./deploy.sh          # minikube + terraform: builds and deploys the whole product
+./deploy.sh open     # opens the dashboard at http://localhost:3000
+```
+
+Then: **Sign up → Add a cluster → run the install command it shows you**
+(locally: `./deploy.sh agent <key>`). Within a minute the dashboard fills
+with the cluster's topology, criticality ranking, health, and cost.
+
+Want a production-shaped cluster to point it at? `./deploy.sh demo-cluster`
+deploys a 12-service estate with realistic dependencies and realistic flaws,
+so every analysis panel has something true to show. Full walkthrough, the
+docker-compose alternative, and the customer-flow test: [docs/DEV.md](docs/DEV.md).
+
 > **What is this and why does it matter?** The two-minute version for humans and decision-makers: [docs/WHY-CLOUDOPTIMIZER.md](docs/WHY-CLOUDOPTIMIZER.md)
 >
 > What CloudOptimizer is, why ranking by blast radius changes the answer, how

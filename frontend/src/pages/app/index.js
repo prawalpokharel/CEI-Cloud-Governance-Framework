@@ -96,12 +96,30 @@ export default function AppDashboard() {
 
       {clusters.length === 0 && !newKey && (
         <div style={s.empty}>
+          <div style={s.stepsTitle}>Connect your first cluster — three steps</div>
+          <ol style={s.steps}>
+            <li>
+              <strong>Add a cluster</strong> above. You get an API key,
+              shown exactly once, and the exact install command.
+            </li>
+            <li>
+              <strong>Run that command in your Kubernetes cluster.</strong>{' '}
+              It installs a small read-only agent pod (Helm chart; no write
+              permissions, no access to secrets) that reports your cluster's
+              topology here every minute.
+            </li>
+            <li>
+              <strong>Refresh this page.</strong> Within ~60 seconds the
+              cluster shows connected, and the dashboard fills with its
+              dependency map, criticality ranking, health, and cost.
+            </li>
+          </ol>
           <p style={s.muted}>
-            No clusters yet. Add one to get an install command — or{' '}
+            Want to look around first?{' '}
             <Link href="/app/sandbox" style={s.inlineLink}>
-              explore sample data
+              Explore the sandbox
             </Link>{' '}
-            first.
+            — same dashboard, sample cluster.
           </p>
         </div>
       )}
@@ -135,6 +153,17 @@ export default function AppDashboard() {
               {c.connected && !c.metrics_available && (
                 <div style={s.warn}>
                   metrics-server not detected — usage data unavailable
+                </div>
+              )}
+              {!c.connected && (
+                <div style={s.installHint}>
+                  Waiting for the agent. Install it with the command shown
+                  when this cluster was created (key was shown once):
+                  <code style={s.inlineCode}>
+                    helm install cloudoptimizer … --set apiKey=&lt;key&gt; --set endpoint={API_BASE}
+                  </code>
+                  Running the local dev stack? <code style={s.inlineCode}>./deploy.sh agent &lt;key&gt;</code>{' '}
+                  Lost the key? Delete this cluster and add it again.
                 </div>
               )}
             </div>
@@ -467,6 +496,17 @@ const s = {
   stats: { display: 'flex', gap: 24 },
   statValue: { fontSize: 20, fontWeight: 700, color: '#1C2833' },
   statLabel: { fontSize: 11, color: '#7B8A8B', textTransform: 'uppercase' },
+  stepsTitle: { fontSize: 15, fontWeight: 700, color: '#1B2631', marginBottom: 8 },
+  steps: { margin: '0 0 12px 18px', padding: 0, fontSize: 13.5, color: '#2C3E50', lineHeight: 1.7 },
+  installHint: {
+    marginTop: 10, fontSize: 12, color: '#7D6608', background: '#FEF9E7',
+    borderRadius: 6, padding: '8px 10px', lineHeight: 1.6,
+  },
+  inlineCode: {
+    display: 'block', fontFamily: 'ui-monospace, monospace', fontSize: 11,
+    background: '#FDF6E3', borderRadius: 4, padding: '3px 6px', margin: '4px 0',
+    overflowX: 'auto', whiteSpace: 'nowrap',
+  },
   warn: {
     marginTop: 12,
     fontSize: 11,
