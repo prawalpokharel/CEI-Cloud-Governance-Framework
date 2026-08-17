@@ -110,8 +110,14 @@ resource "kubernetes_deployment" "postgres" {
           }
           readiness_probe {
             exec { command = ["pg_isready", "-U", local.pg_user, "-d", local.pg_db] }
-            period_seconds        = 3
+            period_seconds        = 5
             initial_delay_seconds = 3
+            # The exec default timeout is 1s. On a shared local Docker VM the
+            # command can take longer than that while postgres itself is
+            # perfectly healthy -- observed live: 7,000+ consecutive probe
+            # timeouts against a database that was serving fine.
+            timeout_seconds   = 5
+            failure_threshold = 6
           }
           resources {
             requests = { cpu = "100m", memory = "256Mi" }
@@ -188,6 +194,7 @@ resource "kubernetes_deployment" "core_engine" {
             }
             period_seconds        = 5
             initial_delay_seconds = 5
+            timeout_seconds       = 5
             failure_threshold     = 12
           }
           resources {
@@ -248,6 +255,7 @@ resource "kubernetes_deployment" "frontend" {
             }
             period_seconds        = 5
             initial_delay_seconds = 5
+            timeout_seconds       = 5
             failure_threshold     = 12
           }
           resources {

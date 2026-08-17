@@ -56,7 +56,7 @@ build_images() {
   # than a hope.
   minikube -p "$PROFILE" image build -t cloudoptimizer/core-engine:local "$HERE/core-engine"
   minikube -p "$PROFILE" image build \
-    --build-opt build-arg=NEXT_PUBLIC_CORE_ENGINE_URL=http://localhost:30800 \
+    --build-opt build-arg=NEXT_PUBLIC_CORE_ENGINE_URL=http://localhost:8000 \
     -t cloudoptimizer/frontend:local "$HERE/frontend"
 }
 
@@ -76,23 +76,34 @@ wait_ready() {
 
 urls() {
   say "Where everything is"
-  local ip
-  ip="$(minikube -p "$PROFILE" ip)"
   cat <<EOF
-  API        http://$ip:30800        (health: http://$ip:30800/health)
-  API docs   http://$ip:30800/docs
-  Dashboard  http://$ip:30300
+  Run:   ./deploy.sh open
 
-  On Docker-driver minikube (macOS default) NodePorts are not reachable
-  from the host directly — use the tunnel commands instead:
-    minikube -p $PROFILE service -n cloudoptimizer core-engine --url
-    minikube -p $PROFILE service -n cloudoptimizer frontend --url
+  ...then use:
+    Dashboard  http://localhost:3000
+    API        http://localhost:8000   (docs at /docs)
+
+  Why the extra step: on Docker-driver minikube (the macOS default) the
+  cluster's IP lives inside Docker's VM, so NodePort URLs like
+  http://$(minikube -p "$PROFILE" ip):30300 time out from the host.
+  'open' holds port-forwards on localhost instead, which always works.
 
   Next steps:
-    1. Open the dashboard, sign up, create a cluster, copy its API key.
-    2. Feed it from any kubeconfig context (see docs/DEV.md).
-    3. Iterate with:  devspace dev
+    1. ./deploy.sh open, then visit http://localhost:3000 and sign up.
+    2. Create a cluster, copy its API key, feed it from any kubeconfig
+       context (see docs/DEV.md).
+    3. Iterate with:  devspace dev   (forwards the same ports itself)
 EOF
+}
+
+open_tunnels() {
+  say "Port-forwarding — leave this running; Ctrl-C to stop"
+  echo "  Dashboard  http://localhost:3000"
+  echo "  API        http://localhost:8000"
+  trap 'kill 0' EXIT INT TERM
+  kubectl --context "$PROFILE" -n cloudoptimizer port-forward svc/core-engine 8000:8000 &
+  kubectl --context "$PROFILE" -n cloudoptimizer port-forward svc/frontend 3000:3000 &
+  wait
 }
 
 status() {
@@ -116,7 +127,8 @@ case "${1:-deploy}" in
     wait_ready
     urls
     ;;
+  open)    open_tunnels ;;
   destroy) destroy ;;
   status)  status ;;
-  *) fail "unknown command '${1}'. Usage: ./deploy.sh [deploy|destroy|status]" ;;
+  *) fail "unknown command '${1}'. Usage: ./deploy.sh [deploy|open|destroy|status]" ;;
 esac

@@ -48,13 +48,18 @@ For a local environment that mirrors a real cluster deployment rather than
 compose:
 
 ```bash
-./deploy.sh
+./deploy.sh        # build + deploy
+./deploy.sh open   # then: port-forwards — dashboard on http://localhost:3000
 ```
 
-One command: starts minikube, builds both images directly into its container
+`deploy` starts minikube, builds both images directly into its container
 runtime (`imagePullPolicy: Never` guarantees the local build is what runs),
-applies [deploy/local/main.tf](../deploy/local/main.tf), waits for readiness,
-prints URLs. Then iterate with live code sync:
+applies [deploy/local/main.tf](../deploy/local/main.tf), and waits for
+readiness. `open` holds localhost port-forwards for the dashboard (3000) and
+API (8000) — needed because on Docker-driver minikube (the macOS default)
+the cluster IP lives inside Docker's VM and NodePort URLs time out from the
+host, which presents as "the dashboard is taking too long to respond". Then
+iterate with live code sync:
 
 ```bash
 devspace dev
