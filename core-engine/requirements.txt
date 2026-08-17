@@ -36,3 +36,8 @@ psycopg2-binary==2.9.12
 # cryptography PyJWT raises at signing time rather than at import.
 PyJWT[crypto]==2.10.1
 argon2-cffi==23.1.0
+
+# Manifest parsing for pull-request blast radius. Not transitively
+# available here: the Kubernetes client pulls PyYAML, but that is the
+# agent's dependency tree, not the server's.
+PyYAML==6.0.2

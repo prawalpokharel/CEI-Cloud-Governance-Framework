@@ -246,6 +246,121 @@ class GitHubApp:
     def default_branch(self, repo: str) -> str:
         return self._request("GET", f"/repos/{repo}")["default_branch"]
 
+    # -- pull request review ----------------------------------------------
+    #
+    # The Phase 4 direction was writing PRs. This is the reverse: reading one
+    # that a human (or an agent) already opened and reporting what it will
+    # reach. The auth, retry, and error handling are identical, so it belongs
+    # on the same client.
+
+    def get_pull_request(self, repo: str, number: int) -> dict | None:
+        payload = self._request(
+            "GET", f"/repos/{repo}/pulls/{number}", allow_404=True
+        )
+        if payload is None:
+            return None
+        return {
+            "number": payload["number"],
+            "title": payload.get("title"),
+            "base_sha": payload["base"]["sha"],
+            "head_sha": payload["head"]["sha"],
+            "base_ref": payload["base"]["ref"],
+            "head_ref": payload["head"]["ref"],
+            "state": payload.get("state"),
+            "draft": payload.get("draft", False),
+        }
+
+    def pull_request_files(self, repo: str, number: int) -> list[dict[str, Any]]:
+        """
+        Every file the pull request touches.
+
+        Paginated at 100 per page and followed to the end: a migration PR that
+        touches 300 manifests is exactly the change most worth analysing, and
+        silently reading the first hundred would report a blast radius that is
+        confidently too small.
+        """
+        files: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            batch = self._request(
+                "GET", f"/repos/{repo}/pulls/{number}/files?per_page=100&page={page}"
+            )
+            if not batch:
+                break
+            files.extend({
+                "path": entry["filename"],
+                "status": entry["status"],
+                "previous_path": entry.get("previous_filename"),
+                "additions": entry.get("additions", 0),
+                "deletions": entry.get("deletions", 0),
+            } for entry in batch)
+            if len(batch) < 100:
+                break
+            page += 1
+            if page > 30:  # 3000 files; beyond this the diff is not reviewable
+                break
+        return files
+
+    def create_check_run(
+        self,
+        repo: str,
+        head_sha: str,
+        *,
+        name: str,
+        conclusion: str,
+        title: str,
+        summary: str,
+        text: str | None = None,
+    ) -> dict:
+        """
+        Publish a check run against the head commit.
+
+        A check run rather than a status: it carries a title, a markdown body,
+        and its own tab, so the reasoning travels with the verdict. A red mark
+        with no explanation of what it will break gets overridden and then
+        ignored.
+        """
+        return self._request(
+            "POST",
+            f"/repos/{repo}/check-runs",
+            body={
+                "name": name,
+                "head_sha": head_sha,
+                "status": "completed",
+                "conclusion": conclusion,
+                "output": {
+                    "title": title[:255],
+                    "summary": summary[:65535],
+                    **({"text": text[:65535]} if text else {}),
+                },
+            },
+        )
+
+    def upsert_pull_request_comment(
+        self, repo: str, number: int, body: str, *, marker: str
+    ) -> dict:
+        """
+        Post a comment, replacing this bot's previous one.
+
+        ``marker`` is an HTML comment embedded in the body. Without it, every
+        push appends another analysis and the review turns into a wall of
+        near-identical bot comments -- which is how teams end up muting the
+        integration that was supposed to help them.
+        """
+        existing = self._request(
+            "GET", f"/repos/{repo}/issues/{number}/comments?per_page=100"
+        ) or []
+        for comment in existing:
+            if marker in (comment.get("body") or ""):
+                return self._request(
+                    "PATCH",
+                    f"/repos/{repo}/issues/comments/{comment['id']}",
+                    body={"body": body},
+                )
+        return self._request(
+            "POST", f"/repos/{repo}/issues/{number}/comments", body={"body": body}
+        )
+
     def _branch_head(self, repo: str, branch: str) -> str | None:
         ref = self._request(
             "GET", f"/repos/{repo}/git/ref/heads/{branch}", allow_404=True

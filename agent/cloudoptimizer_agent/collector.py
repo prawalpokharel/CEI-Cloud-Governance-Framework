@@ -33,6 +33,20 @@ log = logging.getLogger(__name__)
 
 WORKLOAD_KINDS = ("Deployment", "StatefulSet", "DaemonSet")
 
+# Label and annotation keys that identify who owns a workload.
+#
+# A curated allowlist, not "all annotations". Annotations are a dumping
+# ground: `kubectl.kubernetes.io/last-applied-configuration` holds the entire
+# submitted manifest, environment variables included, so collecting
+# annotations wholesale would smuggle out exactly the values redact.py exists
+# to keep in. Everything here is a name or a team handle by construction.
+OWNERSHIP_KEYS = (
+    "owner", "owners", "team", "squad", "contact", "email", "slack",
+    "app.kubernetes.io/part-of", "app.kubernetes.io/managed-by",
+    "app.kubernetes.io/name", "app.kubernetes.io/component",
+    "argocd.argoproj.io/instance", "meta.helm.sh/release-name",
+)
+
 
 def parse_cpu(value: str | None) -> float | None:
     """Kubernetes CPU quantity -> cores."""
@@ -70,6 +84,114 @@ def parse_memory(value: str | None) -> int | None:
         return int(float(text))
     except ValueError:
         return None
+
+
+def ownership_metadata(labels: dict | None, annotations: dict | None) -> dict:
+    """
+    Extract the subset of labels and annotations that name an owner.
+
+    Values are truncated: a team handle is short, and anything long is either
+    a description or something that does not belong in an owner field.
+    """
+    found = {}
+    for source in (labels or {}, annotations or {}):
+        for key, value in source.items():
+            if key in OWNERSHIP_KEYS and value:
+                found[key] = str(value)[:120]
+    return found
+
+
+def config_references(pod_spec) -> dict[str, list[str]]:
+    """
+    Which ConfigMaps and Secrets a pod spec reads, by name only.
+
+    Names, never contents -- the RBAC role grants no access to Secret bodies
+    and the collector deliberately does not read ConfigMap bodies either. The
+    reason to collect this at all is fan-in: a ConfigMap twelve workloads
+    mount is a single point of failure that no Kubernetes view surfaces,
+    because from each workload's side it looks like an ordinary reference.
+    """
+    config_maps: set[str] = set()
+    secrets: set[str] = set()
+
+    for container in (pod_spec.containers or []) + (pod_spec.init_containers or []):
+        for source in (container.env_from or []):
+            if getattr(source, "config_map_ref", None):
+                config_maps.add(source.config_map_ref.name)
+            if getattr(source, "secret_ref", None):
+                secrets.add(source.secret_ref.name)
+        for env in (container.env or []):
+            value_from = getattr(env, "value_from", None)
+            if not value_from:
+                continue
+            if getattr(value_from, "config_map_key_ref", None):
+                config_maps.add(value_from.config_map_key_ref.name)
+            if getattr(value_from, "secret_key_ref", None):
+                secrets.add(value_from.secret_key_ref.name)
+
+    for volume in (pod_spec.volumes or []):
+        if getattr(volume, "config_map", None):
+            config_maps.add(volume.config_map.name)
+        if getattr(volume, "secret", None):
+            secrets.add(volume.secret.secret_name)
+        projected = getattr(volume, "projected", None)
+        for source in (getattr(projected, "sources", None) or []):
+            if getattr(source, "config_map", None):
+                config_maps.add(source.config_map.name)
+            if getattr(source, "secret", None):
+                secrets.add(source.secret.name)
+
+    return {
+        "config_maps": sorted(n for n in config_maps if n),
+        "secrets": sorted(n for n in secrets if n),
+    }
+
+
+def probe_coverage(containers) -> dict:
+    """
+    Probe presence per container, counted rather than reduced to a boolean.
+
+    A workload where one of three containers has a readiness probe is not
+    "has readiness probe" in any useful sense: traffic is routed to the pod as
+    soon as the probed container is up, while the unprobed ones may still be
+    starting. Counts keep that distinction visible.
+    """
+    containers = list(containers or [])
+    return {
+        "containers": len(containers),
+        "with_readiness": sum(1 for c in containers if c.readiness_probe),
+        "with_liveness": sum(1 for c in containers if c.liveness_probe),
+        "with_startup": sum(1 for c in containers if c.startup_probe),
+    }
+
+
+def spread_policy(pod_spec) -> dict:
+    """
+    Whether anything stops every replica landing on one node.
+
+    Three mechanisms do it -- topology spread constraints, pod anti-affinity,
+    and (weakly) a node selector splitting the fleet. Presence is recorded
+    rather than evaluated; whether the policy is *sufficient* depends on the
+    observed placement, which is a server-side question.
+    """
+    affinity = getattr(pod_spec, "affinity", None)
+    pod_anti = getattr(affinity, "pod_anti_affinity", None) if affinity else None
+
+    required = list(
+        getattr(pod_anti, "required_during_scheduling_ignored_during_execution", None) or []
+    )
+    preferred = list(
+        getattr(pod_anti, "preferred_during_scheduling_ignored_during_execution", None) or []
+    )
+    constraints = list(getattr(pod_spec, "topology_spread_constraints", None) or [])
+
+    return {
+        "topology_spread_constraints": len(constraints),
+        "topology_keys": sorted({c.topology_key for c in constraints if c.topology_key}),
+        "anti_affinity_required": len(required),
+        "anti_affinity_preferred": len(preferred),
+        "priority_class": getattr(pod_spec, "priority_class_name", None),
+    }
 
 
 def workload_key(namespace: str, kind: str, name: str) -> str:
@@ -278,6 +400,15 @@ class ClusterCollector:
                 "_env_values": env_values,  # stripped before transmission
                 "service_account": pod_spec.service_account_name,
                 "node_selector": pod_spec.node_selector or {},
+                # Resilience signals. Collected so the server can answer "what
+                # stops this from being a single point of failure" without a
+                # second round trip to the cluster.
+                "ownership": ownership_metadata(
+                    item.metadata.labels, item.metadata.annotations
+                ),
+                "probes": probe_coverage(containers),
+                "spread": spread_policy(pod_spec),
+                "config_refs": config_references(pod_spec),
             })
         return out
 
@@ -293,6 +424,101 @@ class ClusterCollector:
             "DaemonSet", self.apps.list_daemon_set_for_all_namespaces().items
         )
         return workloads
+
+    def collect_disruption_budgets(self) -> list[dict]:
+        """
+        PodDisruptionBudgets, with the field that actually matters.
+
+        ``disruptions_allowed`` is computed by the controller against live pod
+        health, and it is the only number that says what the PDB will do right
+        now. A budget of ``minAvailable: 1`` on a single-replica Deployment
+        reports 0 allowed disruptions -- it does not protect the workload, it
+        blocks every node drain, and the cluster upgrade that stalls three
+        months later is never traced back to it.
+        """
+        return self._optional_list(
+            "poddisruptionbudgets",
+            lambda: client.PolicyV1Api().list_pod_disruption_budget_for_all_namespaces().items,
+            self._pdb_record,
+        )
+
+    @staticmethod
+    def _pdb_record(item) -> dict:
+        spec, status = item.spec, item.status
+        selector = getattr(spec.selector, "match_labels", None) or {} if spec.selector else {}
+        return {
+            "name": item.metadata.name,
+            "namespace": item.metadata.namespace,
+            "selector": selector,
+            "min_available": str(spec.min_available) if spec.min_available is not None else None,
+            "max_unavailable": str(spec.max_unavailable) if spec.max_unavailable is not None else None,
+            "disruptions_allowed": getattr(status, "disruptions_allowed", None),
+            "current_healthy": getattr(status, "current_healthy", None),
+            "desired_healthy": getattr(status, "desired_healthy", None),
+            "expected_pods": getattr(status, "expected_pods", None),
+        }
+
+    def collect_autoscalers(self) -> list[dict]:
+        """
+        HorizontalPodAutoscalers and whether they are currently pinned.
+
+        A HPA sitting at ``current == max`` is not autoscaling; it ran out of
+        room and is silently absorbing load it cannot shed. That reads as
+        healthy on every dashboard right up until it does not.
+        """
+        return self._optional_list(
+            "horizontalpodautoscalers",
+            lambda: client.AutoscalingV2Api().list_horizontal_pod_autoscaler_for_all_namespaces().items,
+            self._hpa_record,
+        )
+
+    @staticmethod
+    def _hpa_record(item) -> dict:
+        spec, status = item.spec, item.status
+        target = spec.scale_target_ref
+        return {
+            "name": item.metadata.name,
+            "namespace": item.metadata.namespace,
+            "target_kind": getattr(target, "kind", None),
+            "target_name": getattr(target, "name", None),
+            "min_replicas": spec.min_replicas,
+            "max_replicas": spec.max_replicas,
+            "current_replicas": getattr(status, "current_replicas", None),
+            "desired_replicas": getattr(status, "desired_replicas", None),
+        }
+
+    def _optional_list(self, resource: str, fetch, to_record) -> list[dict]:
+        """
+        Collect a resource the agent can run without.
+
+        These collections were added after the chart shipped, so an agent
+        upgraded ahead of its ClusterRole will be denied. Losing one signal is
+        an acceptable outcome; failing the whole snapshot -- and with it CEI,
+        cost, and health for the entire cluster -- is not. A 403 is logged once
+        per cycle at warning level with the fix, and the rest proceeds.
+        """
+        try:
+            items = fetch()
+        except ApiException as exc:
+            if exc.status in (403, 404):
+                log.warning(
+                    "%s not collected (HTTP %s). Upgrade the agent's ClusterRole "
+                    "to grant get/list/watch on %s; other analysis is unaffected.",
+                    resource, exc.status, resource,
+                )
+            else:
+                log.warning("%s not collected: %s", resource, exc)
+            return []
+        except Exception as exc:  # API group absent on very old clusters
+            log.warning("%s not collected: %s", resource, exc)
+            return []
+
+        out = []
+        for item in items:
+            if not self.config.wants_namespace(item.metadata.namespace):
+                continue
+            out.append(to_record(item))
+        return out
 
     def collect_pods(self) -> list[dict]:
         """

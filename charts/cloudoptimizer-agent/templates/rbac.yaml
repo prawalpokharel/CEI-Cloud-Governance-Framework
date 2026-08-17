@@ -47,6 +47,24 @@ rules:
       - networkpolicies
     verbs: ["get", "list", "watch"]
 
+  # Resilience posture. A PodDisruptionBudget is how a cluster says "do not
+  # take all of these down at once" and a HorizontalPodAutoscaler is how it
+  # says "this absorbs load by growing"; without them the agent cannot tell a
+  # workload that is protected from one that merely has not failed yet.
+  #
+  # Both are declarations about availability. Neither exposes application
+  # data, which is why they are acceptable additions to a role that still
+  # cannot read a Secret or a ConfigMap.
+  - apiGroups: ["policy"]
+    resources:
+      - poddisruptionbudgets
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["get", "list", "watch"]
+
   # Actual CPU/memory usage. Optional: metrics-server may not be installed,
   # and the agent degrades to requested/limit values when it is absent.
   - apiGroups: ["metrics.k8s.io"]

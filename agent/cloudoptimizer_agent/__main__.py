@@ -67,6 +67,8 @@ def run_cycle(
     pods = collector.collect_pods()
     ingresses = collector.collect_ingresses()
     network_policies = collector.collect_network_policies()
+    disruption_budgets = collector.collect_disruption_budgets()
+    autoscalers = collector.collect_autoscalers()
 
     # Resolve env references into service references, then drop the values.
     attach_service_references(workloads, services)
@@ -94,6 +96,8 @@ def run_cycle(
         pods=pods,
         ingresses=ingresses,
         network_policies=network_policies,
+        disruption_budgets=disruption_budgets,
+        autoscalers=autoscalers,
         metrics_available=metrics_available,
         metrics_reason=metrics_reason,
     )

@@ -33,6 +33,11 @@ from ..db.models import (
 from ..services import audit
 from ..services.cost import analyze_cluster_cost
 from ..services.health import diagnose
+from ..services import blast_radius as blast_radius_service
+from ..services import ownership as ownership_service
+from ..services import pr_review as pr_review_service
+from ..services import resilience as resilience_service
+from ..services import safe_to_delete as safe_to_delete_service
 from ..services.live_cei import CentralityMode, _history_for, compute_live_cei
 from ..services.network import analyze_segmentation, generate_all_policies
 from ..services.policy import plan_remediation
@@ -70,6 +75,25 @@ class LoginRequest(BaseModel):
 
 class CreateClusterRequest(BaseModel):
     name: str
+
+
+class ManifestFile(BaseModel):
+    path: str
+    # Both sides of the change. Either may be absent: a new file has no
+    # `before`, a deleted one no `after`. Whole documents rather than a patch
+    # -- a `replicas:` line in a hunk says nothing about which object in a
+    # multi-document file it belongs to.
+    before: str | None = None
+    after: str | None = None
+
+
+class PullRequestReviewRequest(BaseModel):
+    files: list[ManifestFile]
+    # Manifests routinely omit namespace and get it from kustomize or the
+    # apply command. Guessing "default" silently would resolve nothing on a
+    # cluster that uses real namespaces, so the caller can say.
+    default_namespace: str = "default"
+    render_markdown: bool = False
 
 
 # --------------------------------------------------------------------------
@@ -484,6 +508,173 @@ async def cluster_cei(
     payload["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     payload["captured_at"] = latest.captured_at.isoformat()
     return payload
+
+
+@router.get("/clusters/{cluster_id}/blast-radius")
+async def cluster_blast_radius(
+    cluster_id: str,
+    workload: str | None = None,
+    limit: int = 10,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    What breaks if a workload changes.
+
+    Without `workload`, ranks the cluster by whose failure costs the most.
+    That ranking is deliberately not the CEI ranking: CEI judges the workload
+    itself, this judges what it takes down with it, and a stable well-governed
+    service half the cluster calls belongs at the top of one and not the other.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    if workload:
+        radius = blast_radius_service.compute_blast_radius(
+            snapshot, workload, cei_by_workload
+        )
+        if not radius.exists:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"Workload {workload!r} is not in the latest snapshot. "
+                    "Keys look like 'namespace/Kind/name'."
+                ),
+            )
+        result = radius.to_dict()
+    else:
+        result = {
+            "ranked": blast_radius_service.rank_by_blast_radius(
+                snapshot, cei_by_workload, limit=limit
+            )
+        }
+
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/resilience")
+async def cluster_resilience(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Single points of failure nobody labelled as one.
+
+    Distinct from /health, which reports what is failing now. This reports
+    what is fine now and structurally unable to survive an ordinary node
+    drain.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    result = resilience_service.analyze(snapshot, cei_by_workload)
+    # A v1 agent sends neither collection. Saying so beats reporting zero
+    # findings, which reads as a clean bill of health.
+    if "disruption_budgets" not in snapshot and "autoscalers" not in snapshot:
+        result["summary"]["note"] = (
+            "This snapshot predates PodDisruptionBudget and "
+            "HorizontalPodAutoscaler collection. Upgrade the agent to at "
+            "least schema version 2 for disruption and autoscaling findings."
+        )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/ownership")
+async def cluster_ownership(
+    cluster_id: str,
+    include_system: bool = False,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Critical dependencies with no owner, no source of truth, or no identifiable image."""
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    result = ownership_service.analyze(
+        snapshot, cei_by_workload, include_system_namespaces=include_system
+    )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.get("/clusters/{cluster_id}/cost/safety")
+async def cluster_cost_safety(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Cost recommendations with a safety verdict attached.
+
+    Reports the claimed saving and the safe saving separately. The gap is the
+    money a utilization-only tool would have told someone to take, and the
+    outage they would have bought with it.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    result = safe_to_delete_service.review_cost_recommendations(
+        snapshot, analyze_cluster_cost(snapshot), cei_by_workload
+    )
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
+
+
+@router.post("/clusters/{cluster_id}/pr-review")
+async def cluster_pr_review(
+    cluster_id: str,
+    payload: PullRequestReviewRequest,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Blast radius of a proposed change, against this cluster's live graph.
+
+    Accepts manifests directly rather than requiring a GitHub App, so the
+    analysis can be driven from any CI system -- and so it can be tried
+    without installing anything.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    result = pr_review_service.review(
+        snapshot,
+        [f.model_dump() for f in payload.files],
+        cei_by_workload,
+        default_namespace=payload.default_namespace,
+    )
+    if payload.render_markdown:
+        result["markdown"] = pr_review_service.render_markdown(result)
+    result["cluster"] = {"id": str(cluster.id), "name": cluster.name}
+    result["captured_at"] = latest.captured_at.isoformat()
+    return result
 
 
 @router.get("/clusters/{cluster_id}/cost")

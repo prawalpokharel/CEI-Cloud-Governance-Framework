@@ -15,7 +15,14 @@ from typing import Any
 from .inference import edge_summary, infer_edges
 from .version import AGENT_VERSION
 
-SNAPSHOT_SCHEMA_VERSION = 1
+# 2 adds resilience state: PodDisruptionBudgets, HorizontalPodAutoscalers, and
+# per-workload probe/spread/ownership/config-reference fields.
+#
+# Purely additive, and the server treats every one of them as optional. Agents
+# roll out on the operator's schedule, not ours -- a v1 agent reporting to a
+# server that understands v2 has to keep working, and a v2 agent whose
+# ClusterRole has not been updated yet simply sends empty lists.
+SNAPSHOT_SCHEMA_VERSION = 2
 
 
 def build_snapshot(
@@ -32,6 +39,8 @@ def build_snapshot(
     network_policies: list[dict],
     metrics_available: bool,
     metrics_reason: str | None,
+    disruption_budgets: list[dict] | None = None,
+    autoscalers: list[dict] | None = None,
 ) -> dict[str, Any]:
     edges = infer_edges(workloads, services, ingresses)
 
@@ -60,12 +69,16 @@ def build_snapshot(
         "pods": pods,
         "ingresses": ingresses,
         "network_policies": network_policies,
+        "disruption_budgets": disruption_budgets or [],
+        "autoscalers": autoscalers or [],
         "edges": edges,
         "summary": {
             "nodes": len(nodes),
             "workloads": len(workloads),
             "services": len(services),
             "pods": len(pods),
+            "disruption_budgets": len(disruption_budgets or []),
+            "autoscalers": len(autoscalers or []),
             "edges": edge_summary(edges),
         },
     }
