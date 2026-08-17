@@ -181,6 +181,32 @@ install_agent() {
 EOF
 }
 
+demo_cluster() {
+  # A production-shaped estate to point the agent at: twelve services across
+  # two namespaces with REAL runtime dependencies (readiness probes check
+  # upstream reachability, so failures genuinely cascade) and the flaws a
+  # real estate carries -- a hub with no PodDisruptionBudget, a service
+  # nobody owns on a :latest tag, an idle over-provisioned worker, a
+  # single-replica user-facing gateway. Every dashboard panel gets something
+  # true to say.
+  say "Applying the production-sim demo estate"
+  kubectl --context "$PROFILE" apply -f "$HERE/deploy/demo-cluster/production-sim.yaml"
+  say "Waiting for the estate to settle (data tier first, then the cascade)"
+  kubectl --context "$PROFILE" -n shop rollout status statefulset/orders-db --timeout=240s || true
+  for d in session-cache catalog checkout payments search email-worker api-gateway; do
+    kubectl --context "$PROFILE" -n shop rollout status "deploy/$d" --timeout=240s || true
+  done
+  kubectl --context "$PROFILE" -n platform rollout status deploy/legacy-ledger --timeout=240s || true
+  say "Done"
+  cat <<EOF
+  The agent's next snapshot (within ~60s) picks the estate up. Refresh the
+  dashboard: topology, CEI ranking, health, resilience findings, an
+  ownerless-service finding, cost waste, remediation proposals, and
+  prescriptions all light up from this estate. Remove it with:
+    kubectl --context $PROFILE delete -f deploy/demo-cluster/production-sim.yaml
+EOF
+}
+
 status() {
   kubectl -n cloudoptimizer get deploy,svc,pvc 2>/dev/null \
     || echo "nothing deployed (namespace 'cloudoptimizer' absent on context '$PROFILE')"
@@ -204,7 +230,8 @@ case "${1:-deploy}" in
     ;;
   open)    open_tunnels ;;
   agent)   install_agent "${2:-}" ;;
+  demo-cluster) demo_cluster ;;
   destroy) destroy ;;
   status)  status ;;
-  *) fail "unknown command '${1}'. Usage: ./deploy.sh [deploy|open|agent <API_KEY>|destroy|status]" ;;
+  *) fail "unknown command '${1}'. Usage: ./deploy.sh [deploy|open|agent <API_KEY>|demo-cluster|destroy|status]" ;;
 esac

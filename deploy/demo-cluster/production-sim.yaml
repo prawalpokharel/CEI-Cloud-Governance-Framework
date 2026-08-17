@@ -1,0 +1,352 @@
+# A production-shaped demo estate for CloudOptimizer.
+#
+# Apply with:  ./deploy.sh demo-cluster
+#
+# Twelve services across two namespaces, wired with REAL runtime
+# dependencies: each service's readiness probe checks TCP reachability of
+# its upstreams, so failures genuinely cascade the way they do in
+# production — which is what makes /diagnose, blast radius, and the chaos
+# harness demonstrable against it.
+#
+# It also carries the flaws a real estate carries, ON PURPOSE, so every
+# analysis panel has something true to say:
+#
+#   orders-db     — the hub: 5 dependents, stateful, NO PodDisruptionBudget
+#                   → resilience finding + a remediation PR proposal
+#   legacy-ledger — :latest image, no ownership labels, 2 dependents
+#                   → ownerless-critical-dependency, control-plane finding
+#   session-cache — minAvailable == replicas PDB → blocks every node drain
+#   email-worker  — 6 replicas, idle → cost waste + safe-to-delete candidate
+#   api-gateway   — single replica, user-facing → SPOF + prescription
+#   checkout      — CPU-only HPA while depending on orders-db → lagging signal
+#   shop-config   — ConfigMap mounted by 5 services → fan-in finding
+#
+# Everything is tiny (busybox httpd, ~12Mi per pod) so the whole estate fits
+# beside the platform on a 2-CPU minikube.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop
+  labels: {env: production-sim}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform
+  labels: {env: production-sim}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shop-config
+  namespace: shop
+data:
+  LOG_LEVEL: "info"
+  FEATURE_FLAGS: "checkout_v2,fast_search"
+---
+# ── data tier ──────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: orders-db
+  namespace: shop
+  labels: {app: orders-db, team: storage, "app.kubernetes.io/managed-by": Helm}
+spec:
+  serviceName: orders-db
+  replicas: 2
+  selector: {matchLabels: {app: orders-db}}
+  template:
+    metadata: {labels: {app: orders-db}}
+    spec:
+      containers:
+        - name: db
+          image: busybox:1.36
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          readinessProbe: {exec: {command: ["true"]}, periodSeconds: 5, timeoutSeconds: 5}
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session-cache
+  namespace: shop
+  labels: {app: session-cache, team: storage, "app.kubernetes.io/managed-by": Helm}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: session-cache}}
+  template:
+    metadata: {labels: {app: session-cache}}
+    spec:
+      containers:
+        - name: cache
+          image: busybox:1.36
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          readinessProbe: {exec: {command: ["true"]}, periodSeconds: 5, timeoutSeconds: 5}
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+---
+# The anti-pattern the analysis flags: satisfied only when nothing is ever
+# evicted. Blocks every node drain while protecting nothing.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: session-cache-pdb
+  namespace: shop
+spec:
+  minAvailable: 2
+  selector: {matchLabels: {app: session-cache}}
+---
+# legacy: mutable tag, zero ownership labels, hand-applied. The service
+# nobody owns that two things depend on.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: legacy-ledger
+  namespace: platform
+  labels: {app: legacy-ledger}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: legacy-ledger}}
+  template:
+    metadata: {labels: {app: legacy-ledger}}
+    spec:
+      containers:
+        - name: app
+          image: busybox:latest
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          readinessProbe: {exec: {command: ["true"]}, periodSeconds: 5, timeoutSeconds: 5}
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+---
+# ── application tier (probes check real upstreams) ─────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+  namespace: shop
+  labels: {app: catalog, team: shop, "app.kubernetes.io/managed-by": Helm}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: catalog}}
+  template:
+    metadata: {labels: {app: catalog}}
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          env:
+            - {name: ORDERS_DB_URL, value: "http://orders-db:8080"}
+            - {name: CACHE_URL, value: "http://session-cache:8080"}
+          envFrom: [{configMapRef: {name: shop-config}}]
+          readinessProbe:
+            exec: {command: ["sh","-c","nc -z orders-db 8080 && nc -z session-cache 8080"]}
+            periodSeconds: 5
+            timeoutSeconds: 5
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: shop
+  labels: {app: checkout, team: shop, "app.kubernetes.io/managed-by": Helm}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: checkout}}
+  template:
+    metadata: {labels: {app: checkout}}
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          env:
+            - {name: ORDERS_DB_URL, value: "http://orders-db:8080"}
+            - {name: LEDGER_URL, value: "http://legacy-ledger.platform:8080"}
+          envFrom: [{configMapRef: {name: shop-config}}]
+          readinessProbe:
+            exec: {command: ["sh","-c","nc -z orders-db 8080"]}
+            periodSeconds: 5
+            timeoutSeconds: 5
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+---
+# CPU-only HPA on a workload whose real failure mode is upstream: the
+# lagging-signal finding.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: checkout-hpa
+  namespace: shop
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: checkout}
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 75}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments
+  namespace: shop
+  labels: {app: payments, team: payments, "app.kubernetes.io/managed-by": Helm}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: payments}}
+  template:
+    metadata: {labels: {app: payments}}
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          env:
+            - {name: ORDERS_DB_URL, value: "http://orders-db:8080"}
+            - {name: LEDGER_URL, value: "http://legacy-ledger.platform:8080"}
+          envFrom: [{configMapRef: {name: shop-config}}]
+          readinessProbe:
+            exec: {command: ["sh","-c","nc -z orders-db 8080"]}
+            periodSeconds: 5
+            timeoutSeconds: 5
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: payments-pdb
+  namespace: shop
+spec:
+  maxUnavailable: 1
+  selector: {matchLabels: {app: payments}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search
+  namespace: shop
+  labels: {app: search, team: shop, "app.kubernetes.io/managed-by": Helm}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: search}}
+  template:
+    metadata: {labels: {app: search}}
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          env: [{name: CATALOG_URL, value: "http://catalog:8080"}]
+          envFrom: [{configMapRef: {name: shop-config}}]
+          readinessProbe:
+            exec: {command: ["sh","-c","nc -z catalog 8080"]}
+            periodSeconds: 5
+            timeoutSeconds: 5
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+---
+# Idle over-provisioned worker: 6 replicas of nothing much. Cost waste that
+# safe-to-delete clears for removal (nothing depends on it).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email-worker
+  namespace: shop
+  labels: {app: email-worker, team: shop, "app.kubernetes.io/managed-by": Helm}
+spec:
+  replicas: 6
+  selector: {matchLabels: {app: email-worker}}
+  template:
+    metadata: {labels: {app: email-worker}}
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          env: [{name: ORDERS_DB_URL, value: "http://orders-db:8080"}]
+          readinessProbe: {exec: {command: ["true"]}, periodSeconds: 10, timeoutSeconds: 5}
+          resources: {requests: {cpu: 50m, memory: 32Mi}}
+---
+# ── web tier ───────────────────────────────────────────────────────────────
+# Single replica, user-facing: the SPOF the prescriptions engine fixes first.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: shop
+  labels: {app: api-gateway, team: shop, "app.kubernetes.io/managed-by": Helm}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: api-gateway}}
+  template:
+    metadata: {labels: {app: api-gateway}}
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh","-c","mkdir -p /w && echo ok > /w/index.html && httpd -f -p 8080 -h /w"]
+          env:
+            - {name: CATALOG_URL, value: "http://catalog:8080"}
+            - {name: CHECKOUT_URL, value: "http://checkout:8080"}
+            - {name: PAYMENTS_URL, value: "http://payments:8080"}
+            - {name: SEARCH_URL, value: "http://search:8080"}
+          envFrom: [{configMapRef: {name: shop-config}}]
+          readinessProbe:
+            exec: {command: ["sh","-c","nc -z catalog 8080 && nc -z checkout 8080"]}
+            periodSeconds: 5
+            timeoutSeconds: 5
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+---
+# ── services ───────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata: {name: orders-db, namespace: shop}
+spec: {selector: {app: orders-db}, ports: [{port: 8080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: session-cache, namespace: shop}
+spec: {selector: {app: session-cache}, ports: [{port: 8080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: legacy-ledger, namespace: platform}
+spec: {selector: {app: legacy-ledger}, ports: [{port: 8080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: catalog, namespace: shop}
+spec: {selector: {app: catalog}, ports: [{port: 8080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: checkout, namespace: shop}
+spec: {selector: {app: checkout}, ports: [{port: 8080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: payments, namespace: shop}
+spec: {selector: {app: payments}, ports: [{port: 8080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: search, namespace: shop}
+spec: {selector: {app: search}, ports: [{port: 8080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: api-gateway, namespace: shop}
+spec: {selector: {app: api-gateway}, ports: [{port: 8080}]}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: storefront
+  namespace: shop
+spec:
+  rules:
+    - host: shop.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: api-gateway, port: {number: 8080}}}

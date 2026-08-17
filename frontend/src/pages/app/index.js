@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { api, clearToken, getToken, setToken } from '../../lib/appApi';
+import { API_BASE, api, clearToken, getToken, setToken } from '../../lib/appApi';
 
 /**
  * /app — product dashboard.
@@ -269,12 +269,18 @@ function AddCluster({ onCreated }) {
 }
 
 function KeyReveal({ result, onDismiss }) {
+  // The endpoint is whatever API origin THIS dashboard is talking to, so
+  // the copied command points the agent at the same deployment the key came
+  // from. Omitting it made every self-hosted install silently target the
+  // hosted production URL, where the key does not exist.
   const command = [
     'helm install cloudoptimizer \\',
     '  oci://ghcr.io/prawalpokharel/charts/cloudoptimizer-agent \\',
     '  --namespace cloudoptimizer --create-namespace \\',
-    `  --set apiKey=${result.api_key}`,
+    `  --set apiKey=${result.api_key} \\`,
+    `  --set endpoint=${API_BASE}`,
   ].join('\n');
+  const localCommand = `./deploy.sh agent ${result.api_key}`;
 
   return (
     <div style={s.keyPanel}>
@@ -284,6 +290,16 @@ function KeyReveal({ result, onDismiss }) {
         you lose it, delete the cluster and add it again.
       </p>
       <pre style={s.code}>{command}</pre>
+      <p style={s.keyLocalNote}>
+        Running the local dev stack on this machine? The one-liner instead:
+      </p>
+      <pre style={s.code}>{localCommand}</pre>
+      <p style={s.keyAfter}>
+        Within about a minute of the agent starting, this cluster shows
+        connected and the dashboard fills with its topology, criticality
+        ranking, health, and cost — refresh to see it arrive. The agent is
+        read-only: it can never modify your cluster.
+      </p>
       <div style={s.keyActions}>
         <button
           style={s.primary}
@@ -488,5 +504,7 @@ const s = {
     overflowX: 'auto',
     lineHeight: 1.6,
   },
+  keyLocalNote: { fontSize: 12.5, color: '#7F8C8D', margin: '10px 0 4px' },
+  keyAfter: { fontSize: 12.5, color: '#5D6D7E', margin: '10px 0 2px', lineHeight: 1.5 },
   keyActions: { display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 },
 };
