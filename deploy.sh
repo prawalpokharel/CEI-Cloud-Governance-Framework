@@ -100,9 +100,28 @@ open_tunnels() {
   say "Port-forwarding — leave this running; Ctrl-C to stop"
   echo "  Dashboard  http://localhost:3000"
   echo "  API        http://localhost:8000"
+  # kubectl port-forward pins the specific POD it resolves at startup and
+  # dies when that pod is replaced -- which is every rollout, every image
+  # rebuild, every devspace restart. Observed live: a forward bound to a pod
+  # a rollout had just terminated failed on first connection with "No such
+  # container". Each forward therefore runs in a reconnect loop: a dropped
+  # forward re-resolves the service to the CURRENT pod within a second, and
+  # a rollout costs one refresh in the browser instead of a dead terminal.
   trap 'kill 0' EXIT INT TERM
-  kubectl --context "$PROFILE" -n cloudoptimizer port-forward svc/core-engine 8000:8000 &
-  kubectl --context "$PROFILE" -n cloudoptimizer port-forward svc/frontend 3000:3000 &
+  ( while true; do
+      kubectl --context "$PROFILE" -n cloudoptimizer \
+        port-forward svc/core-engine 8000:8000 2>&1 \
+        | grep --line-buffered -v "^Handling connection" || true
+      echo "  [api] forward dropped (pod replaced?) — reconnecting"
+      sleep 1
+    done ) &
+  ( while true; do
+      kubectl --context "$PROFILE" -n cloudoptimizer \
+        port-forward svc/frontend 3000:3000 2>&1 \
+        | grep --line-buffered -v "^Handling connection" || true
+      echo "  [dashboard] forward dropped (pod replaced?) — reconnecting"
+      sleep 1
+    done ) &
   wait
 }
 
