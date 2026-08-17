@@ -488,7 +488,7 @@ afternoon.
 | Log collection | Not started. |
 | SAST | Not started. |
 | Automated fix PRs | Built and tested; requires a GitHub App and is opt-in per repository. |
-| Writing to your cluster | **Not implemented at all.** The agent is read-only and has no write permissions. |
+| Writing to your cluster | **Not implemented at all.** The agent is read-only and has no write permissions. CloudOptimizer *acts* by opening pull requests in your repository through the GitHub App — changes you review and merge, never changes applied to the cluster behind your back. |
 
 Multi-cloud validation on EKS, AKS, and GKE has a runbook
 ([`VALIDATION.md`](VALIDATION.md)) but has not been executed. Everything above

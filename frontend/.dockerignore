@@ -1,0 +1,7 @@
+# The build context must not include local artifacts: node_modules is
+# platform-specific (native deps built for the host, not the container) and
+# .next is the previous build. Copying either produces a container that
+# works by coincidence or not at all.
+node_modules
+.next
+coverage

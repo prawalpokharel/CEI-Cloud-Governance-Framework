@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import ClusterTopologyMap from '../../components/app/ClusterTopologyMap';
+import DriftPanel from '../../components/app/DriftPanel';
 import { api, getToken, isSandbox } from '../../lib/appApi';
 
 // Beyond this a force-directed layout is a hairball: nodes overlap, labels
@@ -30,6 +31,7 @@ export default function ClusterView() {
   const [cost, setCost] = useState(null);
   const [health, setHealth] = useState(null);
   const [vulns, setVulns] = useState(null);
+  const [drift, setDrift] = useState(null);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('cei');
   const [namespace, setNamespace] = useState('all');
@@ -62,6 +64,10 @@ export default function ClusterView() {
         .vulnerabilities(clusterId)
         .then((v) => active && setVulns(v))
         .catch(() => active && setVulns(null));
+      api
+        .drift(clusterId)
+        .then((d) => active && setDrift(d))
+        .catch(() => active && setDrift(null));
       api
         .cei(clusterId, mode)
         // A cluster with no snapshot yet returns 409; that is a normal
@@ -312,6 +318,8 @@ export default function ClusterView() {
           )}
         </div>
       )}
+
+      <DriftPanel drift={drift} styles={s} />
 
       {health && health.summary.total > 0 && (
         <div style={s.panel}>

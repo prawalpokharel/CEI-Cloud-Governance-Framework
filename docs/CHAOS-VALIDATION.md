@@ -86,3 +86,17 @@ argument for this whole method.
   predicted, so agreement is a lower bound.
 - Readiness is the only impact signal. Latency degradation, error-rate rises,
   and partial brownouts are invisible to it.
+
+## Recovery-curve protocol (validated live 2026-08-17)
+
+The harness also measures what happens *after* the trigger clears — the
+metastable-failure question. Live run on `cei-test`: a 45s `pod-failure` on
+`db` (readiness delayed 30s to make recovery non-instant), then snapshots
+every 6s for 84s after the experiment ended.
+
+Measured: the entire dependent cascade (api, web, worker, reporting) stayed
+degraded for **30 seconds after the trigger was gone**, then recovered
+together with no flapping and no metastable residue — matching the injected
+readiness delay exactly. The instrument correctly distinguishes "slow but
+clean recovery" from the metastable signature (`unrecovered` after the
+trigger clears), which is the distinction the whole measurement exists for.

@@ -294,10 +294,13 @@ counterfactuals. True-independence scoring with provider knowledge base.
 Scheduler hints. Each is publishable work — and each becomes credible only
 because Phase B produced measured ground truth first.
 
-**Standing constraints.** Agent stays read-only (advisory-first is a product
-principle, not a limitation). NIW demonstration surface stays pinned by
-goldens. Every predictive claim ships with its chaos-validation protocol —
-"here is the number, here is how to check it on your own cluster" is the
+**Standing constraints.** The application ACTS — through pull requests via
+the GitHub App, subject to the customer's own review and merge controls —
+while the in-cluster agent keeps its read-only ClusterRole: acting through
+the customer's GitOps pipeline is action with an audit trail, a reviewer,
+and a revert button. NIW demonstration surface stays pinned by goldens.
+Every predictive claim ships with its chaos-validation protocol — "here is
+the number, here is how to check it on your own cluster" is the
 differentiator every incumbent lacks.
 
 ---

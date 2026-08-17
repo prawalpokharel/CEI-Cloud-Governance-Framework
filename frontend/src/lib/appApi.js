@@ -94,6 +94,10 @@ export const api = {
     isSandbox(id)
       ? request('/v1/sandbox/health', { auth: false })
       : request(`/v1/clusters/${id}/health`),
+  drift: (id) =>
+    isSandbox(id)
+      ? Promise.resolve({ events: [], concentration_trend: [] })
+      : request(`/v1/clusters/${id}/drift`),
   vulnerabilities: (id) =>
     isSandbox(id)
       ? request('/v1/sandbox/vulnerabilities', { auth: false })

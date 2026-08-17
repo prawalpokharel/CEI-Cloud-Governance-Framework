@@ -1,0 +1,81 @@
+# Local development environment: the full product on one machine.
+#
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# Postgres on 55433 (NOT 55432, so it cannot collide with the test-suite
+# database the repo's tests expect on that port), API on 8000, UI on 3000.
+# See docs/DEV.md for the full workflow, including pointing an agent at it.
+#
+# Everything here is dev-grade on purpose: fixed credentials, a fixed app
+# secret, no TLS. None of these values may travel to production — production
+# secrets are set on the platform (Railway) and never live in this repo.
+
+# An explicit project name. Without one, compose derives the project from the
+# directory and CLAIMS any older container carrying that label -- which is how
+# a `down` of this file once deleted the repository's long-running test
+# database. A name no other stack uses makes that collision impossible.
+name: cloudoptimizer-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cloudopt
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: cloudoptimizer
+    ports:
+      - "55433:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudopt -d cloudoptimizer"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  core-engine:
+    build: ./core-engine
+    environment:
+      DATABASE_URL: postgres://cloudopt:devpass@postgres:5432/cloudoptimizer
+      # Dev-only. The server refuses to issue sessions without one; a fixed
+      # value here means logins survive container restarts.
+      APP_SECRET_KEY: dev-only-secret-do-not-use-in-production-0000
+      # Optional integrations — export these in your shell to enable them,
+      # absent means the feature reports itself unconfigured rather than
+      # failing:
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_INSTALLATION_ID: ${GITHUB_APP_INSTALLATION_ID:-}
+      # Accepts the PEM contents or a path (a path is preferable; see
+      # git_provider._load_private_key). Paths must be visible inside the
+      # container — mount the file and point this at the mount.
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Inlined into the bundle at build time; the browser calls the API
+        # directly, so this is the host-visible origin, not the compose-
+        # internal one.
+        NEXT_PUBLIC_CORE_ENGINE_URL: http://localhost:8000
+    environment:
+      # The start script is `next start -p $PORT` (Railway convention, where
+      # the platform injects it). Bare containers have no platform, so the
+      # variable must be supplied or next exits with "Option requires
+      # argument: -p".
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - core-engine
+
+volumes:
+  pgdata-dev:

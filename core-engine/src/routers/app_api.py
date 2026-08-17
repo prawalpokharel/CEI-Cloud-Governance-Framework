@@ -37,6 +37,8 @@ from ..services import control_plane as control_plane_service
 from ..services import external_deps as external_deps_service
 from ..services import fleet as fleet_service
 from ..services import recovery as recovery_service
+from ..services import remediation as remediation_service
+from ..services.git_provider import GitHubApp, GitProviderError
 from ..services.cost import analyze_cluster_cost
 from ..services.health import diagnose
 from ..services import blast_radius as blast_radius_service
@@ -89,6 +91,12 @@ class CreateClusterRequest(BaseModel):
 
 class LinkRepositoryRequest(BaseModel):
     # "owner/name". None clears the link.
+    repository: str | None = None
+
+
+class RemediationRequest(BaseModel):
+    workload_key: str
+    # Defaults to the cluster's linked repository.
     repository: str | None = None
 
 
@@ -792,6 +800,112 @@ async def fleet_convergence(
 
     result = fleet_service.analyze(fleet)
     result["clusters_without_snapshots"] = len(clusters) - len(fleet)
+    return result
+
+
+@router.get("/clusters/{cluster_id}/remediations")
+async def cluster_remediations(
+    cluster_id: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Remediations this cluster warrants, with the exact manifests that would
+    be proposed. Read-only preview; opening the PR is a separate POST.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+
+    proposals = remediation_service.plan(snapshot, cei_by_workload)
+    return {
+        "cluster": {"id": str(cluster.id), "name": cluster.name},
+        "repository": cluster.repository,
+        "proposals": proposals,
+        "captured_at": latest.captured_at.isoformat(),
+        "note": (
+            "Each proposal is a deterministic new-file change. POST to "
+            "/remediations/open with a workload_key to open it as a pull "
+            "request; nothing is applied to the cluster directly -- the agent "
+            "remains read-only, and action happens through your repository "
+            "and your review."
+        ),
+    }
+
+
+@router.post("/clusters/{cluster_id}/remediations/open", status_code=201)
+async def open_remediation(
+    cluster_id: str,
+    body: RemediationRequest,
+    request: Request,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Open one remediation as a pull request via the GitHub App.
+
+    One PR per proposal: independently mergeable, independently revertible.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+    repo = (body.repository or cluster.repository or "").strip()
+    if not repo:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No repository. Link one to this cluster (PUT "
+                "/clusters/{id}/repository) or pass it in the request."
+            ),
+        )
+
+    latest = await _latest_snapshot(session, cluster.id)
+    snapshot = latest.payload or {}
+    cei_by_workload = {
+        n["node_id"]: n for n in compute_live_cei(snapshot, {}).nodes
+    }
+    proposals = remediation_service.plan(snapshot, cei_by_workload)
+    proposal = next(
+        (p for p in proposals if p["workload_key"] == body.workload_key), None
+    )
+    if proposal is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"No remediation is currently proposed for {body.workload_key}. "
+                "GET /remediations lists what this cluster warrants."
+            ),
+        )
+
+    app_client = GitHubApp()
+    if not app_client.configured:
+        raise HTTPException(
+            status_code=503,
+            detail="GitHub App is not configured on this server.",
+        )
+    try:
+        result = remediation_service.open_pr(app_client, repo, proposal)
+    except GitProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    await audit.record(
+        session,
+        action="remediation.pr_opened",
+        actor_type=ActorType.user,
+        actor_id=user.email,
+        tenant_id=user.tenant_id,
+        target_type="cluster",
+        target_id=str(cluster.id),
+        source_ip=audit.client_ip(request),
+        details={
+            "workload_key": body.workload_key,
+            "repository": repo,
+            "kind": proposal["kind"],
+            "pr": result.get("pull_request"),
+        },
+    )
+    await session.commit()
     return result
 
 
