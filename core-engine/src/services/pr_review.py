@@ -44,7 +44,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import manifest_diff, resilience
+from . import graph_simulation, manifest_diff, resilience
 from .blast_radius import (
     build_dependency_graph,
     compute_blast_radius,
@@ -339,6 +339,7 @@ def review(
     *,
     default_namespace: str = "default",
     include_resilience: bool = True,
+    include_structural: bool = True,
 ) -> dict[str, Any]:
     """
     Full analysis of a pull request against a cluster snapshot.
@@ -373,6 +374,21 @@ def review(
                 if f["workload_key"] in touched
             ]
 
+    # Structural analysis of the graph the merge would produce. Distinct from
+    # the impact table above, which measures the CURRENT graph and therefore
+    # cannot see a service or a dependency that does not exist yet.
+    structural = None
+    if include_structural:
+        try:
+            structural = graph_simulation.compare(
+                snapshot, files,
+                default_namespace=default_namespace, kustomize=kustomize,
+            )
+        except Exception:
+            # Never let the projection take down the impact analysis; the
+            # latter is the part reviewers rely on.
+            structural = None
+
     by_risk: dict[str, int] = {}
     for impact in impacts:
         by_risk[impact.risk] = by_risk.get(impact.risk, 0) + 1
@@ -380,6 +396,14 @@ def review(
     highest = min(
         (i.risk for i in impacts), key=lambda r: RISK_ORDER.index(r), default="none"
     )
+    # A pull request adding a new shared dependency touches nothing that
+    # exists, so every per-object impact is "low" and the verdict would read
+    # as harmless. The structural finding is the entire signal in that case.
+    for finding in (structural or {}).get("findings", []):
+        if finding["severity"] == "critical":
+            highest = _at_least(highest, "high")
+        elif finding["severity"] == "warning":
+            highest = _at_least(highest, "moderate")
     total_affected = len({
         key
         for impact in impacts
@@ -398,6 +422,7 @@ def review(
             "files_skipped": len(skipped),
         },
         "impacts": [i.to_dict() for i in impacts],
+        "structural": structural,
         "fragile_workloads_touched": fragile_touched,
         "skipped_files": skipped,
     }
@@ -484,6 +509,30 @@ def render_markdown(result: dict) -> str:
                 )
                 lines.append(f"- Reachable from ingress: {names}")
             lines.append("")
+
+    structural = result.get("structural") or {}
+    structural_findings = structural.get("findings") or []
+    if structural_findings:
+        lines.append("### Structural change")
+        lines.append("")
+        conc = structural.get("concentration") or {}
+        graph_counts = structural.get("graph") or {}
+        lines.append(
+            f"Concentration {conc.get('before')} → {conc.get('after')}"
+            + (
+                f" ({conc['relative_change']:+.0%})"
+                if conc.get("relative_change") is not None else ""
+            )
+            + f" · {graph_counts.get('workloads_before')} → "
+            f"{graph_counts.get('workloads_after')} workloads, "
+            f"{graph_counts.get('edges_before')} → "
+            f"{graph_counts.get('edges_after')} dependencies"
+        )
+        lines.append("")
+        for finding in structural_findings[:6]:
+            lines.append(f"- {_RISK_ICON.get(finding['severity'], '⚪')} "
+                         f"**{finding['title']}** — {finding['detail']}")
+        lines.append("")
 
     fragile = result.get("fragile_workloads_touched") or []
     if fragile:

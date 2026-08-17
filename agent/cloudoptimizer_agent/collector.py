@@ -384,9 +384,18 @@ class ClusterCollector:
                 if spec.template.metadata else {},
                 "images": images,
                 "replicas_desired": replicas_desired,
-                "replicas_ready": getattr(status, "ready_replicas", None)
-                if kind != "DaemonSet"
-                else getattr(status, "number_ready", None),
+                # Kubernetes OMITS readyReplicas when zero pods are ready --
+                # the API returns no field rather than 0. Passing the None
+                # through made a fully-down workload indistinguishable from
+                # one whose readiness is unknown, and every consumer that
+                # treated None as "assume serving" then read a dead workload
+                # as healthy. 0 is the truthful value whenever the status
+                # object itself was present.
+                "replicas_ready": (
+                    (getattr(status, "ready_replicas", None) or 0)
+                    if kind != "DaemonSet"
+                    else (getattr(status, "number_ready", None) or 0)
+                ) if status is not None else None,
                 # Fleet-wide, comparable to cpu_cores_used / memory_bytes_used.
                 "cpu_cores_requested": (cpu_req * fleet) if cpu_req else None,
                 "memory_bytes_requested": (mem_req * fleet) if mem_req else None,
