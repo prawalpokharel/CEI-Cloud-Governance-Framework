@@ -50,7 +50,11 @@ export default function ConnectPage() {
       if (pRes.ok) setProviders((await pRes.json()).providers || []);
       if (sRes.ok) setConnected((await sRes.json()).connected || []);
     } catch (e) {
-      setError(e.message);
+      // The cloud-OAuth backend is a hosted service; a connection failure
+      // here almost always means a local/self-hosted stack where it simply
+      // is not deployed. Say that, and point at the flow that DOES work
+      // locally, instead of leaving dead buttons.
+      setError('backend_unreachable');
     }
   };
 
@@ -159,7 +163,21 @@ export default function ConnectPage() {
             </div>
           )}
 
-          {error && <div style={s.errorBox}>{error}</div>}
+          {error === 'backend_unreachable' ? (
+            <div style={s.errorBox}>
+              <strong>Cloud OAuth connect is not available in this
+              environment.</strong>{' '}
+              This page talks to CloudOptimizer&apos;s hosted backend, which
+              is not part of a local or self-hosted deployment. To connect a
+              Kubernetes cluster here, use the{' '}
+              <Link href="/app" style={{ fontWeight: 600 }}>dashboard</Link>:
+              sign up, create a cluster, and install the read-only agent with
+              the API key it gives you — that is the primary product flow,
+              and it works everywhere.
+            </div>
+          ) : (
+            error && <div style={s.errorBox}>{error}</div>
+          )}
 
           <div style={s.providerGrid}>
             {providers.map((p) => {

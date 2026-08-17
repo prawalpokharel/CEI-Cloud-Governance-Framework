@@ -70,6 +70,54 @@ stack down (minikube itself stays). Terraform owns *what* runs, DevSpace owns
 the *loop* — the same split a production GitOps setup has, which is the point
 of practicing it locally.
 
+## Testing the real customer flow, end to end
+
+The product's onboarding is: **a customer signs up on the dashboard, creates
+a cluster, and installs a read-only agent pod into their Kubernetes cluster
+with the API key the dashboard shows — from then on, everything they see is
+what that pod observes.** Here is that exact flow against the local stack:
+
+```bash
+./deploy.sh open          # dashboard on http://localhost:3000
+```
+
+1. **Sign up** at http://localhost:3000/app — any email; it is your local
+   database.
+2. **Create a cluster** and **copy the API key** (shown exactly once, by
+   design — it is stored only as a hash).
+3. **Install the agent pod** — the same Helm chart a customer runs:
+
+```bash
+./deploy.sh agent <API_KEY>
+```
+
+   This installs `charts/cloudoptimizer-agent` (unmodified: read-only
+   ClusterRole, no secrets access) into the minikube cluster, pointed at the
+   core engine over in-cluster DNS. A real customer runs the same chart with
+   `--set endpoint=https://your-hosted-api --set apiKey=...` — the only
+   difference is the URL.
+
+4. **Refresh the dashboard.** Within ~60 seconds the cluster shows
+   connected, with the topology map, CEI ranking, health, and cost built
+   from what the pod observed. From the second snapshot onward the drift
+   rail runs on every ingest, and all 26 analysis endpoints
+   (`/diagnose`, `/prescriptions`, `/drift`, ...) work against the data.
+
+Watch the agent do its work:
+
+```bash
+kubectl -n cloudoptimizer-agent logs -f deploy/cloudoptimizer-agent
+```
+
+## What works locally vs. what needs the hosted backend
+
+| Surface | Local stack | Notes |
+|---|---|---|
+| `/app` dashboard — signup, clusters, topology, CEI, health, cost, drift | ✅ | The product. Backed entirely by core-engine. |
+| All 26 `/v1/clusters/*` analysis endpoints + API docs | ✅ | http://localhost:8000/docs |
+| Agent onboarding via Helm chart | ✅ | `./deploy.sh agent <key>` |
+| `/demo/*` scenarios, `/connect` cloud-OAuth, marketing pages | ❌ | These call CloudOptimizer's **hosted legacy backend** (`NEXT_PUBLIC_API_URL`), which is not part of this repository or the local stack. The `/connect` page now says so and points at the agent flow instead of showing dead buttons. |
+
 ## What is dev-grade here, on purpose
 
 Fixed database credentials, a fixed `APP_SECRET_KEY`, no TLS. **None of

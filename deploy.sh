@@ -141,6 +141,42 @@ open_tunnels() {
   wait
 }
 
+install_agent() {
+  # The customer flow, locally: after signing up in the dashboard and
+  # creating a cluster, install the agent into the (minikube) cluster with
+  # the API key the dashboard showed. The agent then observes the cluster
+  # and ships snapshots to the core engine over in-cluster DNS -- the same
+  # path a real customer's agent takes to the hosted endpoint, minus TLS.
+  local api_key="${1:-}"
+  [ -n "$api_key" ] || fail "usage: ./deploy.sh agent <API_KEY>   (from the dashboard's 'create cluster' step)"
+
+  say "Building the agent image into minikube (skipped if present)"
+  minikube -p "$PROFILE" image ls | grep -q "cloudoptimizer/agent:local" \
+    || minikube -p "$PROFILE" image build -t cloudoptimizer/agent:local "$HERE/agent"
+
+  say "Installing the agent chart (read-only ClusterRole, as shipped)"
+  helm upgrade --install cloudoptimizer-agent "$HERE/charts/cloudoptimizer-agent" \
+    --kube-context "$PROFILE" \
+    --namespace cloudoptimizer-agent --create-namespace \
+    --set apiKey="$api_key" \
+    --set endpoint="http://core-engine.cloudoptimizer.svc.cluster.local:8000" \
+    --set image.repository=cloudoptimizer/agent \
+    --set image.tag=local \
+    --set image.pullPolicy=Never
+
+  kubectl --context "$PROFILE" -n cloudoptimizer-agent rollout status \
+    deploy --timeout=180s 2>/dev/null \
+    || kubectl --context "$PROFILE" -n cloudoptimizer-agent get pods
+  say "Done"
+  cat <<EOF
+  The agent pod is now observing this cluster and shipping snapshots.
+  Within ~60s, refresh the dashboard: the cluster shows connected, with
+  topology, CEI, health, cost, and (from the second snapshot) the drift
+  rail. Follow the agent itself with:
+    kubectl --context $PROFILE -n cloudoptimizer-agent logs -f -l app.kubernetes.io/name=cloudoptimizer-agent
+EOF
+}
+
 status() {
   kubectl -n cloudoptimizer get deploy,svc,pvc 2>/dev/null \
     || echo "nothing deployed (namespace 'cloudoptimizer' absent on context '$PROFILE')"
@@ -163,7 +199,8 @@ case "${1:-deploy}" in
     urls
     ;;
   open)    open_tunnels ;;
+  agent)   install_agent "${2:-}" ;;
   destroy) destroy ;;
   status)  status ;;
-  *) fail "unknown command '${1}'. Usage: ./deploy.sh [deploy|open|destroy|status]" ;;
+  *) fail "unknown command '${1}'. Usage: ./deploy.sh [deploy|open|agent <API_KEY>|destroy|status]" ;;
 esac
