@@ -164,11 +164,11 @@ after Phase 4, since both need the Git integration and it should be built once.
 | 1 — Agent, topology, CEI | Complete. Multi-cloud validation outstanding (G3). |
 | 2 — Waste in $, health, demo mode | Complete. |
 | 3 — Vulnerability scanning, reports, Slack | Complete. |
-| 4 — Fix with AI | Not started. Decision surface built; execution blocked on D5. |
+| 4 — Fix with AI | Built and verified end to end against the real repo and Gemini. Live PR pending D5. |
 | 5 — IaC + CSPM + cloud connect | IaC done. CSPM and cloud connect blocked on credentials. |
 | 6 — Network layer | Segmentation and policy generation done. Egress analysis needs flow data. |
 | 6.5 — Observability Lite | Not started. Blocked on D8. |
 | 7 — Write mode | Policy engine done and tested. Execution blocked on D6. |
 | 8 — SAST | Not started. Sequence after Phase 4. |
 
-**206 tests** — 153 core-engine, 45 agent, 8 frontend.
+**233 tests** — 180 core-engine, 45 agent, 8 frontend.

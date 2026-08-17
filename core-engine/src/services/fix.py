@@ -41,14 +41,12 @@ from .policy import Action, ChangeKind, classify_version_change
 
 log = logging.getLogger(__name__)
 
-# Manifests understood well enough to edit exactly. Anything outside this list
-# is reported as unsupported rather than guessed at.
-SUPPORTED_MANIFESTS = {
-    "requirements.txt": "python",
-    "package.json": "node",
-    "go.mod": "go",
-    "Dockerfile": "docker",
-}
+# Dispatch table, populated after the editors are defined. It is the single
+# source of truth for what can be edited: an earlier version was a separate
+# descriptive dict that listed go.mod, which apply_edit never handled, so the
+# constant advertised support that did not exist. Driving dispatch from it
+# makes that drift impossible.
+MANIFEST_EDITORS: dict[str, Any] = {}
 
 
 @dataclass
@@ -213,18 +211,36 @@ def bump_dockerfile_base(
     return updated, line_number
 
 
+MANIFEST_EDITORS.update({
+    "requirements.txt": bump_requirements_txt,
+    "package.json": bump_package_json,
+    # Prefix match, so Dockerfile.scanner and Dockerfile.prod are covered.
+    "Dockerfile": bump_dockerfile_base,
+})
+
+
+def supported_manifests() -> list[str]:
+    """Filenames this module can edit. Used by callers and by the tests."""
+    return sorted(MANIFEST_EDITORS)
+
+
 def apply_edit(
     path: str, content: str, package: str, to_version: str
 ) -> tuple[str, int | None]:
-    """Dispatch to the right editor by filename."""
+    """
+    Dispatch to the right editor by filename.
+
+    An unrecognized manifest returns the content unchanged rather than
+    attempting a generic substitution. A wrong edit in a file format nobody
+    modelled is worse than no pull request.
+    """
     name = path.rsplit("/", 1)[-1]
-    if name == "requirements.txt":
-        return bump_requirements_txt(content, package, to_version)
-    if name == "package.json":
-        return bump_package_json(content, package, to_version)
-    if name.startswith("Dockerfile"):
-        return bump_dockerfile_base(content, package, to_version)
-    return content, None
+    editor = MANIFEST_EDITORS.get(name)
+    if editor is None and name.startswith("Dockerfile"):
+        editor = MANIFEST_EDITORS["Dockerfile"]
+    if editor is None:
+        return content, None
+    return editor(content, package, to_version)
 
 
 # --------------------------------------------------------------------------

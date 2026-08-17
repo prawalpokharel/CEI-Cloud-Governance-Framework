@@ -26,3 +26,13 @@ SQLAlchemy[asyncio]==2.0.52
 alembic==1.19.1
 asyncpg==0.31.0
 psycopg2-binary==2.9.12
+
+# Authentication. Both are imported by src/ and their absence broke a clean
+# install of the whole app: src.main -> routers.app_api -> services.security
+# -> jwt. Verified by installing requirements.txt into an empty virtualenv and
+# importing src.main, which is now part of CI.
+#
+# PyJWT needs the crypto extra: GitHub App tokens are RS256, and without
+# cryptography PyJWT raises at signing time rather than at import.
+PyJWT[crypto]==2.10.1
+argon2-cffi==23.1.0

@@ -24,7 +24,6 @@ from typing import Any
 # Palette matched to the existing dashboard so the report does not look like
 # it came from a different product.
 NAVY = "#1B4F72"
-BLUE = "#2874A6"
 GREEN = "#196F3D"
 AMBER = "#7D6608"
 RED = "#922B21"

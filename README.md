@@ -8,18 +8,30 @@ CloudOptimizer is a full-stack SaaS implementation of the methodology described 
 
 ```
 cloud-optimizer/
-├── frontend/          # Next.js 14 — Interactive dashboards & visualization
-├── backend/           # Node.js/Express — API server, auth, orchestration
-├── core-engine/       # Python/FastAPI — CEI computation, graph analysis, optimization
-└── README.md
+├── core-engine/       # Python/FastAPI — CEI computation, graph analysis, product API
+├── agent/             # Python — read-only in-cluster Kubernetes agent + scanner
+├── charts/            # Helm chart for the agent (read-only RBAC, opt-in scanner)
+├── frontend/          # Next.js 14 — scenario pages and the /app dashboard
+├── backend/           # Node.js/Express — demo proxy for the scenario pages
+├── scenarios/         # Reference datasets for the five demonstration domains
+├── spikes/            # Throwaway validation experiments, kept for their findings
+└── docs/              # Runbooks
 ```
+
+The patent modules (101–112) live in `core-engine/src/` with their reference
+numbering intact and are exercised by the scenario endpoints. The agent,
+scanner, and product API added later build on the same CEI engine rather than
+replacing it — `core-engine/tests/golden/` pins the scenario responses so the
+demonstration numbers cannot move as a side effect of product work.
+
+See `SETUP.md` for running it, `BACKLOG.md` for current state.
 
 ## Patent Claim Cross-Reference (USPTO App. No. 19/641,446)
 
 | Patent Component (Ref#) | Implementation Module | Claim |
 |---|---|---|
 | Data Collection Module (101) | `core-engine/src/cei/data_collector.py` | 1 |
-| Distributed Computing Env (102) | `backend/src/services/cloud_providers.js` | 1 |
+| Distributed Computing Env (102) | `agent/cloudoptimizer_agent/collector.py` | 1 |
 | Graph Constructor (103) | `core-engine/src/graph/dependency_graph.py` | 1 |
 | Governance Policy Store (104) | `core-engine/src/governance/policy_store.py` | 2 |
 | Stability Monitor (105) | `core-engine/src/cei/stability_monitor.py` | 2 |

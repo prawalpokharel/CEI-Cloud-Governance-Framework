@@ -51,6 +51,18 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
+      - name: Verify a clean install can import the app
+        # requirements.txt once omitted PyJWT and argon2-cffi, which are
+        # imported transitively from src.main. Every developer machine had
+        # them from an earlier ad-hoc pip install, so nothing failed locally
+        # while a fresh deploy would have crashed on startup. Installing into
+        # a separate virtualenv is the only way to catch that.
+        run: |
+          python -m venv /tmp/cleanenv
+          /tmp/cleanenv/bin/pip install --quiet -r requirements.txt
+          DATABASE_URL=postgres://u:p@localhost:1/db \
+            /tmp/cleanenv/bin/python -c "import sys; sys.path.insert(0,'.'); import src.main, src.cli"
+
       - name: Create the throwaway test database
         run: PGPASSWORD=devpass psql -h localhost -U cloudopt -d cloudoptimizer -c 'CREATE DATABASE cloudoptimizer_test'
 
