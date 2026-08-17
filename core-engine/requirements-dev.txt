@@ -1,5 +1,6 @@
 # Development and CI dependencies. Not installed on Railway.
 -r requirements.txt
+-r requirements-cloud.txt
 
 pytest>=8.0
 pytest-asyncio>=0.23

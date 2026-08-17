@@ -1,0 +1,178 @@
+name: Release images
+
+# Publishes the agent and scanner images to ghcr.io.
+#
+# Targeted releases only: a tag, or a manual dispatch naming the tag. Nothing
+# publishes on a push to a branch. An image that appears in the registry
+# because someone merged a README change is an image nobody can reason about,
+# and `latest` moving underneath a running cluster is worse than a stale tag.
+#
+#   git tag release-v0.1.0 && git push origin release-v0.1.0
+#
+# or run this workflow manually and supply the version.
+
+on:
+  push:
+    tags:
+      - "release-v*"
+      # Retained so existing agent-only tags keep working.
+      - "agent-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g. 0.1.0)"
+        required: true
+      images:
+        description: "Which images to publish"
+        required: true
+        default: both
+        type: choice
+        options: [both, agent, scanner]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      publish_agent: ${{ steps.meta.outputs.publish_agent }}
+      publish_scanner: ${{ steps.meta.outputs.publish_scanner }}
+    steps:
+      - id: meta
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+            SELECTION="${{ inputs.images }}"
+          else
+            # release-v0.1.0 -> 0.1.0, agent-v0.1.0 -> 0.1.0
+            VERSION="${GITHUB_REF_NAME#*-v}"
+            case "$GITHUB_REF_NAME" in
+              agent-v*) SELECTION=agent ;;
+              *)        SELECTION=both ;;
+            esac
+          fi
+
+          # A tag that does not yield a version would otherwise publish an
+          # image tagged with an empty string, which resolves to :latest.
+          if [ -z "$VERSION" ] || [ "$VERSION" = "$GITHUB_REF_NAME" ]; then
+            echo "::error::Could not derive a version from '$GITHUB_REF_NAME'."
+            echo "::error::Expected release-vX.Y.Z or agent-vX.Y.Z."
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          [ "$SELECTION" = "scanner" ] && echo "publish_agent=false" >> "$GITHUB_OUTPUT" || echo "publish_agent=true" >> "$GITHUB_OUTPUT"
+          [ "$SELECTION" = "agent" ] && echo "publish_scanner=false" >> "$GITHUB_OUTPUT" || echo "publish_scanner=true" >> "$GITHUB_OUTPUT"
+          echo "Publishing version $VERSION (selection: $SELECTION)"
+
+  publish:
+    needs: resolve
+    runs-on: ubuntu-latest
+    strategy:
+      # One image failing must not cancel the other: a half-published release
+      # where the agent exists and the scanner does not is worse than a clean
+      # failure of one.
+      fail-fast: false
+      matrix:
+        include:
+          - name: agent
+            dockerfile: agent/Dockerfile
+            enabled_from: publish_agent
+          - name: scanner
+            dockerfile: agent/Dockerfile.scanner
+            enabled_from: publish_scanner
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Should this image be published?
+        id: gate
+        run: |
+          if [ "${{ matrix.name }}" = "agent" ]; then
+            echo "go=${{ needs.resolve.outputs.publish_agent }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=${{ needs.resolve.outputs.publish_scanner }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-qemu-action@v3
+        if: steps.gate.outputs.go == 'true'
+      - uses: docker/setup-buildx-action@v3
+        if: steps.gate.outputs.go == 'true'
+
+      - uses: docker/login-action@v3
+        if: steps.gate.outputs.go == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        if: steps.gate.outputs.go == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: agent
+          file: ${{ matrix.dockerfile }}
+          # Both architectures are required, not optional. Graviton and Ampere
+          # node pools are common, and an amd64-only image fails to schedule
+          # there with an error most operators read as a broken chart.
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/cloudoptimizer-${{ matrix.name }}:${{ needs.resolve.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/cloudoptimizer-${{ matrix.name }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.resolve.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Verify both architectures are present
+        if: steps.gate.outputs.go == 'true'
+        # A manifest that silently lost an architecture works everywhere the
+        # maintainer tests and fails only on the customer's ARM nodes.
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/cloudoptimizer-${{ matrix.name }}:${{ needs.resolve.outputs.version }}
+          docker buildx imagetools inspect "$IMAGE" | tee /tmp/manifest.txt
+          for arch in amd64 arm64; do
+            grep -q "linux/$arch" /tmp/manifest.txt || {
+              echo "::error::${{ matrix.name }} manifest is missing linux/$arch"
+              exit 1
+            }
+          done
+
+      - name: Verify the image actually runs
+        if: steps.gate.outputs.go == 'true'
+        # A manifest can be well-formed and the entrypoint still broken. This
+        # pulls the published amd64 image and exercises it, so a release that
+        # cannot start is caught here rather than by the first operator to
+        # install it.
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/cloudoptimizer-${{ matrix.name }}:${{ needs.resolve.outputs.version }}
+          if [ "${{ matrix.name }}" = "scanner" ]; then
+            docker run --rm --platform linux/amd64 --entrypoint trivy "$IMAGE" --version
+          fi
+          docker run --rm --platform linux/amd64 --entrypoint python "$IMAGE" \
+            -c "import cloudoptimizer_agent; print('agent package', cloudoptimizer_agent.AGENT_VERSION)"
+
+  summary:
+    needs: [resolve, publish]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          {
+            echo "## Release ${{ needs.resolve.outputs.version }}"
+            echo ""
+            echo "| Image | Requested | Result |"
+            echo "|---|---|---|"
+            echo "| agent | ${{ needs.resolve.outputs.publish_agent }} | ${{ needs.publish.result }} |"
+            echo "| scanner | ${{ needs.resolve.outputs.publish_scanner }} | ${{ needs.publish.result }} |"
+            echo ""
+            echo "Pull with:"
+            echo '```'
+            echo "docker pull ghcr.io/${{ github.repository_owner }}/cloudoptimizer-agent:${{ needs.resolve.outputs.version }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

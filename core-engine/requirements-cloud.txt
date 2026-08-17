@@ -1,0 +1,13 @@
+# Cloud posture checks (Phase 5). Optional.
+#
+# Deliberately not in requirements.txt: the Azure SDK pulls ~40 MB that a
+# deployment doing only Kubernetes analysis never uses. Install with
+#     pip install -r requirements-cloud.txt
+# services/cspm_azure.py degrades to "unavailable" without it rather than
+# failing to import.
+
+azure-identity==1.25.3
+azure-mgmt-storage==25.1.0
+azure-mgmt-network==31.0.1
+azure-mgmt-authorization==4.0.0
+azure-mgmt-resource==26.0.0

@@ -45,34 +45,48 @@ Still outstanding:
   choosing the replacement tag needs registry queries not yet implemented.
 - **GitLab.** Only GitHub is implemented.
 
-### Phase 5 — CSPM and cloud account connect · **partial**
+### Phase 5 — CSPM · **Azure built and live; AWS and GCP not started**
 
-Built: IaC misconfiguration scanning (Terraform, CloudFormation, Kubernetes,
-Helm, Dockerfiles) via Trivy config.
+Built: IaC misconfiguration scanning via Trivy config, and **Azure CSPM** —
+public blob access, HTTP-permitting storage, weak TLS, unrestricted storage
+networking, NSG rules exposing administrative ports to the internet, and
+subscription-scoped privileged role assignments.
 
-Skipped: CSPM checks (public buckets, over-permissioned IAM, open security
-groups) and the cloud-account connect flow. Both need real cloud credentials —
-AWS cross-account role + External ID, Azure multi-tenant consent, GCP service
-account. The check logic is writable without them; the value is not
-demonstrable without them, and untested cloud-permission code is worse than
-none.
+Authenticates with `DefaultAzureCredential`: the operator's `az login` in
+development, a managed identity in production, no client secret either way.
+Verified live against a real subscription, which produced a genuine finding
+(2 principals holding Owner at subscription scope).
+
+The Azure SDK lives in `requirements-cloud.txt`, not the base requirements —
+~40 MB a Kubernetes-only deployment never needs. The module degrades to
+"unavailable" when it is absent.
+
+Not started: AWS and GCP equivalents, and the customer-facing cloud-account
+connect flow (cross-account role + External ID).
 
 The existing Express OAuth scaffolding is **not** what Phase 5 describes and
 should be deleted rather than extended (T4).
 
-### Phase 6 — Egress traffic analysis · **partial**
+### Phase 6 — Egress traffic analysis · **built, UNVALIDATED against live Hubble**
 
-Built: segmentation coverage analysis and NetworkPolicy generation from the
-dependency graph.
+Built: segmentation analysis, NetworkPolicy generation, and egress analysis
+over Hubble flow data — flagging denied egress, administrative ports leaving
+the cluster, bare-IP destinations with no DNS, and destinations only one
+workload reaches. Ranked by CEI.
 
-Skipped: egress traffic analysis — "flag pods communicating with unexpected
-external destinations". That needs flow data: eBPF (Cilium Hubble), a service
-mesh, or VPC flow logs. All three are substantial infrastructure decisions and
-none is inferable from the Kubernetes API.
+**Not validated against a live Hubble.** Cilium was installed on the local
+`cei-test` cluster and could not start:
 
-This is also why generated NetworkPolicies are audit-first rather than
-enforce-first. Real flow data would close that gap and is the single
-highest-value addition to this phase.
+    failed to retrieve qdisc list of link eth0: operation not supported
+
+Docker Desktop's linuxkit kernel (6.5.11) has no traffic-control subsystem —
+`tc qdisc show` itself fails — so Cilium's eBPF datapath cannot attach. This
+is not a configuration problem and no Cilium setting works around it. The
+cluster was restored to kindnet afterwards.
+
+The flow schema parsed is stable and documented, and parsing is covered by 16
+tests using realistic records. **Validate on a real Linux cluster before
+relying on the output.**
 
 ### Phase 6.5 — Observability Lite · **not started**
 
@@ -132,7 +146,7 @@ after Phase 4, since both need the Git integration and it should be built once.
 | # | Item | Note |
 |---|---|---|
 | G1 | Agent image not published | `git tag agent-v0.1.0 && git push origin agent-v0.1.0` |
-| G2 | Scanner image not published | Built and verified locally (333 MB, Trivy 0.58.0, non-root). Needs a release job like the agent's. |
+| G2 | Images not published | `release-images.yml` publishes both agent and scanner, multi-arch, verifying the manifest and that the entrypoint runs. Tag `release-v0.1.0` to fire it. |
 | G3 | Multi-cloud validation not run | Yours — runbook at `docs/VALIDATION.md` |
 | G4 | Schedulers not wired | `prune`, `report`, and `alert` all work and are verified. Need cron. |
 | G5 | SMTP and Slack webhook unconfigured | Both degrade to "not delivered" and log. Set `SMTP_HOST` / `SLACK_WEBHOOK_URL`. |
@@ -171,4 +185,4 @@ after Phase 4, since both need the Git integration and it should be built once.
 | 7 — Write mode | Policy engine done and tested. Execution blocked on D6. |
 | 8 — SAST | Not started. Sequence after Phase 4. |
 
-**233 tests** — 180 core-engine, 45 agent, 8 frontend.
+**275 tests** — 206 core-engine, 61 agent, 8 frontend.

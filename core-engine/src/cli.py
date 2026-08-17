@@ -7,6 +7,7 @@ Operational commands.
     python -m src.cli alert          Slack alerts for high-CEI critical issues
     python -m src.cli fix --repo O/R  open fix PRs for approved findings
     python -m src.cli integrations    report credential/config state
+    python -m src.cli cspm            Azure posture checks (uses az login)
 
 Run `prune` on a schedule (Railway cron, or any scheduler that can invoke a
 one-off command against the service). It is idempotent and safe to run
@@ -87,6 +88,11 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)-7s %(name)s: %(message)s"
     )
+    # The Azure SDK logs every HTTP request and header at INFO, which buries
+    # the command's own output several screens deep. Raised to WARNING so
+    # real problems still surface.
+    for noisy in ("azure", "azure.identity", "azure.core.pipeline.policies.http_logging_policy"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     parser = argparse.ArgumentParser(prog="cloudoptimizer")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -103,6 +109,11 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     sub.add_parser("integrations", help="Report credential and config state")
+
+    cspm_cmd = sub.add_parser("cspm", help="Azure cloud posture checks")
+    cspm_cmd.add_argument(
+        "--subscription", help="Override AZURE_SUBSCRIPTION_ID",
+    )
 
     prune_cmd = sub.add_parser("prune", help="Delete expired snapshots/samples")
     prune_cmd.add_argument(
@@ -135,6 +146,8 @@ def main(argv: list[str] | None = None) -> int:
                 return await _fix(args.repo, args.manifest, args.limit, args.execute)
             if args.command == "integrations":
                 return _integrations()
+            if args.command == "cspm":
+                return _cspm(args.subscription)
             return 1
         finally:
             await dispose_engine()
@@ -398,6 +411,34 @@ async def _fix(repo: str, manifests: list[str], limit: int, execute: bool) -> in
                 )
 
     print(json.dumps({"executed": execute, "results": results}, indent=2))
+    return 0
+
+
+def _cspm(subscription: str | None) -> int:
+    """Azure posture checks. Authenticates via DefaultAzureCredential."""
+    from .services import cspm_azure
+
+    try:
+        result = cspm_azure.scan(subscription)
+    except cspm_azure.AzureUnavailable as exc:
+        log.error("%s", exc)
+        return 2
+
+    s = result["summary"]
+    print(f"subscription {result['subscription_id']}")
+    print(f"  resources examined : {s['resources_examined']}")
+    print(f"  findings           : {s['total']} {s['by_severity']}")
+    if s["checks_failed"]:
+        # Distinguishes "clean" from "could not look".
+        print(f"  CHECKS FAILED      : {s['checks_failed']}")
+        for name, err in result["errors"].items():
+            print(f"      {name}: {err}")
+    print()
+    for f in result["findings"]:
+        print(f"  [{f['severity']:8s}] {f['title']}")
+        print(f"             {f['detail']}")
+        print(f"             fix: {f['remediation']}")
+        print()
     return 0
 
 
