@@ -7,7 +7,7 @@ Patent Section 5 / Paper Section VII.
 violate governance constraints (e.g., minimum replicas), the action is aborted."
 """
 import networkx as nx
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 
 
 class PreModificationValidator:

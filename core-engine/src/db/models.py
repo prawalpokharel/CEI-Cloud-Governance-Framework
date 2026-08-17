@@ -160,6 +160,15 @@ class Cluster(Base):
     k8s_version: Mapped[str | None] = mapped_column(String(40))
     agent_version: Mapped[str | None] = mapped_column(String(40))
 
+    # The GitHub repository whose manifests describe this cluster, as
+    # "owner/name". Set by the operator; null until they link one.
+    #
+    # This is what lets an inbound webhook find the right dependency graph.
+    # Indexed but not unique: a monorepo legitimately describes several
+    # clusters, and the webhook declines to guess when it matches more than
+    # one rather than analysing against an arbitrary graph.
+    repository: Mapped[str | None] = mapped_column(String(255), index=True)
+
     # Whether metrics-server was reachable on the most recent report. Drives
     # the "metrics unavailable" state in the UI, since CPU/memory actuals are
     # absent without it and several figures degrade to requests/limits.

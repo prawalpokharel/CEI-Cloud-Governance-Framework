@@ -3,7 +3,7 @@ Patent Module 111: Actuator / Recommendation Engine
 Executes modifications by calling cloud provider APIs.
 Generates actionable recommendations with cost projections.
 """
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 
 class RecommendationActuator:

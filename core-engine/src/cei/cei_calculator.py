@@ -11,7 +11,7 @@ Where:
 """
 import numpy as np
 import networkx as nx
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any
 
 
 class CEICalculator:

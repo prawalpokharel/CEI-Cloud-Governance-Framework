@@ -26,21 +26,10 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture(scope="module")
-def client():
-    # The app decides whether to mount the product routers at import time, so
-    # the environment has to be right before src.main is first imported.
-    os.environ.setdefault("DATABASE_URL", os.environ["TEST_DATABASE_URL"])
-    os.environ.setdefault("APP_SECRET_KEY", "test-only-secret-not-for-production")
-    from fastapi.testclient import TestClient
-
-    import src.main
-
-    assert src.main.PRODUCT_API_ENABLED, (
-        "product routers did not mount; the dashboard API would 404 in production"
-    )
-    with TestClient(src.main.app) as test_client:
-        yield test_client
+@pytest.fixture(scope="session")
+def client(api_client):
+    """Shared with every other HTTP suite; see conftest.api_client."""
+    return api_client
 
 
 @pytest.fixture(scope="module")

@@ -21,7 +21,7 @@ The recommendation ALSO respects governance min_replicas if provided.
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 
-from .cost_tables import INSTANCE_PRICES, monthly_cost, cheaper_alternatives, HOURS_PER_MONTH
+from .cost_tables import INSTANCE_PRICES, monthly_cost, HOURS_PER_MONTH
 
 
 @dataclass

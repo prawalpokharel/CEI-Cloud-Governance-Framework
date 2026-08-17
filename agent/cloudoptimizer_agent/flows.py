@@ -23,12 +23,21 @@ flows, and the egress analysis is simply absent for them.
 
 ## VALIDATION STATUS
 
-The Hubble flow schema this parses is stable and documented, and the parsing
-is covered by tests using realistic records. It has **not** been validated
-against a live Hubble instance: Cilium's datapath requires tc/clsact qdisc
-support, which Docker Desktop's linuxkit kernel does not provide, so no local
-Kubernetes cluster on this machine can run it. Validate on a real Linux
-cluster before relying on the output.
+**Schema: verified against upstream Cilium.** Every field name read here was
+checked against `api/v1/flow/flow.proto`, and every reserved identity against
+`pkg/datapath/types/types_generated.go` and `pkg/labels/labels.go`. That check
+found a real defect: dual-stack clusters do not use identity 2 for the
+internet, they use 9 and 10, and the original code matched them only by
+accident through a fallback.
+
+**Behaviour: not validated against a live Hubble.** Cilium's datapath needs
+tc/clsact qdisc support, which Docker Desktop's linuxkit kernel does not
+provide -- `tc qdisc show` fails on the host itself -- so no local Kubernetes
+cluster on this machine can run it. What that leaves untested is timing and
+volume: whether a 90-second window is long enough, how the CLI behaves under
+load, and whether flows arrive in the shape the schema promises.
+
+Run it on a real Linux cluster before relying on the numbers.
 """
 
 from __future__ import annotations
@@ -43,16 +52,49 @@ from typing import Any, Iterable
 
 log = logging.getLogger(__name__)
 
-# Cilium reserved identities. 2 is "world" — anything outside the cluster,
-# which is exactly what egress analysis is about.
-IDENTITY_WORLD = 2
+# Cilium reserved identities, transcribed from
+# pkg/datapath/types/types_generated.go. Verified against upstream rather than
+# assumed: an identity used for the wrong side of the cluster boundary is a
+# silent misclassification, not a crash.
 IDENTITY_HOST = 1
+IDENTITY_WORLD = 2
+IDENTITY_UNMANAGED = 3
+IDENTITY_HEALTH = 4
+IDENTITY_INIT = 5
 IDENTITY_REMOTE_NODE = 6
 IDENTITY_KUBE_APISERVER = 7
+IDENTITY_INGRESS = 8
+# Dual-stack clusters do NOT use identity 2. Cilium splits "world" into
+# per-family identities, so egress to the internet carries 9 or 10 and a check
+# for 2 alone matches nothing. This was the bug: the code happened to catch
+# these through the has-no-namespace fallback, which is coincidence rather
+# than intent and would break the moment an endpoint carried a namespace.
+IDENTITY_WORLD_IPV4 = 9
+IDENTITY_WORLD_IPV6 = 10
+
+EXTERNAL_IDENTITIES = frozenset({
+    IDENTITY_WORLD, IDENTITY_WORLD_IPV4, IDENTITY_WORLD_IPV6, IDENTITY_UNMANAGED,
+})
+
+# Cluster infrastructure. Traffic to these is not egress and reporting it as
+# such buries the real findings: every workload talks to the apiserver, and on
+# a cluster using Cilium's Ingress every inbound path shows identity 8.
+INTERNAL_IDENTITIES = frozenset({
+    IDENTITY_HOST, IDENTITY_HEALTH, IDENTITY_INIT,
+    IDENTITY_REMOTE_NODE, IDENTITY_KUBE_APISERVER, IDENTITY_INGRESS,
+})
 
 # Reserved-identity labels, checked alongside the numeric identity because
-# Hubble populates one or the other depending on version and flow type.
-WORLD_LABELS = {"reserved:world", "reserved:unmanaged"}
+# Hubble populates one or the other depending on version and flow type. Names
+# from pkg/labels/labels.go, prefixed "reserved:" as they appear on a flow.
+WORLD_LABELS = frozenset({
+    "reserved:world", "reserved:world-ipv4", "reserved:world-ipv6",
+    "reserved:unmanaged",
+})
+INTERNAL_LABELS = frozenset({
+    "reserved:host", "reserved:remote-node", "reserved:kube-apiserver",
+    "reserved:health", "reserved:init", "reserved:ingress",
+})
 
 DEFAULT_WINDOW_SECONDS = 90
 DEFAULT_FLOW_LIMIT = 20000
@@ -170,16 +212,31 @@ def _workload_key(endpoint: dict) -> str | None:
 
 
 def _is_external(destination: dict) -> bool:
+    """
+    Whether a flow destination is outside the cluster.
+
+    Identity is checked before labels, and both before the fallback. The
+    ordering matters: an endpoint can carry a reserved identity *and* a
+    namespace (Cilium's Ingress identity does), so a fallback that only asks
+    "has no namespace" reaches the wrong answer for exactly the identities
+    that are named explicitly.
+    """
     identity = destination.get("identity")
-    if identity == IDENTITY_WORLD:
+    if identity in EXTERNAL_IDENTITIES:
         return True
-    labels = {str(l).lower() for l in (destination.get("labels") or [])}
+    if identity in INTERNAL_IDENTITIES:
+        return False
+
+    labels = {str(label).lower() for label in (destination.get("labels") or [])}
     if labels & WORLD_LABELS:
         return True
-    # An endpoint with no namespace and no pod is not a cluster workload.
-    if identity in (IDENTITY_HOST, IDENTITY_REMOTE_NODE, IDENTITY_KUBE_APISERVER):
+    if labels & INTERNAL_LABELS:
         return False
-    return not destination.get("namespace") and not destination.get("pod_name")
+
+    # Nothing reserved matched. An endpoint Kubernetes can name is a cluster
+    # workload; anything else is outside.
+    pod = destination.get("pod_name") or destination.get("podName")
+    return not destination.get("namespace") and not pod
 
 
 def summarize_egress(flows: list[dict]) -> dict[str, Any]:

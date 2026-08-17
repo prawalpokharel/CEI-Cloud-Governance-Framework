@@ -67,7 +67,7 @@ connect flow (cross-account role + External ID).
 The existing Express OAuth scaffolding is **not** what Phase 5 describes and
 should be deleted rather than extended (T4).
 
-### Phase 6 — Egress traffic analysis · **built, UNVALIDATED against live Hubble**
+### Phase 6 — Egress traffic analysis · **schema verified, behaviour unvalidated**
 
 Built: segmentation analysis, NetworkPolicy generation, and egress analysis
 over Hubble flow data — flagging denied egress, administrative ports leaving
@@ -84,9 +84,16 @@ Docker Desktop's linuxkit kernel (6.5.11) has no traffic-control subsystem —
 is not a configuration problem and no Cilium setting works around it. The
 cluster was restored to kindnet afterwards.
 
-The flow schema parsed is stable and documented, and parsing is covered by 16
-tests using realistic records. **Validate on a real Linux cluster before
-relying on the output.**
+**Schema verified against upstream Cilium.** Every field name was checked
+against `api/v1/flow/flow.proto` and every reserved identity against
+`pkg/datapath/types/types_generated.go`. That check found a real defect:
+dual-stack clusters use identities 9 and 10 for the internet, not 2, and the
+original code matched them only by accident through a fallback. Cilium's
+Ingress identity (8) was also being counted as an external destination.
+
+What remains unvalidated is behaviour under real traffic — whether a
+90-second window is wide enough, and how the CLI behaves under load.
+**Run it on a real Linux cluster before relying on the numbers.**
 
 ### Phase 6.5 — Observability Lite · **not started**
 
@@ -185,4 +192,4 @@ after Phase 4, since both need the Git integration and it should be built once.
 | 7 — Write mode | Policy engine done and tested. Execution blocked on D6. |
 | 8 — SAST | Not started. Sequence after Phase 4. |
 
-**483 tests** — 392 core-engine, 83 agent, 8 frontend.
+**555 tests** — 437 core-engine, 110 agent, 8 frontend.

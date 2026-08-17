@@ -1,13 +1,19 @@
 """
 Hubble flow parsing.
 
-Fixtures are real `hubble observe --output jsonpb` record shapes. The schema
-is stable and documented; this has NOT been validated against a live Hubble,
-because Cilium's datapath needs tc/clsact qdisc support that Docker Desktop's
-linuxkit kernel does not provide.
+Fixtures are real `hubble observe --output jsonpb` record shapes.
+
+Field names are verified against Cilium's api/v1/flow/flow.proto and the
+reserved identities against pkg/datapath/types/types_generated.go, so these
+tests check the code against upstream rather than against the assumptions
+that produced it. Behaviour under real traffic is still unvalidated: Cilium's
+datapath needs tc/clsact qdisc support that Docker Desktop's linuxkit kernel
+does not provide.
 """
 
 from __future__ import annotations
+
+import pytest
 
 from cloudoptimizer_agent.flows import (
     IDENTITY_WORLD,
@@ -177,3 +183,92 @@ def test_destinations_are_ordered_by_volume():
     )
     entries = summarize_egress(flows)["workloads"]["default/Deployment/api"]
     assert entries[0]["destination"] == "busy.test"
+
+
+# --- reserved identities, transcribed from upstream Cilium ------------------
+#
+# Values verified against pkg/datapath/types/types_generated.go and label
+# names against pkg/labels/labels.go. Checking them found the dual-stack
+# defect below, which no amount of testing against my own assumptions would
+# have surfaced.
+
+from cloudoptimizer_agent.flows import (  # noqa: E402
+    EXTERNAL_IDENTITIES,
+    INTERNAL_IDENTITIES,
+    _is_external,
+)
+
+
+@pytest.mark.parametrize("identity,name", [
+    (2, "world"), (9, "world-ipv4"), (10, "world-ipv6"), (3, "unmanaged"),
+])
+def test_external_identities(identity, name):
+    assert _is_external({"identity": identity}) is True
+
+
+def test_dual_stack_world_identities_are_recognised():
+    """
+    A dual-stack cluster never emits identity 2 for the internet -- Cilium
+    splits it per address family. Matching only 2 catches these by accident
+    through the no-namespace fallback, which breaks as soon as the endpoint
+    carries one.
+    """
+    ipv4 = {"identity": 9, "namespace": "kube-system", "pod_name": "something"}
+    ipv6 = {"identity": 10, "namespace": "kube-system", "pod_name": "something"}
+
+    assert _is_external(ipv4) is True
+    assert _is_external(ipv6) is True
+
+
+@pytest.mark.parametrize("identity,name", [
+    (1, "host"), (4, "health"), (5, "init"),
+    (6, "remote-node"), (7, "kube-apiserver"), (8, "ingress"),
+])
+def test_internal_identities_are_not_egress(identity, name):
+    assert _is_external({"identity": identity}) is False
+
+
+def test_ingress_identity_is_not_egress_even_without_a_namespace():
+    """
+    Cilium's Ingress proxy is cluster infrastructure. Counting it as an
+    external destination puts an entry on every inbound path in the cluster.
+    """
+    assert _is_external({"identity": 8}) is False
+
+
+def test_identity_sets_do_not_overlap():
+    assert not (EXTERNAL_IDENTITIES & INTERNAL_IDENTITIES)
+
+
+@pytest.mark.parametrize("label", [
+    "reserved:world", "reserved:world-ipv4", "reserved:world-ipv6",
+    "reserved:unmanaged",
+])
+def test_world_labels(label):
+    assert _is_external({"labels": [label]}) is True
+
+
+@pytest.mark.parametrize("label", [
+    "reserved:host", "reserved:remote-node", "reserved:kube-apiserver",
+    "reserved:health", "reserved:init", "reserved:ingress",
+])
+def test_internal_labels(label):
+    assert _is_external({"labels": [label]}) is False
+
+
+def test_identity_wins_over_a_conflicting_label():
+    """Identity is authoritative; labels are the fallback for older Hubble."""
+    assert _is_external({"identity": 2, "labels": ["reserved:host"]}) is True
+
+
+def test_labelled_workload_is_internal():
+    assert _is_external({"namespace": "prod", "pod_name": "api-abc-123"}) is False
+
+
+def test_unlabelled_unidentified_destination_is_external():
+    assert _is_external({}) is True
+
+
+def test_camel_case_pod_name_is_honoured():
+    """Hubble emits podName in some versions, pod_name in others."""
+    assert _is_external({"namespace": "prod", "podName": "api-abc"}) is False

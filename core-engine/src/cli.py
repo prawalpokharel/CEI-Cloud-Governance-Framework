@@ -160,7 +160,7 @@ async def _for_each_cluster(session, fn):
     """Run fn(cluster, cost, health, vulns, cei) for every reporting cluster."""
     from sqlalchemy import desc, select
 
-    from .db.models import Cluster, ImageScan, Snapshot, User
+    from .db.models import Cluster, Snapshot, User
     from .routers.app_api import _load_scans
     from .services.cost import analyze_cluster_cost
     from .services.health import diagnose

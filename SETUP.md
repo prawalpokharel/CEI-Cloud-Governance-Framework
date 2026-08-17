@@ -160,3 +160,45 @@ Everything through Week 3 runs against the local throwaway database. If
 something needs diagnosing against production later, `railway run` and
 `railway logs` produce output you can paste — which is a redactable artifact,
 unlike a credential.
+
+## GitHub webhook (automatic pull-request analysis)
+
+Without this, the blast-radius check runs only when something calls it. With
+it, every pull request is analysed as it opens and re-analysed on each push.
+
+**1. Set a webhook secret on the server.** Generate one and set it as
+`GITHUB_WEBHOOK_SECRET`:
+
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+The endpoint returns 503 until this is set. That is deliberate: without a
+secret it would be an unauthenticated remote trigger against your
+infrastructure data, so it refuses rather than accepting unsigned payloads.
+
+**2. Point the GitHub App's webhook at the server.**
+
+- Payload URL: `https://<your-host>/v1/webhooks/github`
+- Content type: `application/json`
+- Secret: the value from step 1
+- Events: **Pull requests** only
+
+**3. Link the repository to the cluster it deploys to.**
+
+```bash
+curl -X PUT https://<your-host>/v1/clusters/<cluster-id>/repository \
+  -H "Authorization: Bearer <session-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"repository": "your-org/your-repo"}'
+```
+
+This link is what lets an inbound delivery find the right dependency graph.
+Until it exists the webhook acknowledges deliveries and does nothing —
+analysing a pull request against the wrong cluster would report impact
+numbers that are confident and entirely fictional, which is worse than
+reporting none.
+
+The check is advisory by default: it posts a comment and a neutral check run,
+and does not fail the build. A check that blocks merges on a heuristic gets
+bypassed within a week and ignored afterwards.

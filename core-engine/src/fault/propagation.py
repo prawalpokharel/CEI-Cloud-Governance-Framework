@@ -7,8 +7,7 @@ Patent Section 5 / Paper Section VII.
 redundancy, and risk weight."
 """
 import networkx as nx
-import numpy as np
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 
 class FaultPropagationSimulator:
@@ -38,10 +37,24 @@ class FaultPropagationSimulator:
             centrality = cei_data.get("centrality", 0.0)
             risk = risk_factors.get(node_id, 0.0)
 
-            # Redundancy: inverse of in-degree (more dependencies = less redundancy)
-            in_degree = graph.in_degree(node_id)
+            # Redundancy falls as a node's own dependency count rises: a
+            # workload calling six services has six ways to be taken down and
+            # no alternative path when one fails.
+            #
+            # Edges run source -> target meaning "source depends on target",
+            # so out-degree is the count of things this node depends on. The
+            # two comments here previously described in-degree and
+            # "dependents" while the arithmetic used out-degree; the
+            # arithmetic is what shipped, is what the published scenario
+            # figures were computed from, and is left untouched. Only the
+            # description is corrected, along with an in_degree local that was
+            # computed and discarded.
+            #
+            # Whether redundancy is better modelled on dependents than on
+            # dependencies is a real question, but it is a scoring change and
+            # belongs in the backlog, not in a comment fix.
             out_degree = graph.out_degree(node_id)
-            redundancy = 1.0 / (1 + out_degree)  # nodes with many dependents are less redundant
+            redundancy = 1.0 / (1 + out_degree)
 
             # P_fail(i) = f(centrality, redundancy, risk)
             p_fail = self._compute_failure_probability(

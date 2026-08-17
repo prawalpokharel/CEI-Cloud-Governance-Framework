@@ -81,6 +81,11 @@ class CreateClusterRequest(BaseModel):
     name: str
 
 
+class LinkRepositoryRequest(BaseModel):
+    # "owner/name". None clears the link.
+    repository: str | None = None
+
+
 class ManifestFile(BaseModel):
     path: str
     # Both sides of the change. Either may be absent: a new file has no
@@ -552,6 +557,46 @@ async def cluster_cei(
     payload["cluster"] = {"id": str(cluster.id), "name": cluster.name}
     payload["captured_at"] = latest.captured_at.isoformat()
     return payload
+
+
+@router.put("/clusters/{cluster_id}/repository")
+async def link_repository(
+    cluster_id: str,
+    body: LinkRepositoryRequest,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Link the repository whose manifests describe this cluster.
+
+    What lets an inbound GitHub webhook find the right dependency graph.
+    Without it the webhook declines to analyse rather than guessing, because
+    a pull request measured against the wrong cluster produces impact numbers
+    that are confident and entirely fictional.
+    """
+    cluster = await _owned_cluster(cluster_id, user, session)
+
+    repository = (body.repository or "").strip() or None
+    if repository is not None and not re.match(r"^[\w.-]+/[\w.-]+$", repository):
+        raise HTTPException(
+            status_code=400,
+            detail="Repository must be in 'owner/name' form, e.g. acme/platform",
+        )
+
+    cluster.repository = repository
+    await audit.record(
+        session,
+        action="cluster.repository_linked",
+        actor_type=ActorType.user,
+        actor_id=user.email,
+        tenant_id=user.tenant_id,
+        target_type="cluster",
+        target_id=str(cluster.id),
+        details={"repository": repository},
+    )
+    await session.commit()
+    return {"cluster": {"id": str(cluster.id), "name": cluster.name},
+            "repository": repository}
 
 
 @router.get("/clusters/{cluster_id}/blast-radius")
