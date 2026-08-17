@@ -184,7 +184,14 @@ function Stat({ label, value }) {
 }
 
 function AuthPanel({ onAuthed }) {
-  const [mode, setMode] = useState('signup');
+  // The landing page's two buttons differ only by this: Sign up lands on
+  // the default, Log in arrives as /app?mode=login.
+  const initialMode =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('mode') === 'login'
+      ? 'login'
+      : 'signup';
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [org, setOrg] = useState('');
