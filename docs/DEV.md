@@ -116,7 +116,8 @@ kubectl -n cloudoptimizer-agent logs -f deploy/cloudoptimizer-agent
 | `/app` dashboard — signup, clusters, topology, CEI, health, cost, drift | ✅ | The product. Backed entirely by core-engine. |
 | All 26 `/v1/clusters/*` analysis endpoints + API docs | ✅ | http://localhost:8000/docs |
 | Agent onboarding via Helm chart | ✅ | `./deploy.sh agent <key>` |
-| `/demo/*` scenarios, `/connect` cloud-OAuth, marketing pages | ❌ | These call CloudOptimizer's **hosted legacy backend** (`NEXT_PUBLIC_API_URL`), which is not part of this repository or the local stack. The `/connect` page now says so and points at the agent flow instead of showing dead buttons. |
+| `/demo/*` scenarios | ✅ | Served by core-engine's compat routes (`/api/demo/*` are aliases of `/scenarios/*` — the same handlers, so the demonstration numbers cannot diverge). |
+| `/connect` cloud connect | ✅ (demo mode) | Mock connections, exactly as the hosted backend's demo worked (the UI's MOCK badge comes from the provider metadata). Topologies are labelled samples; the analysis over them is the real pipeline. Production keeps its hosted backend via `NEXT_PUBLIC_API_URL`. |
 
 ## What is dev-grade here, on purpose
 

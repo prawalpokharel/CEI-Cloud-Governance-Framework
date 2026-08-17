@@ -11,7 +11,12 @@ RUN npm ci
 COPY . .
 
 ARG NEXT_PUBLIC_CORE_ENGINE_URL=http://localhost:8000
+# The legacy-backend origin. Locally the core engine serves those paths too
+# (see core-engine/src/routers/compat.py), so both point at the same place;
+# production overrides this with the hosted backend's URL.
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_CORE_ENGINE_URL=$NEXT_PUBLIC_CORE_ENGINE_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 
 EXPOSE 3000

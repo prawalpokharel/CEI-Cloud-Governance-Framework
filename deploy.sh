@@ -57,6 +57,7 @@ build_images() {
   minikube -p "$PROFILE" image build -t cloudoptimizer/core-engine:local "$HERE/core-engine"
   minikube -p "$PROFILE" image build \
     --build-opt build-arg=NEXT_PUBLIC_CORE_ENGINE_URL=http://localhost:8000 \
+    --build-opt build-arg=NEXT_PUBLIC_API_URL=http://localhost:8000 \
     -t cloudoptimizer/frontend:local "$HERE/frontend"
 }
 

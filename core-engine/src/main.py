@@ -16,7 +16,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import analysis, pricing, sandbox, scenarios
+from .routers import analysis, compat, pricing, sandbox, scenarios
 
 # Product routers depend on the database. They are imported lazily below so
 # that a deployment without DATABASE_URL -- which is every deployment until
@@ -62,6 +62,8 @@ app.include_router(pricing.router)
 # Sandbox is public and needs no database: the point is to demonstrate the
 # product with nothing installed and nothing signed up for.
 app.include_router(sandbox.router)
+# Legacy-backend paths (/api/demo/*, /api/cloud/*) served locally; see compat.py.
+app.include_router(compat.router)
 
 
 def _mount_product_routers() -> bool:

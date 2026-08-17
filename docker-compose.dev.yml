@@ -66,6 +66,8 @@ services:
         # directly, so this is the host-visible origin, not the compose-
         # internal one.
         NEXT_PUBLIC_CORE_ENGINE_URL: http://localhost:8000
+        # Demo/connect pages: served by the same core engine locally.
+        NEXT_PUBLIC_API_URL: http://localhost:8000
     environment:
       # The start script is `next start -p $PORT` (Railway convention, where
       # the platform injects it). Bare containers have no platform, so the
