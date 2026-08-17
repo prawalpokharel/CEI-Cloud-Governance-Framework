@@ -62,11 +62,7 @@ from typing import Any
 
 from . import availability, cost as cost_service, recovery
 from .blast_radius import build_dependency_graph, compute_blast_radius, is_load_bearing
-from .external_deps import (
-    CATEGORY_WEIGHT,
-    build_external_nodes,
-    dependency_concentration_index,
-)
+from .external_deps import build_external_nodes, dependency_concentration_index
 from .graph_simulation import concentration, structural_centrality
 from .safe_to_delete import assess as safety_assess
 
