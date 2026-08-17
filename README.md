@@ -1,5 +1,12 @@
 # CloudOptimizer — Governance-Aware Dynamic Resource Allocation SaaS Platform
 
+> ### 👉 New here? Start with **[docs/GETTING-STARTED.md](docs/GETTING-STARTED.md)**
+>
+> What CloudOptimizer is, why ranking by blast radius changes the answer, how
+> to try it on a throwaway local cluster in 10 minutes, and how to install it
+> on your own Kubernetes. Includes exactly what the agent can and cannot read,
+> and how to verify that yourself before installing.
+
 ## Overview
 
 CloudOptimizer is a full-stack SaaS implementation of the methodology described in **USPTO Non-Provisional Utility Application No. 19/641,446** (filed April 7, 2026 under 35 USC 111(a), claiming priority from provisional **63/999,378**): *System and Method for Dynamic Resource Allocation in Distributed Computing Environments Using Adaptive Centrality-Entropy Index with Oscillation Suppression and Fault Propagation Control.*
@@ -44,6 +51,10 @@ See `SETUP.md` for running it, `BACKLOG.md` for current state.
 | Rollback Manager (112) | `core-engine/src/rollback/manager.py` | 1 |
 
 ## Quick Start
+
+For installing the agent on a Kubernetes cluster, see
+[docs/GETTING-STARTED.md](docs/GETTING-STARTED.md). The commands below run the
+three services locally for development.
 
 ```bash
 # Core Engine (Python/FastAPI)
