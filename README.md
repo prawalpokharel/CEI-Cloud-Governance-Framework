@@ -47,5 +47,4 @@ cd frontend && npm install && npm run dev  # port 3000
 
 ## References
 - USPTO Non-Provisional Utility Patent Application No. 19/641,446 (priority date 63/999,378)
-- P. Pokharel, "Governance-Aware Dynamic Resource Allocation..." IEEE Cloud Summit 2026
 - P. Pokharel, "AI Modernization in the US Air Force..." SSRN, 2025
